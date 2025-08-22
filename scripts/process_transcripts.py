@@ -6,31 +6,62 @@ import json
 
 # Load environment variables
 load_dotenv()
-openai.api_key = os.getenv("OPENAI_API_KEY")
+
+# Initialize OpenAI client (THIS LINE MIGHT BE MISSING)
+client = openai.OpenAI(api_key=os.getenv("OPENAI_API_KEY"))
 
 def analyze_transcript(transcript_text):
     """Uses AI to analyze and categorize transcript content"""
     
-    # Initialize OpenAI client (new way)
-    client = openai.OpenAI(api_key=os.getenv("OPENAI_API_KEY"))
+    # For long content, preserve original and do minimal analysis
+    word_count = len(transcript_text.split())
+    if word_count > 800:  # If more than 800 words
+        print(f"   Long content detected ({word_count} words) - preserving original")
+        
+        # Determine category from ending
+        content_lower = transcript_text.lower()
+        if content_lower.endswith("this is a task"):
+            category = "task"
+        elif content_lower.endswith("this is a note"):
+            category = "note"
+        elif content_lower.endswith("this is research"):
+            category = "research"
+        else:
+            category = "note"  # Default for unclear endings
+        
+        # Extract title from first part of content
+        first_words = transcript_text.split()[:10]
+        title = " ".join(first_words)
+        if len(title) > 60:
+            title = title[:60] + "..."
+            
+        return {
+            "category": category,
+            "title": title,
+            "content": transcript_text,  # FULL ORIGINAL CONTENT
+            "action_items": [],
+            "key_insights": [],
+            "confidence": "high"
+        }
     
+    # For shorter content, use AI analysis
     prompt = f"""
     Analyze this voice transcript and organize it into categories.
     
-    The person will end recordings with phrases like:
-    - "This is a task" - for actionable items
-    - "This is a note" - for information/learnings
-    - "This is research" - for research topics
-    
     Transcript: {transcript_text}
     
-    Return a JSON response with this structure:
+    CATEGORIZATION RULES (in priority order):
+    1. If the transcript ends with "This is a task" → category = "task"
+    2. If the transcript ends with "This is a note" → category = "note" 
+    3. If the transcript ends with "This is research" → category = "research"
+    
+    Return JSON:
     {{
-        "category": "task|note|research|mixed",
+        "category": "task|note|research",
         "title": "Brief descriptive title",
-        "content": "Main content cleaned up",
-        "action_items": ["list of specific tasks if any"],
-        "key_insights": ["main points or learnings"],
+        "content": "Clean up the content with formatting but preserve all details",
+        "action_items": ["specific tasks if any"],
+        "key_insights": ["main insights if any"],
         "confidence": "high|medium|low"
     }}
     """
@@ -39,7 +70,7 @@ def analyze_transcript(transcript_text):
         response = client.chat.completions.create(
             model="gpt-3.5-turbo",
             messages=[{"role": "user", "content": prompt}],
-            max_tokens=500
+            max_tokens=800
         )
         
         # Parse JSON response
@@ -48,7 +79,14 @@ def analyze_transcript(transcript_text):
         
     except Exception as e:
         print(f"Error analyzing transcript: {e}")
-        return None
+        return {
+            "category": "note",
+            "title": "Voice Recording",
+            "content": transcript_text,  # Fallback to original
+            "action_items": [],
+            "key_insights": [],
+            "confidence": "low"
+        }
 
         
 def process_transcript_file(file_path):
@@ -80,6 +118,19 @@ def process_transcript_file(file_path):
                 }, f, indent=2)
             
             print(f"✅ Saved analysis to: {output_file}")
+            
+            # 🚀 AUTO-ROUTE TO NOTION! 🚀
+            try:
+                from notion_manager import AdvancedNotionManager
+                manager = AdvancedNotionManager()
+                result = manager.route_content(analysis)
+                if result:
+                    print("🎉 Successfully routed to Notion!")
+                else:
+                    print("❌ Failed to create Notion content")
+            except Exception as e:
+                print(f"⚠️ Notion routing failed: {e}")
+            
             return analysis
         else:
             print("❌ Failed to analyze transcript")
