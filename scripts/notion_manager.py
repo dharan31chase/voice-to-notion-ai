@@ -18,43 +18,53 @@ class AdvancedNotionManager:
         self.router = IntelligentRouter()
     
     def create_intelligent_task(self, analysis):
-        """Create a task with AI-powered smart routing"""
+        """Create a task with AI-powered smart routing and clean formatting"""
         try:
             content = analysis.get("content", "")
-            title = analysis.get("title", "")
+            original_title = analysis.get("title", "")
             
-            # Get AI recommendations
+           # In create_intelligent_task method, after getting the cleaned title:
+            title = self.clean_task_title(content, original_title)
+
+            # Extra safety check to remove any quotes
+            title = title.strip('"').strip("'")
+            
+            # NEW: Clean the content to remove meta-commentary
+            cleaned_content = self.organize_task_content(content)
+            
+            # Get AI recommendations (existing code)
             project = self.router.detect_project(content)
             duration_info = self.router.estimate_duration_and_due_date(content)
             special_tags = self.router.detect_special_tags(content)
             
-            # Build properties with EXACT property types
+            # Build properties (existing code)
             properties = {
-                "Task": {"title": [{"text": {"content": title}}]},
-                "Done": {"status": {"name": "Not started"}},  # Status property, not select
+                "Task": {"title": [{"text": {"content": title}}]},  # Use cleaned title
+                "Done": {"status": {"name": "Not started"}},
                 "Due Date": {"date": {"start": duration_info["due_date"]}}
             }
             
-            # Add project if detected (Relation property - need project page ID)
-            # For now, skip project assignment to avoid relation complexity
+            # Add project detection info (existing)
             if project != "Manual Review Required":
-                print(f"   Would assign to project: {project} (relation setup needed)")
+                print(f"   Would assign to project: {project}")
             else:
                 special_tags.append("🔍 AI Review Needed")
             
-            # Add tags (Multi-select)
+            # Add manual review tag if needed
+            if analysis.get("manual_review", False):
+                special_tags.append("🏷️ Needs Manual Review")
+            
+            # Add tags (existing)
             if special_tags:
                 properties["Tags"] = {"multi_select": [{"name": tag} for tag in special_tags]}
             
-            organized_content = self.organize_task_content(content)
-
-            # Create content blocks with preserved context
+            # Create content blocks with CLEANED content
             content_blocks = [
                 {
                     "object": "block",
                     "type": "paragraph", 
                     "paragraph": {
-                        "rich_text": [{"type": "text", "text": {"content": organized_content}}]
+                        "rich_text": [{"text": {"content": cleaned_content}}]  # Use cleaned
                     }
                 },
                 {
@@ -66,11 +76,12 @@ class AdvancedNotionManager:
                     "object": "block",
                     "type": "paragraph",
                     "paragraph": {
-                        "rich_text": [{"type": "text", "text": {"content": f"🤖 AI Analysis:\n• Duration: {duration_info['duration_category']} ({duration_info['estimated_minutes']} min)\n• Project: {project}\n• Tags: {', '.join(special_tags) if special_tags else 'None'}\n• Reasoning: {duration_info['reasoning']}"}}]
+                        "rich_text": [{"text": {"content": f"🤖 AI Analysis:\n• Duration: {duration_info['duration_category']} ({duration_info['estimated_minutes']} min)\n• Project: {project}\n• Tags: {', '.join(special_tags) if special_tags else 'None'}\n• Reasoning: {duration_info['reasoning']}"}}]
                     }
                 }
             ]
             
+            # Create the page (existing code)
             page = notion.pages.create(
                 parent={"database_id": self.tasks_db},
                 properties=properties,
@@ -181,27 +192,51 @@ class AdvancedNotionManager:
             print(f"❌ Failed to create note: {e}")
             print(f"   Content: {content[:100]}...")
             return None
+    
     def organize_task_content(self, content):
-        """Use AI to organize task content while preserving context and insights"""
+        """Clean content while removing meta-commentary but preserving context"""
         
+        # Remove common prompt artifacts
+        meta_patterns = [
+            "I recorded a message instructing you to",
+            "I recorded a message asking you to",
+            "I recorded a message telling you to",
+            "This task is important because it will help",
+            "The user wants to",
+            "The user needs to", 
+            "The recording says to",
+            "I need you to",
+            "Please help me",
+            "Remember to",
+            "Don't forget to",
+        ]
+        
+        cleaned_content = content
+        for pattern in meta_patterns:
+            # Case-insensitive replacement
+            import re
+            cleaned_content = re.sub(pattern, "", cleaned_content, flags=re.IGNORECASE)
+        
+        # Clean up the content while preserving insights
         prompt = f"""
-        Format this voice recording into a clear task description while preserving ALL context and insights:
-        
-        Original content: "{content}"
-        
-        Guidelines:
-        1. Keep ALL the original context, thoughts, and insights exactly as expressed
-        2. Fix grammar, spelling, and sentence structure ONLY
-        3. Preserve the original tone and personal voice
-        4. Add paragraph breaks for readability
-        5. DO NOT summarize or remove any background context - it's valuable!
-        6. DO NOT rephrase the core insights - keep original expressions
-        7. The full context helps understand WHY this task matters
-        
-        Format as: [Context/Insights] + [Clear Action Item]
-        
-        Return the formatted content with ALL original thoughts and context intact.
-        """
+    Format this task content by removing ALL meta-commentary while keeping the actual task details:
+
+    "{cleaned_content}"
+
+    REMOVE:
+    - "I recorded a message..." phrases
+    - "This task is important because..." explanations
+    - Instructions about formatting
+    - Meta-commentary about what you should do
+
+    KEEP:
+    - The actual task details and requirements
+    - Context that explains WHY this matters
+    - Specific constraints or deadlines
+    - Any insights or reasoning that adds value
+
+    Return ONLY the clean, formatted task context.
+    """
         
         try:
             from intelligent_router import client
@@ -216,61 +251,116 @@ class AdvancedNotionManager:
             
         except Exception as e:
             print(f"Error organizing task content: {e}")
-            return content  # Return original if AI fails
+            # Basic fallback - at least remove the patterns
+            return cleaned_content.strip()
     
     def organize_note_content(self, content):
-        """Use AI to organize and format note content while preserving insights"""
+        """Preserve original note content with only basic formatting"""
         
-        prompt = f"""
-        CRITICAL: This is a voice transcript that must preserve the speaker's exact thoughts, insights, and voice.
-
-        Original transcript: "{content}"
-
-        Your ONLY job:
-        1. Add punctuation and paragraph breaks for readability
-        2. Fix obvious typos or transcription errors
-        3. Keep EVERY single insight, phrase, and observation exactly as spoken
-        4. Preserve ALL specific terms, concepts, and unique expressions
-        5. Do NOT summarize, condense, or rephrase ANY content
-        6. Do NOT make it "professional" - keep the original voice and tone
-        7. Do NOT add your own interpretations or explanations
-
-        FORBIDDEN:
-        - Rewriting sentences
-        - Adding new explanations  
-        - Making it sound "polished"
-        - Removing any content whatsoever
-        - Changing the speaker's words or expressions
-
-        Return the content with ONLY formatting improvements - every thought and insight must remain exactly as originally expressed.
-        """
+        # Just do basic cleanup - NO AI processing to preserve voice
+        cleaned_content = content
         
-        try:
-            from intelligent_router import client
-            
-            response = client.chat.completions.create(
-                model="gpt-3.5-turbo",
-                messages=[{"role": "user", "content": prompt}],
-                max_tokens=2500  # Increased for longer content
-            )
-            
-            return response.choices[0].message.content.strip()
-            
-        except Exception as e:
-            print(f"Error organizing content: {e}")
-            return content  # Return original if AI fails
+        # Only fix obvious formatting issues
+        # Remove multiple spaces
+        import re
+        cleaned_content = re.sub(r'\s+', ' ', cleaned_content)
+        
+        # Add paragraph breaks at obvious points (after periods followed by capital letters)
+        cleaned_content = re.sub(r'\. ([A-Z])', r'.\n\n\1', cleaned_content)
+        
+        # Return the content with minimal changes to preserve original voice
+        return cleaned_content.strip()
     
     def route_content(self, analysis):
-        """Intelligently route content to appropriate PARA database"""
-        category = analysis.get("category", "").lower()
+        """Handle both single analysis and list of analyses with structured results"""
         
-        if category == "task":
-            return self.create_intelligent_task(analysis)
-        elif category in ["note", "research"]:
-            return self.create_organized_note(analysis)
+        # Check if it's a list (multiple tasks) or single object
+        if isinstance(analysis, list):
+            # Multiple tasks - process each one
+            successful_tasks = []
+            failed_tasks = []
+            
+            for i, task_analysis in enumerate(analysis, 1):
+                try:
+                    result = self.create_intelligent_task(task_analysis)
+                    if result:
+                        successful_tasks.append(result)
+                        print(f"✅ Task {i} created successfully")
+                    else:
+                        failed_tasks.append({
+                            "task": task_analysis,
+                            "error": "Failed to create task in Notion"
+                        })
+                        print(f"❌ Task {i} failed to create")
+                except Exception as e:
+                    failed_tasks.append({
+                        "task": task_analysis,
+                        "error": str(e)
+                    })
+                    print(f"❌ Task {i} failed with error: {e}")
+            
+            print(f"📊 Multiple tasks summary: {len(successful_tasks)} successful, {len(failed_tasks)} failed")
+            
+            return {
+                "successful": successful_tasks,
+                "failed": failed_tasks,
+                "summary": {
+                    "total": len(analysis),
+                    "successful": len(successful_tasks),
+                    "failed": len(failed_tasks)
+                }
+            }
+            
         else:
-            print(f"⚠️ Unknown category: {category}, creating as note with manual review flag")
-            return self.create_organized_note(analysis)
+            # Single analysis - use structured format for consistency
+            try:
+                category = analysis.get("category", "").lower()
+                
+                if category == "task":
+                    result = self.create_intelligent_task(analysis)
+                elif category in ["note", "research"]:
+                    result = self.create_organized_note(analysis)
+                else:
+                    print(f"⚠️ Unknown category: {category}, creating as note with manual review flag")
+                    result = self.create_organized_note(analysis)
+                
+                if result:
+                    return {
+                        "successful": [result],
+                        "failed": [],
+                        "summary": {
+                            "total": 1,
+                            "successful": 1,
+                            "failed": 0
+                        }
+                    }
+                else:
+                    return {
+                        "successful": [],
+                        "failed": [{
+                            "task": analysis,
+                            "error": "Failed to create content in Notion"
+                        }],
+                        "summary": {
+                            "total": 1,
+                            "successful": 0,
+                            "failed": 1
+                        }
+                    }
+                    
+            except Exception as e:
+                return {
+                    "successful": [],
+                    "failed": [{
+                        "task": analysis,
+                        "error": str(e)
+                    }],
+                    "summary": {
+                        "total": 1,
+                        "successful": 0,
+                        "failed": 1
+                    }
+                }
     def chunk_content(self, content, max_length=1800):
         """Split long content into chunks that fit Notion's 2000 character limit"""
         if len(content) <= max_length:
@@ -297,6 +387,71 @@ class AdvancedNotionManager:
             chunks.append(" ".join(current_chunk))
         
         return chunks
+    
+    def clean_task_title(self, content, title):
+        """Generate clean 'Verb + Object + Essential Context' task titles"""
+        
+        # Common spelling corrections
+        corrections = {
+            "tremor": "trimmer",
+            "calender": "calendar",
+            "recieve": "receive",
+            "jessie": "Jessi",
+            "jessy": "Jessi",
+        }
+        
+        # Apply corrections to both title and content
+        for wrong, right in corrections.items():
+            title = title.replace(wrong, right)
+            content = content.replace(wrong, right)
+        
+        prompt = f"""
+    Create a clear task title using this format: [Verb] + [Object] + [Essential Context]
+
+    Original content: "{content}"
+    Current title: "{title}"
+
+    RULES:
+    1. Start with an action verb (Buy, Research, Call, Send, Schedule, Review, etc.)
+    2. Follow with the specific object/target
+    3. KEEP essential context like WHO (recipient names) or WHAT (specific project/item names)
+    4. Aim for 5-8 words when context is needed
+    5. Fix any spelling errors
+    6. DO NOT add quotation marks around the title
+
+    EXAMPLES:
+    "Write a tech article about how you built your notion second brain" → Write tech article about Notion Second Brain
+    "Send painting inspirations to Nina and Adrian" → Send painting inspirations to Nina and Adrian
+    "Create new project Studio Dharma" → Create new project Studio Dharma
+    "Email Elliot Greenberg about voice block" → Email Elliot Greenberg about voice block
+    "Research and buy the right trimmer" → Research and buy trimmer
+
+    Return ONLY the clean title without any quotes or punctuation marks around it.
+    """
+        
+        try:
+            from intelligent_router import client
+            
+            response = client.chat.completions.create(
+                model="gpt-3.5-turbo",
+                messages=[{"role": "user", "content": prompt}],
+                max_tokens=50
+            )
+            
+            # Strip any quotes that GPT might add
+            cleaned = response.choices[0].message.content.strip()
+            # Remove leading/trailing quotes if present
+            cleaned = cleaned.strip('"').strip("'")
+            
+            return cleaned
+            
+        except Exception as e:
+            print(f"Error cleaning title: {e}")
+            # Basic fallback cleaning
+            clean_title = title
+            for wrong, right in corrections.items():
+                clean_title = clean_title.replace(wrong, right)
+            return clean_title.strip('"').strip("'")
 
 def main():
     """Test the advanced Notion manager with processed transcripts"""
