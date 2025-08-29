@@ -5,37 +5,165 @@ against the actual project list. Supports both hardcoded and future database-dri
 """
 
 import difflib
-from typing import List, Optional
+import os
+from typing import List, Optional, Dict, Any
+from notion_client import Client
+from dotenv import load_dotenv
+
+# Load environment variables
+load_dotenv()
 
 class ProjectMatcher:
     def __init__(self):
         self._project_list = None
+        self._project_data = None  # NEW: Store full project data
         self._similarity_threshold = 0.8  # 80% similarity threshold
+        self._notion_client = None
+        self._projects_db_id = os.getenv("PROJECTS_DATABASE_ID")
+        
+        # Initialize Notion client if token is available
+        notion_token = os.getenv("NOTION_TOKEN")
+        if notion_token and self._projects_db_id:
+            try:
+                self._notion_client = Client(auth=notion_token)
+            except Exception as e:
+                print(f"⚠️ Failed to initialize Notion client: {e}")
+    
+    def fetch_projects_from_notion(self) -> List[Dict[str, Any]]:
+        """
+        Query Notion Projects database and return active projects.
+        
+        Returns:
+            List of project dictionaries with name, id, status, and aliases
+        """
+        if not self._notion_client or not self._projects_db_id:
+            print("❌ Notion client or Projects database ID not available")
+            return []
+        
+        try:
+            # Filter for active projects (not archived, status in active categories)
+            # Note: Status is a "status" type, Archived is "Archives" checkbox
+            filter_params = {
+                "and": [
+                    {
+                        "or": [
+                            {
+                                "property": "Status",
+                                "status": {
+                                    "equals": "In progress"
+                                }
+                            },
+                            {
+                                "property": "Status",
+                                "status": {
+                                    "equals": "Ongoing"
+                                }
+                            },
+                            {
+                                "property": "Status",
+                                "status": {
+                                    "equals": "Backlog"
+                                }
+                            },
+                            {
+                                "property": "Status",
+                                "status": {
+                                    "equals": "On Hold"
+                                }
+                            }
+                        ]
+                    },
+                    {
+                        "property": "Archives", 
+                        "checkbox": {
+                            "equals": False
+                        }
+                    }
+                ]
+            }
+            
+            # Query the database
+            response = self._notion_client.databases.query(
+                database_id=self._projects_db_id,
+                filter=filter_params
+            )
+            
+            projects = []
+            for page in response["results"]:
+                properties = page["properties"]
+                
+                # Extract project name (title field)
+                name_property = properties.get("Name", {})
+                name = ""
+                if name_property.get("title") and len(name_property["title"]) > 0:
+                    name = name_property["title"][0]["text"]["content"]
+                
+                # Extract status (status type)
+                status_property = properties.get("Status", {})
+                status = status_property.get("status", {}).get("name", "")
+                
+                # Extract aliases (text field)
+                aliases_property = properties.get("Aliases", {})
+                aliases_text = ""
+                if aliases_property.get("rich_text") and len(aliases_property["rich_text"]) > 0:
+                    aliases_text = aliases_property["rich_text"][0]["text"]["content"]
+                
+                # Parse aliases (split by comma, strip whitespace)
+                aliases = []
+                if aliases_text:
+                    aliases = [alias.strip() for alias in aliases_text.split(",") if alias.strip()]
+                
+                if name:  # Only include projects with names
+                    projects.append({
+                        "name": name,
+                        "id": page["id"],
+                        "status": status,
+                        "aliases": aliases,
+                        "archived": False
+                    })
+            
+            print(f"✅ Fetched {len(projects)} active projects from Notion")
+            return projects
+            
+        except Exception as e:
+            print(f"❌ Notion query failed: {e}")
+            return []
     
     def get_project_list(self) -> List[str]:
         """
         Get the current project list. 
-        Future: This will query the Notion database.
-        Current: Returns hardcoded list.
+        Tries Notion first, falls back to hardcoded list.
         """
         if self._project_list is None:
-            self._project_list = [
-                "Green Card Application",
-                "Welcoming our Baby",
-                "Project 2035 - Zen Product Craftsman",
-                "Home Remodel",
-                "AI Ethics / Sci Author Extraordinaire",
-                "Legendary Seed-stage Investor",
-                "Tinker with Claude",
-                "Nutrition & Morning Routine",
-                "India Wedding Planning",
-                "Epic 2nd Brain Workflow in Notion",
-                "Lume Coaching Notes & Meetings",
-                "Project Eudaimonia: Focus. Flow. Fulfillment.",
-                "Life Admin HQ",
-                "Improve my Product Sense & Taste",
-                "Woodworking Projects"
-            ]
+            # Try to fetch from Notion first
+            notion_projects = self.fetch_projects_from_notion()
+            
+            if notion_projects:
+                # Use Notion projects
+                self._project_data = notion_projects
+                self._project_list = [project["name"] for project in notion_projects]
+                print(f"📋 Using {len(self._project_list)} projects from Notion")
+            else:
+                # Fallback to hardcoded list
+                self._project_list = [
+                    "Green Card Application",
+                    "Welcoming our Baby",
+                    "Project 2035 - Zen Product Craftsman",
+                    "Home Remodel",
+                    "AI Ethics / Sci Author Extraordinaire",
+                    "Legendary Seed-stage Investor",
+                    "Tinker with Claude",
+                    "Nutrition & Morning Routine",
+                    "India Wedding Planning",
+                    "Epic 2nd Brain Workflow in Notion",
+                    "Lume Coaching Notes & Meetings",
+                    "Project Eudaimonia: Focus. Flow. Fulfillment.",
+                    "Life Admin HQ",
+                    "Improve my Product Sense & Taste",
+                    "Woodworking Projects"
+                ]
+                print(f"📋 Using {len(self._project_list)} hardcoded projects (fallback)")
+        
         return self._project_list
     
     def fuzzy_match_project(self, extracted_project_name: str) -> str:
