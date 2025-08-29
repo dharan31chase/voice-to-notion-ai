@@ -361,7 +361,7 @@ class ProjectMatcher:
     
     def fuzzy_match_project(self, extracted_project_name: str) -> str:
         """
-        Fuzzy match extracted project name against actual project list.
+        Enhanced fuzzy match extracted project name against actual project list and aliases.
         
         Args:
             extracted_project_name: Project name extracted from transcript
@@ -373,76 +373,179 @@ class ProjectMatcher:
             return "Manual Review Required"
         
         extracted = extracted_project_name.strip()
+        normalized_extracted = extracted.lower()
+        
+        # Get all project names and cache for alias lookups
         actual_projects = self.get_project_list()
         
-        # Try exact match first (case insensitive)
+        # Track all potential matches with confidence scores
+        matches = []
+        
+        # 1. Try exact match against project names (highest priority)
         for project in actual_projects:
-            if extracted.lower() == project.lower():
-                return project
+            if normalized_extracted == project.lower():
+                matches.append({
+                    "project": project,
+                    "confidence": 1.0,
+                    "type": "exact_project_name",
+                    "source": project
+                })
+                print(f"🎯 Exact project name match: '{extracted}' → '{project}' (confidence: 1.0)")
+                return project  # Return immediately for exact matches
         
-        # Try partial word matching (more flexible)
+        # 2. Try exact match against aliases (high priority)
+        alias_match = self._cache.get_project_by_alias(extracted)
+        if alias_match:
+            project_name = alias_match["name"]
+            matches.append({
+                "project": project_name,
+                "confidence": 0.95,
+                "type": "exact_alias",
+                "source": f"alias: {extracted}"
+            })
+            print(f"🎯 Exact alias match: '{extracted}' → '{project_name}' (confidence: 0.95)")
+            return project_name
+        
+        # 3. Try partial word matching against project names
+        project_matches = self._partial_match_against_projects(extracted, actual_projects)
+        matches.extend(project_matches)
+        
+        # 4. Try partial word matching against aliases
+        alias_matches = self._partial_match_against_aliases(extracted)
+        matches.extend(alias_matches)
+        
+        # 5. Try fuzzy matching as fallback
+        fuzzy_match = self._fuzzy_match_fallback(extracted, actual_projects)
+        if fuzzy_match:
+            matches.append(fuzzy_match)
+        
+        # Return best match if any found
+        if matches:
+            # Sort by confidence (highest first)
+            matches.sort(key=lambda x: x["confidence"], reverse=True)
+            best_match = matches[0]
+            
+            print(f"🔍 Best match: '{extracted}' → '{best_match['project']}' "
+                  f"(type: {best_match['type']}, confidence: {best_match['confidence']:.2f})")
+            
+            # Log all matches for debugging
+            if len(matches) > 1:
+                print(f"   Other matches: {[(m['project'], m['confidence']) for m in matches[1:3]]}")
+            
+            return best_match["project"]
+        
+        print(f"❌ No match found for '{extracted}'")
+        return "Manual Review Required"
+    
+    def _partial_match_against_projects(self, extracted: str, actual_projects: List[str]) -> List[Dict]:
+        """Partial word matching against project names"""
+        matches = []
         extracted_words = extracted.lower().split()
-        
-        # Track best partial match
-        best_partial_match = None
-        best_partial_score = 0
         
         for project in actual_projects:
             project_words = project.lower().split()
             
-            # Check if all extracted words are found in project
-            matches = 0
+            # Check if extracted words are found in project
+            matches_count = 0
             exact_matches = 0
             
             for word in extracted_words:
-                # Handle number variations (2nd vs Second, etc.)
                 normalized_word = self._normalize_word(word)
                 for project_word in project_words:
                     normalized_project_word = self._normalize_word(project_word)
-                    # More precise matching to avoid false positives
+                    
                     if (word.lower() == project_word.lower() or  # Exact match
                         normalized_word == normalized_project_word or  # Normalized exact match
-                        (len(word) >= 3 and word.lower() in project_word.lower()) or  # Word is substring of project word
-                        (len(project_word) >= 3 and project_word.lower() in word.lower())):  # Project word is substring of word
-                        matches += 1
-                        # Check for exact word match (higher priority)
+                        (len(word) >= 3 and word.lower() in project_word.lower()) or  # Word is substring
+                        (len(project_word) >= 3 and project_word.lower() in word.lower())):  # Project word is substring
+                        matches_count += 1
                         if word.lower() == project_word.lower():
                             exact_matches += 1
                         break
             
-            # Calculate match score with bonus for exact matches
-            match_score = matches / len(extracted_words) if extracted_words else 0
+            # Calculate match score
+            match_score = matches_count / len(extracted_words) if extracted_words else 0
             exact_bonus = exact_matches / len(extracted_words) if extracted_words else 0
-            total_score = match_score + exact_bonus * 0.5  # Bonus for exact matches
+            total_score = match_score + exact_bonus * 0.5
             
             # If most words match, consider it a potential match
-            if match_score >= 0.7:  # 70% of words must match
-                if total_score > best_partial_score:
-                    best_partial_score = total_score
-                    best_partial_match = project
+            if match_score >= 0.7:  # 70% threshold
+                confidence = min(0.9, 0.8 + total_score * 0.1)  # 0.8-0.9 range
+                matches.append({
+                    "project": project,
+                    "confidence": confidence,
+                    "type": "partial_project_name",
+                    "source": project
+                })
         
-        if best_partial_match:
-            print(f"🔍 Partial matched '{extracted}' → '{best_partial_match}' (score: {best_partial_score:.2f})")
-            return best_partial_match
+        return matches
+    
+    def _partial_match_against_aliases(self, extracted: str) -> List[Dict]:
+        """Partial word matching against aliases"""
+        matches = []
+        extracted_words = extracted.lower().split()
         
-        # Try fuzzy matching as fallback
+        # Get all aliases from cache
+        aliases = self._cache._cache["aliases"]
+        
+        for alias, project_name in aliases.items():
+            alias_words = alias.split()
+            
+            # Check if extracted words are found in alias
+            matches_count = 0
+            exact_matches = 0
+            
+            for word in extracted_words:
+                normalized_word = self._normalize_word(word)
+                for alias_word in alias_words:
+                    normalized_alias_word = self._normalize_word(alias_word)
+                    
+                    if (word.lower() == alias_word.lower() or  # Exact match
+                        normalized_word == normalized_alias_word or  # Normalized exact match
+                        (len(word) >= 3 and word.lower() in alias_word.lower()) or  # Word is substring
+                        (len(alias_word) >= 3 and alias_word.lower() in word.lower())):  # Alias word is substring
+                        matches_count += 1
+                        if word.lower() == alias_word.lower():
+                            exact_matches += 1
+                        break
+            
+            # Calculate match score
+            match_score = matches_count / len(extracted_words) if extracted_words else 0
+            exact_bonus = exact_matches / len(extracted_words) if extracted_words else 0
+            total_score = match_score + exact_bonus * 0.5
+            
+            # If most words match, consider it a potential match
+            if match_score >= 0.7:  # 70% threshold
+                confidence = min(0.85, 0.75 + total_score * 0.1)  # 0.75-0.85 range (lower than project names)
+                matches.append({
+                    "project": project_name,
+                    "confidence": confidence,
+                    "type": "partial_alias",
+                    "source": f"alias: {alias}"
+                })
+        
+        return matches
+    
+    def _fuzzy_match_fallback(self, extracted: str, actual_projects: List[str]) -> Optional[Dict]:
+        """Fuzzy matching as fallback using difflib"""
         best_match = None
         best_ratio = 0
         
         for project in actual_projects:
-            # Use difflib for fuzzy string matching
             ratio = difflib.SequenceMatcher(None, extracted.lower(), project.lower()).ratio()
-            
-            if ratio > best_ratio and ratio >= self._similarity_threshold:
+            if ratio > best_ratio and ratio > self._similarity_threshold:
                 best_ratio = ratio
                 best_match = project
         
         if best_match:
-            print(f"🔍 Fuzzy matched '{extracted}' → '{best_match}' (similarity: {best_ratio:.2f})")
-            return best_match
-        else:
-            print(f"❌ No match found for '{extracted}' (best similarity: {best_ratio:.2f})")
-            return "Manual Review Required"
+            return {
+                "project": best_match,
+                "confidence": best_ratio * 0.7,  # Scale down fuzzy match confidence
+                "type": "fuzzy_match",
+                "source": best_match
+            }
+        
+        return None
     
     def set_similarity_threshold(self, threshold: float):
         """Set the similarity threshold for fuzzy matching (0.0 to 1.0)"""
