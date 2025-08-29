@@ -6,17 +6,193 @@ against the actual project list. Supports both hardcoded and future database-dri
 
 import difflib
 import os
+import json
+from datetime import datetime, timedelta
 from typing import List, Optional, Dict, Any
 from notion_client import Client
 from dotenv import load_dotenv
+from pathlib import Path
 
 # Load environment variables
 load_dotenv()
 
+class ProjectCache:
+    """In-memory cache for project data with file persistence"""
+    
+    def __init__(self, cache_file: str = ".cache/projects.json"):
+        self.cache_file = Path(cache_file)
+        self._cache = {
+            "projects": {},  # project_name -> full_data
+            "aliases": {},   # normalized_alias -> project_name
+            "metadata": {
+                "last_fetch": None,
+                "cache_age_minutes": 0,
+                "source": "none",
+                "total_projects": 0,
+                "fetch_duration_ms": 0,
+                "last_successful_fetch": None,
+                "failed_fetch_attempts": 0
+            }
+        }
+        self._load_cache()
+    
+    def _load_cache(self):
+        """Load cache from file if it exists"""
+        try:
+            if self.cache_file.exists():
+                with open(self.cache_file, 'r') as f:
+                    data = json.load(f)
+                    self._cache = data
+                    self._update_cache_age()
+                    print(f"📋 Loaded {self._cache['metadata']['total_projects']} projects from cache ({self._cache['metadata']['cache_age_minutes']}min old)")
+        except Exception as e:
+            print(f"⚠️ Failed to load cache: {e}")
+            self._cache = {
+                "projects": {},
+                "aliases": {},
+                "metadata": {
+                    "last_fetch": None,
+                    "cache_age_minutes": 0,
+                    "source": "none",
+                    "total_projects": 0,
+                    "fetch_duration_ms": 0,
+                    "last_successful_fetch": None,
+                    "failed_fetch_attempts": 0
+                }
+            }
+    
+    def _save_cache(self):
+        """Save cache to file"""
+        try:
+            # Create cache directory if it doesn't exist
+            self.cache_file.parent.mkdir(parents=True, exist_ok=True)
+            
+            with open(self.cache_file, 'w') as f:
+                json.dump(self._cache, f, indent=2, default=str)
+        except Exception as e:
+            print(f"⚠️ Failed to save cache: {e}")
+    
+    def _update_cache_age(self):
+        """Update cache age based on last fetch time"""
+        if self._cache["metadata"]["last_fetch"]:
+            try:
+                last_fetch = datetime.fromisoformat(self._cache["metadata"]["last_fetch"])
+                age = datetime.now() - last_fetch
+                self._cache["metadata"]["cache_age_minutes"] = int(age.total_seconds() / 60)
+            except Exception:
+                self._cache["metadata"]["cache_age_minutes"] = 999999  # Very old
+    
+    def _normalize_alias(self, alias: str) -> str:
+        """Normalize alias for consistent matching"""
+        return alias.lower().strip()
+    
+    def update_from_notion(self, projects_data: List[Dict[str, Any]], fetch_duration_ms: int = 0):
+        """Update cache with data from Notion"""
+        start_time = datetime.now()
+        
+        # Clear existing data
+        self._cache["projects"] = {}
+        self._cache["aliases"] = {}
+        
+        # Process each project
+        for project in projects_data:
+            name = project.get("name", "")
+            if name:
+                # Store project data
+                self._cache["projects"][name] = project
+                
+                # Process aliases
+                aliases = project.get("aliases", [])
+                for alias in aliases:
+                    normalized_alias = self._normalize_alias(alias)
+                    if normalized_alias:
+                        self._cache["aliases"][normalized_alias] = name
+        
+        # Update metadata
+        self._cache["metadata"].update({
+            "last_fetch": start_time.isoformat(),
+            "cache_age_minutes": 0,
+            "source": "notion",
+            "total_projects": len(self._cache["projects"]),
+            "fetch_duration_ms": fetch_duration_ms,
+            "last_successful_fetch": start_time.isoformat(),
+            "failed_fetch_attempts": 0
+        })
+        
+        # Save to file
+        self._save_cache()
+        
+        print(f"✅ Updated cache with {len(self._cache['projects'])} projects and {len(self._cache['aliases'])} aliases")
+    
+    def get_project_by_name(self, name: str) -> Optional[Dict[str, Any]]:
+        """Get project by exact name match"""
+        return self._cache["projects"].get(name)
+    
+    def get_project_by_alias(self, alias: str) -> Optional[Dict[str, Any]]:
+        """Get project by normalized alias"""
+        normalized_alias = self._normalize_alias(alias)
+        project_name = self._cache["aliases"].get(normalized_alias)
+        return self.get_project_by_name(project_name) if project_name else None
+    
+    def get_all_project_names(self) -> List[str]:
+        """Get list of all project names (for backward compatibility)"""
+        return list(self._cache["projects"].keys())
+    
+    def is_cache_fresh(self, max_age_minutes: int = 60) -> bool:
+        """Check if cache is fresh enough to use"""
+        self._update_cache_age()
+        return self._cache["metadata"]["cache_age_minutes"] < max_age_minutes
+    
+    def should_refresh_cache(self, max_age_minutes: int = 60) -> bool:
+        """Determine if cache should be refreshed"""
+        cache_age = self._cache["metadata"]["cache_age_minutes"]
+        total_projects = self._cache["metadata"]["total_projects"]
+        
+        # Always refresh if cache is empty
+        if total_projects == 0:
+            return True
+        
+        # Always refresh if cache is very old (>24 hours)
+        if cache_age > 1440:  # 24 hours
+            return True
+        
+        # Try to refresh if cache is moderately old (>max_age_minutes)
+        if cache_age > max_age_minutes:
+            return True
+        
+        # Use cached data if fresh
+        return False
+    
+    def get_cache_info(self) -> Dict[str, Any]:
+        """Get cache metadata for debugging"""
+        self._update_cache_age()
+        return self._cache["metadata"].copy()
+    
+    def clear_cache(self):
+        """Clear cache and delete file"""
+        try:
+            if self.cache_file.exists():
+                self.cache_file.unlink()
+            self._cache = {
+                "projects": {},
+                "aliases": {},
+                "metadata": {
+                    "last_fetch": None,
+                    "cache_age_minutes": 0,
+                    "source": "none",
+                    "total_projects": 0,
+                    "fetch_duration_ms": 0,
+                    "last_successful_fetch": None,
+                    "failed_fetch_attempts": 0
+                }
+            }
+            print("🗑️ Cache cleared")
+        except Exception as e:
+            print(f"⚠️ Failed to clear cache: {e}")
+
 class ProjectMatcher:
     def __init__(self):
-        self._project_list = None
-        self._project_data = None  # NEW: Store full project data
+        self._cache = ProjectCache()
         self._similarity_threshold = 0.8  # 80% similarity threshold
         self._notion_client = None
         self._projects_db_id = os.getenv("PROJECTS_DATABASE_ID")
@@ -39,6 +215,8 @@ class ProjectMatcher:
         if not self._notion_client or not self._projects_db_id:
             print("❌ Notion client or Projects database ID not available")
             return []
+        
+        start_time = datetime.now()
         
         try:
             # Filter for active projects (not archived, status in active categories)
@@ -122,11 +300,19 @@ class ProjectMatcher:
                         "archived": False
                     })
             
-            print(f"✅ Fetched {len(projects)} active projects from Notion")
+            fetch_duration = int((datetime.now() - start_time).total_seconds() * 1000)
+            print(f"✅ Fetched {len(projects)} active projects from Notion ({fetch_duration}ms)")
+            
+            # Update cache with new data
+            self._cache.update_from_notion(projects, fetch_duration)
+            
             return projects
             
         except Exception as e:
             print(f"❌ Notion query failed: {e}")
+            # Increment failed fetch attempts
+            self._cache._cache["metadata"]["failed_fetch_attempts"] += 1
+            self._cache._save_cache()
             return []
     
     def get_project_list(self) -> List[str]:
@@ -134,37 +320,44 @@ class ProjectMatcher:
         Get the current project list. 
         Tries Notion first, falls back to hardcoded list.
         """
-        if self._project_list is None:
-            # Try to fetch from Notion first
+        # Check if we should refresh cache
+        if self._cache.should_refresh_cache():
             notion_projects = self.fetch_projects_from_notion()
             
             if notion_projects:
-                # Use Notion projects
-                self._project_data = notion_projects
-                self._project_list = [project["name"] for project in notion_projects]
-                print(f"📋 Using {len(self._project_list)} projects from Notion")
+                # Cache was updated with Notion data
+                return self._cache.get_all_project_names()
             else:
-                # Fallback to hardcoded list
-                self._project_list = [
-                    "Green Card Application",
-                    "Welcoming our Baby",
-                    "Project 2035 - Zen Product Craftsman",
-                    "Home Remodel",
-                    "AI Ethics / Sci Author Extraordinaire",
-                    "Legendary Seed-stage Investor",
-                    "Tinker with Claude",
-                    "Nutrition & Morning Routine",
-                    "India Wedding Planning",
-                    "Epic 2nd Brain Workflow in Notion",
-                    "Lume Coaching Notes & Meetings",
-                    "Project Eudaimonia: Focus. Flow. Fulfillment.",
-                    "Life Admin HQ",
-                    "Improve my Product Sense & Taste",
-                    "Woodworking Projects"
-                ]
-                print(f"📋 Using {len(self._project_list)} hardcoded projects (fallback)")
+                # Notion failed, check if we have cached data
+                if self._cache._cache["metadata"]["total_projects"] > 0:
+                    cache_age = self._cache._cache["metadata"]["cache_age_minutes"]
+                    print(f"⚠️ Using {cache_age}min old cached data (Notion unavailable)")
+                    return self._cache.get_all_project_names()
         
-        return self._project_list
+        # Use cached data if fresh or fallback to hardcoded
+        if self._cache._cache["metadata"]["total_projects"] > 0:
+            return self._cache.get_all_project_names()
+        
+        # Fallback to hardcoded list
+        hardcoded_projects = [
+            "Green Card Application",
+            "Welcoming our Baby",
+            "Project 2035 - Zen Product Craftsman",
+            "Home Remodel",
+            "AI Ethics / Sci Author Extraordinaire",
+            "Legendary Seed-stage Investor",
+            "Tinker with Claude",
+            "Nutrition & Morning Routine",
+            "India Wedding Planning",
+            "Epic 2nd Brain Workflow in Notion",
+            "Lume Coaching Notes & Meetings",
+            "Project Eudaimonia: Focus. Flow. Fulfillment.",
+            "Life Admin HQ",
+            "Improve my Product Sense & Taste",
+            "Woodworking Projects"
+        ]
+        print(f"📋 Using {len(hardcoded_projects)} hardcoded projects (fallback)")
+        return hardcoded_projects
     
     def fuzzy_match_project(self, extracted_project_name: str) -> str:
         """
