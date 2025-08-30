@@ -3,7 +3,7 @@ import os
 from dotenv import load_dotenv
 from pathlib import Path
 import json
-from project_matcher import fuzzy_match_project
+from project_matcher import ProjectMatcher
 
 # Load environment variables
 load_dotenv()
@@ -73,69 +73,90 @@ def process_tasks(content):
         # Fallback - treat as single task with manual review
         return process_single_task(content, parts, manual_review=True)
 
+def extract_project_from_content(content: str, project_matcher: ProjectMatcher) -> str:
+    """
+    Extract project name from content using flexible patterns.
+    
+    Patterns supported:
+    - <Content> <Project Name>. <Task/Note>
+    - <Content><Project Name> <Task/Note> (no period)
+    - Handles embedded periods, case insensitive, ignores junk words
+    """
+    print(f"🔍 Extracting project from: '{content[:50]}{'...' if len(content) > 50 else ''}'")
+    
+    # Step 1: Find last task/note keyword (case insensitive)
+    content_lower = content.lower()
+    
+    # Find last occurrence, with priority: last keyword wins
+    last_note_pos = content_lower.rfind('note')
+    last_task_pos = content_lower.rfind('task')
+    
+    if last_note_pos > last_task_pos:
+        last_keyword_pos = last_note_pos
+        keyword = 'note'
+    elif last_task_pos > last_note_pos:
+        last_keyword_pos = last_task_pos
+        keyword = 'task'
+    else:
+        print("  ❌ No task/note keyword found")
+        return "Manual Review Required"
+    
+    print(f"  Found keyword '{keyword}' at position {last_keyword_pos}")
+    
+    # Step 2: Extract text before the keyword (ignore everything after)
+    before_keyword = content[:last_keyword_pos].strip()
+    print(f"  Text before keyword: '{before_keyword}'")
+    
+    # Step 3: Try word combinations from end (1-5 words)
+    words = before_keyword.split()
+    for i in range(1, min(6, len(words) + 1)):  # 1-5 words
+        potential_project = ' '.join(words[-i:])
+        
+        # Normalize: remove embedded periods and normalize spaces
+        normalized_project = ' '.join(potential_project.replace('.', ' ').split())
+        
+        # Skip if the potential project is ONLY a keyword that should be ignored
+        ignored_keywords = ['task', 'note', 'project', 'tasks', 'notes', 'projects']
+        normalized_lower = normalized_project.lower().strip()
+        if normalized_lower in ignored_keywords:
+            print(f"  Skipping keyword: '{normalized_project}'")
+            continue
+        
+        print(f"  Trying word combination: '{potential_project}'")
+        
+        # Use fuzzy matching with error handling
+        try:
+            matched_project = project_matcher.fuzzy_match_project(normalized_project)
+            print(f"  Fuzzy match result: '{matched_project}'")
+            if matched_project != "Manual Review Required":
+                return matched_project
+        except Exception as e:
+            print(f"  ⚠️ Fuzzy matching failed: {e}")
+            continue
+    
+    print("  ❌ No project match found")
+    return "Manual Review Required"
+
 def process_single_task(content, parts, manual_review=False):
     """Process single task with project extraction"""
     
-    # Extract project name from the last segment before final 'Task'
-    project_name = ""
+    # Initialize ProjectMatcher for fuzzy matching
+    project_matcher = ProjectMatcher()
+    
+    # Use new flexible project extraction method
+    project_name = extract_project_from_content(content, project_matcher)
+    
+    # Extract task content (everything before the project name)
     task_content = content
-    
-    # Look for project name in the second-to-last part
-    if len(parts) >= 2:
-        project_candidate = parts[-2].strip()
-        if project_candidate and 'task' not in project_candidate.lower():
-            project_name = project_candidate
-            # Remove project name from content for task description
-            task_content = '.'.join(parts[:-2]).strip()
-    
-    # If no project found, try to extract from last part
-    if not project_name and len(parts) >= 1:
-        last_part = parts[-1].strip()
-        if 'task' in last_part.lower():
-            # Extract everything before 'task' in the last part
-            task_parts = last_part.split()
-            task_index = -1
-            for i, word in enumerate(task_parts):
-                if 'task' in word.lower():
-                    task_index = i
-                    break
-            
-            if task_index > 0:
-                project_name = ' '.join(task_parts[:task_index])
-                if task_content == content:  # If we haven't set task_content yet
-                    task_content = '.'.join(parts[:-1]).strip()
-    
-    # CRITICAL FIX: Handle format like "Task content Task Project Name"
-    if not project_name:
-        # Look for the pattern: content Task ProjectName
-        words = content.split()
-        for i, word in enumerate(words):
-            if 'task' in word.lower() and i < len(words) - 1:
-                # Check if there's a project name after this task
-                potential_project = ' '.join(words[i+1:])
-                if potential_project and len(potential_project.split()) <= 4:  # Project names are 1-4 words
-                    project_name = potential_project
-                    # Extract task content (everything before the last "Task")
-                    task_content = ' '.join(words[:i])
-                    break
     
     # Clean up task content
     if task_content.endswith('.'):
         task_content = task_content[:-1].strip()
     
-    # FUZZY MATCHING INTEGRATION: Match extracted project name against actual projects
-    original_project_name = project_name  # Preserve for debugging
-    try:
-        matched_project = fuzzy_match_project(project_name)
-        if matched_project == "Manual Review Required":
-            manual_review = True
-            project_name = ""  # Clear the unmatched project name
-        else:
-            project_name = matched_project
-    except Exception as e:
-        print(f"Error in fuzzy matching for project '{original_project_name}': {e}")
+    # Handle manual review cases
+    if project_name == "Manual Review Required":
         manual_review = True
-        project_name = original_project_name  # Preserve original for debugging
+        project_name = ""  # Clear the unmatched project name
     
     # Use AI to generate title and analyze task
     prompt = f"""
@@ -186,41 +207,17 @@ def process_multiple_tasks(content, parts, task_occurrences):
     """Process multiple tasks and return list of task objects"""
     
     tasks = []
-    project_name = ""
     
-    # Extract project name from the last segment before final 'Task'
-    if len(parts) >= 2:
-        project_candidate = parts[-2].strip()
-        if project_candidate and 'task' not in project_candidate.lower():
-            project_name = project_candidate
+    # Initialize ProjectMatcher for fuzzy matching
+    project_matcher = ProjectMatcher()
     
-    # If no project found, try to extract from last part
-    if not project_name and len(parts) >= 1:
-        last_part = parts[-1].strip()
-        if 'task' in last_part.lower():
-            task_parts = last_part.split()
-            task_index = -1
-            for i, word in enumerate(task_parts):
-                if 'task' in word.lower():
-                    task_index = i
-                    break
-            
-            if task_index > 0:
-                project_name = ' '.join(task_parts[:task_index])
+    # Use new flexible project extraction method for shared project
+    project_name = extract_project_from_content(content, project_matcher)
     
-    # FUZZY MATCHING INTEGRATION: Match extracted project name against actual projects
-    original_project_name = project_name  # Preserve for debugging
-    try:
-        matched_project = fuzzy_match_project(project_name)
-        if matched_project == "Manual Review Required":
-            project_name = ""  # Clear the unmatched project name
-            manual_review_needed = True
-        else:
-            project_name = matched_project
-            manual_review_needed = False
-    except Exception as e:
-        print(f"Error in fuzzy matching for project '{original_project_name}': {e}")
-        project_name = original_project_name  # Preserve original for debugging
+    # Handle manual review cases
+    manual_review_needed = False
+    if project_name == "Manual Review Required":
+        project_name = ""  # Clear the unmatched project name
         manual_review_needed = True
     
     # Process each task
@@ -281,51 +278,22 @@ def process_multiple_tasks(content, parts, task_occurrences):
 def process_note(content):
     """Process single note with project extraction"""
     
-    # Extract project name from the last segment before 'Note'
-    parts = content.split('.')
-    project_name = ""
+    # Initialize ProjectMatcher for fuzzy matching
+    project_matcher = ProjectMatcher()
+    
+    # Use new flexible project extraction method
+    project_name = extract_project_from_content(content, project_matcher)
+    
+    # Extract note content (everything before the project name)
     note_content = content
-    
-    # Look for project name in the second-to-last part
-    if len(parts) >= 2:
-        project_candidate = parts[-2].strip()
-        if project_candidate and 'note' not in project_candidate.lower():
-            project_name = project_candidate
-            # Remove project name from content for note description
-            note_content = '.'.join(parts[:-2]).strip()
-    
-    # If no project found, try to extract from last part
-    if not project_name and len(parts) >= 1:
-        last_part = parts[-1].strip()
-        if 'note' in last_part.lower():
-            # Extract everything before 'note' in the last part
-            note_parts = last_part.split()
-            note_index = -1
-            for i, word in enumerate(note_parts):
-                if 'note' in word.lower():
-                    note_index = i
-                    break
-            
-            if note_index > 0:
-                project_name = ' '.join(note_parts[:note_index])
-                if note_content == content:  # If we haven't set note_content yet
-                    note_content = '.'.join(parts[:-1]).strip()
     
     # Clean up note content
     if note_content.endswith('.'):
         note_content = note_content[:-1].strip()
     
-    # FUZZY MATCHING INTEGRATION: Match extracted project name against actual projects
-    original_project_name = project_name  # Preserve for debugging
-    try:
-        matched_project = fuzzy_match_project(project_name)
-        if matched_project == "Manual Review Required":
-            project_name = ""  # Clear the unmatched project name
-        else:
-            project_name = matched_project
-    except Exception as e:
-        print(f"Error in fuzzy matching for project '{original_project_name}': {e}")
-        project_name = original_project_name  # Preserve original for debugging
+    # Handle manual review cases
+    if project_name == "Manual Review Required":
+        project_name = ""  # Clear the unmatched project name
     
     # Use AI ONLY for title generation
     title_prompt = f"""

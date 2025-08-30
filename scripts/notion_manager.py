@@ -4,6 +4,7 @@ from notion_client import Client
 import json
 from datetime import datetime
 from intelligent_router import IntelligentRouter
+from project_matcher import ProjectMatcher
 
 # Load environment variables
 load_dotenv()
@@ -16,6 +17,7 @@ class AdvancedNotionManager:
         self.projects_db = os.getenv("PROJECTS_DATABASE_ID")
         self.areas_db = os.getenv("AREAS_DATABASE_ID")
         self.router = IntelligentRouter()
+        self.project_matcher = ProjectMatcher()
     
     def create_intelligent_task(self, analysis):
         """Create a task with AI-powered smart routing and clean formatting"""
@@ -43,6 +45,20 @@ class AdvancedNotionManager:
                 "Done": {"status": {"name": "Not started"}},
                 "Due Date": {"date": {"start": duration_info["due_date"]}}
             }
+            
+            # STEP 4: Add project assignment to Notion
+            # Use project from analysis (which comes from fuzzy matching)
+            analysis_project = analysis.get("project", "")
+            if analysis_project and analysis_project != "Manual Review Required":
+                # Get project ID from cache
+                project_id = self.project_matcher.get_project_id_from_cache(analysis_project)
+                if project_id:
+                    properties["Project"] = {"relation": [{"id": project_id}]}
+                    print(f"   🎯 Project assigned: {analysis_project} (ID: {project_id[:8]}...)")
+                else:
+                    print(f"   ⚠️ Project not found in cache: {analysis_project}")
+            else:
+                print(f"   📝 No project assigned (Manual Review Required or empty)")
             
             # Add project detection info (existing)
             if project != "Manual Review Required":
@@ -109,16 +125,28 @@ class AdvancedNotionManager:
             # Get AI recommendations
             project = self.router.detect_project(content)
             
-            # Build properties for Notes database (skip Project relation for now)
+            # Build properties for Notes database
             properties = {
                 "Name": {"title": [{"text": {"content": title}}]},  # Using your actual title property name
                 "Created Date": {"date": {"start": datetime.now().isoformat()}}
             }
             
-            # Skip project relation for now
-            if project != "Manual Review Required":
-                print(f"   Would assign to project: {project} (relation setup needed)")
+            # STEP 4: Add project assignment to Notes
+            # Use project from analysis (which comes from fuzzy matching)
+            analysis_project = analysis.get("project", "")
+            if analysis_project and analysis_project != "Manual Review Required":
+                # Get project ID from cache
+                project_id = self.project_matcher.get_project_id_from_cache(analysis_project)
+                if project_id:
+                    properties["Project"] = {"relation": [{"id": project_id}]}
+                    print(f"   🎯 Project assigned: {analysis_project} (ID: {project_id[:8]}...)")
+                else:
+                    print(f"   ⚠️ Project not found in cache: {analysis_project}")
             else:
+                print(f"   📝 No project assigned (Manual Review Required or empty)")
+            
+            # Handle manual review cases
+            if project == "Manual Review Required":
                 # Use Jessica's Input checkbox instead
                 properties["Need Jessica's Input"] = {"checkbox": True}
             

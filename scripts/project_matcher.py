@@ -547,6 +547,11 @@ class ProjectMatcher:
         
         return None
     
+    def get_project_id_from_cache(self, project_name: str) -> Optional[str]:
+        """Get project ID from cache for Notion relation assignment"""
+        project_data = self._cache.get_project_by_name(project_name)
+        return project_data.get("id") if project_data else None
+    
     def set_similarity_threshold(self, threshold: float):
         """Set the similarity threshold for fuzzy matching (0.0 to 1.0)"""
         if 0.0 <= threshold <= 1.0:
