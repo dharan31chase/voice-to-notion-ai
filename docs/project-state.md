@@ -1,11 +1,14 @@
 # Voice-to-Notion AI Assistant - Project State & Decisions
 
-## Current Status (Day 2 Complete - August 21, 2025)
+## Current Status (Day 3 Complete - August 22, 2025)
 - ✅ **Complete automation pipeline:** Voice → AI Analysis → Organized Notion PARA content
 - ✅ **Smart project detection:** 90%+ accuracy with few-shot learning
 - ✅ **Content preservation:** Full transcript preservation for long-form content (>800 words)
 - ✅ **Real-world tested:** Validated with actual voice recordings and edge cases
 - ✅ **One-command operation:** `python scripts/process_transcripts.py` does everything
+- ✅ **Flexible project extraction:** 92% success rate with new pattern matching system
+- ✅ **Dynamic project loading:** Real-time project fetching from Notion with caching
+- ✅ **Enhanced fuzzy matching:** Alias support and confidence-based matching
 
 ## Major Architecture Decisions Made
 
@@ -38,49 +41,70 @@
 **Rationale:** Keeps workflow in familiar environment, reduces context switching
 **Implementation:** `🔍 AI Review Needed` tags for low-confidence cases
 
+### 6. Flexible Project Extraction System (Day 3)
+**Decision:** Replace rigid pattern matching with flexible word-combination logic
+**Rationale:** Real-world transcripts don't follow strict formats, need adaptive extraction
+**Implementation:** `extract_project_from_content()` with 1-5 word combinations and fuzzy matching
+**Result:** 92% test success rate, handles embedded periods, case insensitivity, junk word filtering
+
+### 7. Dynamic Project Loading with Caching (Day 3)
+**Decision:** Real-time project fetching from Notion vs. hardcoded project lists
+**Rationale:** Projects change over time, need up-to-date information for accurate matching
+**Implementation:** `ProjectMatcher` class with 60-minute cache and smart invalidation
+**Result:** Always current project data with fallback to hardcoded list
+
+### 8. Enhanced Fuzzy Matching with Aliases (Day 3)
+**Decision:** Multi-layered matching system vs. simple string comparison
+**Rationale:** Project names have variations, aliases, and spelling differences
+**Implementation:** Exact match → Alias match → Partial match → Fuzzy match with confidence scoring
+**Result:** Handles "Product Craftsman" vs "Project 2035 - Zen Product Craftsman" variations
+
 ## Technical Architecture
 
 ### Core Components
-1. **Transcript Processor** (`process_transcripts.py`) - Analyzes voice content with length-based routing
+1. **Transcript Processor** (`process_transcripts.py`) - Analyzes voice content with flexible project extraction
 2. **Intelligent Router** (`intelligent_router.py`) - Project detection, duration estimation, tag assignment
-3. **Notion Manager** (`notion_manager.py`) - Creates organized Notion content with chunking
-4. **Environment** - Python 3.11, OpenAI API, Notion API
+3. **Notion Manager** (`notion_manager.py`) - Creates organized Notion content with project assignment
+4. **Project Matcher** (`project_matcher.py`) - Dynamic project loading and fuzzy matching
+5. **Environment** - Python 3.11, OpenAI API, Notion API
 
 ### Data Flow
-Voice Recording → MacWhisper Pro → .txt files → AI Analysis → Smart Routing → Chunked Notion Content
+Voice Recording → MacWhisper Pro → .txt files → Flexible Analysis → Smart Routing → Project-Assigned Notion Content
 
 ### Key Algorithms
-- **Project Detection:** Few-shot learning with fuzzy matching fallback
+- **Project Extraction:** Flexible pattern matching with 1-5 word combinations
+- **Fuzzy Matching:** Multi-layered matching with confidence scoring
+- **Project Caching:** 60-minute cache with smart invalidation
 - **Content Processing:** Length-based AI vs. preservation routing
 - **Duration Estimation:** Dynamic date calculation with context-aware logic
 - **Content Chunking:** Word-boundary splitting for Notion's character limits
 
-## Lessons Learned (Day 2)
+## Lessons Learned (Day 3)
 
-### 1. Real-World Testing is Critical
-**Issue:** Synthetic test cases missed edge cases like long content, mixed categories, property type mismatches
-**Solution:** Always test with actual user data early in development
-**Applied:** Used real voice recordings to discover token limits, content preservation needs
+### 1. Rigid Pattern Matching Fails in Real-World
+**Issue:** Original extraction logic failed on transcripts that didn't follow strict `[Content]. [Task/Note]. [Project]` format
+**Solution:** Flexible word-combination approach that tries multiple patterns
+**Applied:** 1-5 word combinations from end, keyword filtering, embedded period handling
 
-### 2. AI Token Limits Shape Architecture
-**Issue:** GPT-3.5's token limits forced content truncation for long transcripts
-**Solution:** Hybrid approach - AI for short content, preservation for long content
-**Principle:** Design around AI limitations rather than fighting them
+### 2. Project Data Must Be Dynamic
+**Issue:** Hardcoded project lists become outdated and miss new projects
+**Solution:** Real-time fetching from Notion with intelligent caching
+**Principle:** Always work with current data, not assumptions
 
-### 3. Third-Party API Constraints Drive Design
-**Issue:** Notion's 2000-character limit broke long content
-**Solution:** Automatic chunking with word-boundary awareness
-**Principle:** Expect and plan for external API limitations
+### 3. Fuzzy Matching Needs Multiple Layers
+**Issue:** Simple string matching missed project variations and aliases
+**Solution:** Confidence-based matching with exact → alias → partial → fuzzy hierarchy
+**Result:** Handles spelling variations, aliases, and partial matches effectively
 
-### 4. Property Type Matching is Critical
-**Issue:** Notion Status vs. Select properties caused creation failures
-**Solution:** Exact property type mapping and validation
-**Principle:** APIs are strict about data types - match exactly
+### 4. Keyword Filtering Requires Precision
+**Issue:** Aggressive keyword filtering removed valid project names containing "task", "note", "project"
+**Solution:** Only filter exact keyword matches, not partial matches
+**Principle:** Be precise about what to exclude, not what to include
 
-### 5. Debugging Skills Matter More Than Perfect Code
-**Achievement:** Successfully debugged through 8+ technical issues in one session
-**Skills Applied:** Error message analysis, systematic testing, incremental fixes
-**Result:** Working system despite multiple unexpected issues
+### 5. Test-Driven Development Reveals Edge Cases
+**Achievement:** Created comprehensive test suite that revealed 30% failure rate in original logic
+**Process:** Systematic testing with real-world patterns, incremental improvements
+**Result:** 92% success rate through iterative refinement
 
 ## Current Challenges Solved
 1. ✅ **Project Detection:** 90%+ accuracy with few-shot learning
@@ -89,6 +113,9 @@ Voice Recording → MacWhisper Pro → .txt files → AI Analysis → Smart Rout
 4. ✅ **Notion Integration:** Property type matching and content chunking
 5. ✅ **Tag Logic:** Precise Communications and Jessica Input detection
 6. ✅ **Mixed Content:** Handles tasks with embedded insights
+7. ✅ **Flexible Extraction:** 92% success rate with real-world transcript patterns
+8. ✅ **Dynamic Projects:** Real-time project loading with caching
+9. ✅ **Enhanced Matching:** Multi-layered fuzzy matching with aliases
 
 ## Remaining Technical Debt (Week 3 Roadmap)
 
@@ -110,6 +137,7 @@ Voice Recording → MacWhisper Pro → .txt files → AI Analysis → Smart Rout
 ## Week 1 Achievements
 - ✅ **Day 1:** Complete development environment, AI integration, GitHub workflow
 - ✅ **Day 2:** End-to-end automation with intelligent routing and real-world validation
+- ✅ **Day 3:** Flexible project extraction system with 92% success rate and dynamic project loading
 - ✅ **Time Saved:** Theoretical 30-45 min → 15 min daily organization time
 - ✅ **Quality Improvement:** AI-enhanced project routing and content preservation
 
@@ -123,6 +151,8 @@ Voice Recording → MacWhisper Pro → .txt files → AI Analysis → Smart Rout
 - **Testing Approach:** Always use real voice recordings, not synthetic test cases
 - **Debugging Strategy:** Systematic error message analysis, incremental fixes
 - **Architecture Philosophy:** Preserve user content over AI "enhancement"
+- **Project Extraction:** New flexible system handles various real-world patterns
+- **Project Matching:** Dynamic loading with 60-minute cache, fallback to hardcoded list
 
 ---
-*Last Updated: August 21, 2025 - Day 2 Complete - End-to-End Automation Achieved*
+*Last Updated: August 22, 2025 - Day 3 Complete - Flexible Project Extraction System Implemented*
