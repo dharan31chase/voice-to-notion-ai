@@ -6,10 +6,13 @@
 The AI Assistant Transcript Processing System is designed to automatically process voice transcripts from MacWhisper, categorize them as tasks, notes, or research, and intelligently route them to appropriate Notion databases with AI-powered enhancements.
 
 ### 1.2 Architecture
-- **Input**: Text transcript files (.txt) from MacWhisper
+- **Input**: Text transcript files (.txt) from MacWhisper OR USB recorder (.mp3) files
 - **Processing**: AI-powered analysis and categorization with flexible project extraction
-- **Output**: Structured JSON files and Notion database entries with project assignments
-- **Integration**: OpenAI GPT-3.5-turbo for AI analysis, Notion API for database management
+- **Output**: Structured JSON files and Notion database entries with project assignments and emoji icons
+- **Integration**: OpenAI GPT-3.5-turbo for AI analysis, OpenAI Whisper for transcription, Notion API for database management
+- **Workflow Options**:
+  - **Manual**: MacWhisper → .txt → AI Analysis → Notion
+  - **Automated**: USB Recorder → Orchestrator → Whisper → AI Analysis → Notion → Archive
 
 ## 2. Functional Requirements
 
@@ -89,6 +92,26 @@ The AI Assistant Transcript Processing System is designed to automatically proce
 - **AI Review Needed**: When project detection fails
 - **Manual Review**: When fuzzy matching confidence is below threshold
 
+### 2.5 Smart Icon Assignment System
+- **Icon Selection**: AI-powered emoji assignment based on content keywords
+- **Matching Logic**: Priority-based keyword matching (longer phrases first)
+- **Fallback**: Default to ⁉️ if no keywords match
+- **Configuration**: External JSON file for maintainable icon mappings
+- **Integration**: Page-level emoji icons in Notion (not database properties)
+
+### 2.6 Voice Recording Orchestrator
+- **USB Integration**: Automatic detection of Sony IC Recorder at `/Volumes/IC RECORDER/REC_FILE/FOLDER01`
+- **5-Step Workflow**:
+  1. **Monitor & Detect**: Find new .mp3 recordings and validate
+  2. **Prepare & Plan**: Calculate processing requirements and resource needs
+  3. **Transcribe**: OpenAI Whisper with parallel processing and CPU monitoring
+  4. **Stage & Process**: Integrate with existing AI analysis pipeline
+  5. **Verify & Archive**: Archive recordings with 7-day retention and cleanup
+- **State Management**: Comprehensive JSON-based session tracking
+- **Error Recovery**: Robust failure handling with detailed logging
+- **Resource Monitoring**: CPU usage limits (50%) and disk space validation
+- **Archive Organization**: Date-based folder structure with session IDs
+
 ## 3. Technical Requirements
 
 ### 3.1 Dependencies
@@ -96,10 +119,19 @@ The AI Assistant Transcript Processing System is designed to automatically proce
 openai==1.100.2
 notion-client==2.4.0
 python-dotenv==1.1.1
+psutil==5.9.0
 pathlib (built-in)
 json (built-in)
 datetime (built-in)
+concurrent.futures (built-in)
+subprocess (built-in)
+shutil (built-in)
 ```
+
+### 3.1.1 External Dependencies
+- **OpenAI Whisper CLI**: `pip install openai-whisper` for audio transcription
+- **ffmpeg**: `brew install ffmpeg` for audio file processing
+- **System Requirements**: macOS with USB support, minimum 100MB disk space
 
 ### 3.2 Environment Variables
 - `OPENAI_API_KEY`: OpenAI API key for AI analysis
@@ -114,13 +146,19 @@ datetime (built-in)
 ai-assistant/
 ├── scripts/
 │   ├── process_transcripts.py      # Main processing script with flexible extraction
-│   ├── intelligent_router.py       # AI routing logic
-│   ├── notion_manager.py          # Notion integration with project assignment
+│   ├── intelligent_router.py       # AI routing logic with icon selection
+│   ├── notion_manager.py          # Notion integration with project assignment and icons
 │   ├── project_matcher.py         # Dynamic project loading and fuzzy matching
+│   ├── icon_manager.py            # AI-powered emoji selection
+│   ├── recording_orchestrator.py  # Complete USB recorder workflow
 │   └── test_*.py                  # Test scripts
+├── config/
+│   └── icon_mapping.json         # Configurable icon keyword mappings
 ├── transcripts/                   # Input transcript files
 ├── processed/                     # Output JSON files
-├── .cache/                        # Project cache files
+├── .cache/                        # Project cache and orchestrator state
+├── Failed/                        # Failed transcriptions and processing errors
+├── Recording Archives/            # Organized .mp3 archives with 7-day retention
 ├── docs/                         # Documentation
 ├── requirements.txt              # Python dependencies
 └── README.md                     # Project overview
@@ -198,6 +236,62 @@ ai-assistant/
 }
 ```
 
+### 4.5 Icon Mapping Structure
+```json
+{
+  "icon_mappings": {
+    "home remodel": "🏠",
+    "workout": "💪",
+    "cooking": "👨‍🍳",
+    "reading": "📚",
+    "meeting": "🤝",
+    "planning": "📋",
+    "research": "🔍"
+  },
+  "metadata": {
+    "version": "1.0",
+    "total_mappings": 7,
+    "last_updated": "timestamp"
+  }
+}
+```
+
+### 4.6 Orchestrator State Structure
+```json
+{
+  "current_session": {
+    "session_id": "session_YYYYMMDD_HHMMSS",
+    "start_time": "ISO timestamp",
+    "recordings_processed": ["file1.mp3", "file2.mp3"],
+    "transcripts_created": ["file1.txt", "file2.txt"],
+    "ai_processing_success": ["file1.txt"],
+    "ai_processing_failed": [],
+    "transcription_complete": true,
+    "processing_complete": false,
+    "archive_complete": false,
+    "cleanup_ready": false
+  },
+  "previous_sessions": [
+    {
+      "session_id": "session_YYYYMMDD_HHMMSS",
+      "start_time": "ISO timestamp",
+      "end_time": "ISO timestamp",
+      "cleanup_ready": true,
+      "cleanup_date": "ISO timestamp",
+      "files_to_delete": {
+        "recordings": ["archive_paths"],
+        "transcripts": ["transcript_paths"]
+      }
+    }
+  ],
+  "archive_management": {
+    "last_cleanup": "ISO timestamp",
+    "files_to_delete": [],
+    "deletion_scheduled": null
+  }
+}
+```
+
 ### 4.5 Duration Estimation Structure
 ```json
 {
@@ -237,6 +331,8 @@ ai-assistant/
 - **AI Analysis**: Parallel processing where possible
 - **Notion Integration**: Sequential to avoid rate limits
 - **Project Caching**: 60-minute cache reduces API calls
+- **Transcription**: 3-4 files in parallel with Whisper, 50% CPU limit
+- **Orchestrator**: Complete workflow in 5-15 minutes depending on file count
 
 ### 6.2 Resource Usage
 - **Memory**: Minimal memory footprint (<100MB)
@@ -277,6 +373,9 @@ ai-assistant/
 - **Notion Integration**: Test database creation and project assignment
 - **API Integration**: Test OpenAI and Notion API interactions
 - **Cache System**: Test project loading and invalidation
+- **Orchestrator Pipeline**: Test complete 5-step workflow
+- **Icon System**: Test emoji assignment and Notion integration
+- **Archive Management**: Test file archiving and cleanup processes
 
 ### 8.3 Test Data
 - **Sample Transcripts**: Various formats and content types
@@ -312,6 +411,10 @@ ai-assistant/
 - **Batch Processing**: Process multiple files simultaneously
 - **Web Interface**: GUI for transcript processing
 - **Project Learning**: Improve matching based on user corrections
+- **Auto Cleanup Scheduling**: Automated 7-day archive cleanup
+- **Multi-Device Support**: Extend orchestrator to other recording devices
+- **Progress Tracking**: Real-time progress bars and status updates
+- **Email Notifications**: Success/failure alerts for completed sessions
 
 ### 10.2 Potential Integrations
 - **Calendar Integration**: Auto-schedule tasks based on due dates
