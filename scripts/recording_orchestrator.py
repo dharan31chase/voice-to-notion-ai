@@ -15,6 +15,15 @@ from typing import List, Dict, Optional, Tuple
 import logging
 from concurrent.futures import ThreadPoolExecutor, as_completed
 import sys
+from dotenv import load_dotenv
+
+# Try to import Notion client, but don't fail if it's not available
+try:
+    from notion_client import Client
+    NOTION_AVAILABLE = True
+except ImportError:
+    NOTION_AVAILABLE = False
+    Client = None
 
 # Configure logging
 logging.basicConfig(
@@ -47,6 +56,9 @@ class RecordingOrchestrator:
         self.current_session_id = None
         self.session_start_time = None
         
+        # Initialize Notion client for verification
+        self._setup_notion_client()
+        
     def _setup_folders(self):
         """Create necessary folders if they don't exist"""
         self.transcripts_folder.mkdir(exist_ok=True)
@@ -56,6 +68,29 @@ class RecordingOrchestrator:
         (self.failed_folder / "failed_transcripts").mkdir(exist_ok=True)
         (self.failed_folder / "failure_logs").mkdir(exist_ok=True)
         self.cache_folder.mkdir(exist_ok=True)
+        
+    def _setup_notion_client(self):
+        """Initialize Notion client for entry verification"""
+        try:
+            load_dotenv()
+            self.notion_token = os.getenv('NOTION_TOKEN')
+            
+            if not self.notion_token:
+                logger.warning("⚠️ NOTION_TOKEN not found - verification will be limited")
+                self.notion_client = None
+                return
+            
+            if not NOTION_AVAILABLE:
+                logger.warning("⚠️ notion-client not installed - verification will be limited")
+                self.notion_client = None
+                return
+            
+            self.notion_client = Client(auth=self.notion_token)
+            logger.info("✅ Notion client initialized for verification")
+            
+        except Exception as e:
+            logger.warning(f"⚠️ Failed to initialize Notion client: {e}")
+            self.notion_client = None
         
     def _load_state(self) -> Dict:
         """Load existing state or create new state file"""
@@ -1243,6 +1278,64 @@ class RecordingOrchestrator:
         except Exception as e:
             logger.error(f"❌ Error finalizing session: {e}")
     
+    def _verify_notion_entry_exists(self, notion_entry_id: str) -> Tuple[bool, str]:
+        """
+        Verify that a Notion entry exists via API call
+        Returns: (success, error_message)
+        """
+        if not self.notion_client:
+            return False, "Notion client not available"
+        
+        max_retries = 3
+        base_delay = 1  # seconds
+        
+        for attempt in range(max_retries):
+            try:
+                # Add delay between retries (rate limiting)
+                if attempt > 0:
+                    time.sleep(base_delay * (2 ** (attempt - 1)))
+                
+                # Query the specific page with timeout
+                import signal
+                
+                def timeout_handler(signum, frame):
+                    raise TimeoutError("API call timed out")
+                
+                # Set 10 second timeout
+                signal.signal(signal.SIGALRM, timeout_handler)
+                signal.alarm(10)
+                
+                try:
+                    page = self.notion_client.pages.retrieve(notion_entry_id)
+                    signal.alarm(0)  # Cancel timeout
+                    
+                    if page and page.get("id"):
+                        return True, ""
+                    else:
+                        return False, "Page not found or invalid response"
+                        
+                except TimeoutError:
+                    signal.alarm(0)
+                    return False, "API call timed out after 10 seconds"
+                    
+            except Exception as e:
+                error_msg = str(e)
+                if "rate_limited" in error_msg.lower() or "429" in error_msg:
+                    # Rate limited - wait longer
+                    wait_time = base_delay * (2 ** attempt)
+                    logger.warning(f"⚠️ Rate limited, waiting {wait_time}s before retry {attempt + 1}")
+                    time.sleep(wait_time)
+                    continue
+                elif "not_found" in error_msg.lower() or "404" in error_msg:
+                    return False, "Page not found"
+                elif attempt == max_retries - 1:
+                    return False, f"API error after {max_retries} attempts: {error_msg}"
+                else:
+                    logger.warning(f"⚠️ API error on attempt {attempt + 1}: {error_msg}")
+                    continue
+        
+        return False, f"Failed after {max_retries} attempts"
+    
     def _verify_notion_entries(self, successful_analyses: List[Dict]) -> Tuple[Dict, List[Dict], List[Dict]]:
         """
         Step 5a: Verify Notion entries exist and are valid
@@ -1264,10 +1357,6 @@ class RecordingOrchestrator:
                     })
                     continue
                 
-                # TODO: Add actual Notion API verification here
-                # For now, we'll assume if we have an ID, it was created successfully
-                # This is a placeholder - we need to implement actual verification
-                
                 # Basic validation: check if we have required fields
                 if not analysis.get("title") or not analysis.get("content"):
                     failed_entries.append({
@@ -1277,11 +1366,25 @@ class RecordingOrchestrator:
                     })
                     continue
                 
-                # TODO: Implement actual Notion API verification:
-                # 1. Query Notion API using notion_entry_id
-                # 2. Verify entry exists and has correct properties
-                # 3. Validate project assignment and icon
-                # 4. Return detailed verification results
+                # Verify Notion entry exists via API
+                notion_entry_id = analysis.get("notion_entry_id")
+                if notion_entry_id:
+                    success, error = self._verify_notion_entry_exists(notion_entry_id)
+                    if not success:
+                        failed_entries.append({
+                            "transcript": analysis.get("transcript_name", "unknown"),
+                            "error": f"Notion verification failed: {error}",
+                            "analysis": analysis,
+                            "notion_entry_id": notion_entry_id
+                        })
+                        continue
+                else:
+                    failed_entries.append({
+                        "transcript": analysis.get("transcript_name", "unknown"),
+                        "error": "Missing Notion entry ID from analysis",
+                        "analysis": analysis
+                    })
+                    continue
                 
                 verified_entries.append(analysis)
                 logger.info(f"✅ Verified Notion entry for: {analysis.get('transcript_name', 'unknown')}")
