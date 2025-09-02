@@ -516,6 +516,14 @@ def process_transcript_file(file_path):
                     result = manager.route_content(analysis)
                     if result and result["summary"]["successful"] > 0:
                         print(f"🎉 Successfully routed {result['summary']['successful']}/{result['summary']['total']} to Notion!")
+                        
+                        # 🆕 PHASE 1: CAPTURE NOTION ENTRY IDS FOR MULTIPLE ANALYSES
+                        if isinstance(analysis, list) and result["successful"]:
+                            for i, task in enumerate(analysis):
+                                if i < len(result["successful"]):
+                                    task["notion_entry_id"] = result["successful"][i].get("id")
+                                    print(f"   📝 Task {i+1} Notion ID: {task['notion_entry_id'][:8]}...")
+                        
                         if result["summary"]["failed"] > 0:
                             print(f"⚠️ {result['summary']['failed']} tasks failed to route")
                     else:
@@ -551,6 +559,12 @@ def process_transcript_file(file_path):
                     result = manager.route_content(analysis)
                     if result and result["summary"]["successful"] > 0:
                         print(f"🎉 Successfully routed {result['summary']['successful']}/{result['summary']['total']} to Notion!")
+                        
+                        # 🆕 PHASE 1: CAPTURE NOTION ENTRY ID FOR SINGLE ANALYSIS
+                        if result["successful"]:
+                            analysis["notion_entry_id"] = result["successful"][0].get("id")
+                            print(f"   📝 Notion ID: {analysis['notion_entry_id'][:8]}...")
+                        
                         if result["summary"]["failed"] > 0:
                             print(f"⚠️ {result['summary']['failed']} tasks failed to route")
                     else:
