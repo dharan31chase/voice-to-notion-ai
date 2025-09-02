@@ -2,6 +2,7 @@ import openai
 import os
 from dotenv import load_dotenv
 import json
+from icon_manager import IconManager
 
 # Load environment variables
 load_dotenv()
@@ -9,7 +10,7 @@ client = openai.OpenAI(api_key=os.getenv("OPENAI_API_KEY"))
 
 class IntelligentRouter:
     def __init__(self):
-        pass
+        self.icon_manager = IconManager()
     
     def detect_project(self, content):
         """Use AI to intelligently detect which project this content belongs to"""
@@ -189,6 +190,76 @@ Return JSON format:
             tags.append("Needs Jessica Input")
     
         return tags
+
+    def select_icon_for_analysis(self, title: str, project: str = "") -> str:
+        """
+        Select icon based on title first, then project fallback
+        
+        Args:
+            title: AI-generated title for the task/note
+            project: Project name (optional, used as fallback)
+            
+        Returns:
+            Selected emoji icon or default icon
+        """
+        try:
+            # First try title (primary source)
+            icon = self.icon_manager.select_icon("", title)
+            if icon != self.icon_manager.default_icon:
+                return icon
+            
+            # If no match in title, try project name (secondary source)
+            if project and project != "Manual Review Required":
+                # Use simplified project name for better matching
+                simplified_project = self._simplify_project_name(project)
+                icon = self.icon_manager.select_icon("", simplified_project)
+                if icon != self.icon_manager.default_icon:
+                    return icon
+            
+            return self.icon_manager.default_icon
+            
+        except Exception as e:
+            print(f"⚠️ Error in icon selection: {e}")
+            return self.icon_manager.default_icon
+    
+    def _simplify_project_name(self, project: str) -> str:
+        """
+        Simplify project name for better icon matching
+        
+        Args:
+            project: Full project name
+            
+        Returns:
+            Simplified project name
+        """
+        # Remove common suffixes and prefixes
+        simplified = project
+        
+        # Remove common suffixes
+        suffixes_to_remove = [
+            ": Focus. Flow. Fulfillment.",
+            " - Zen Product Craftsman",
+            " Application",
+            " Workflow in Notion"
+        ]
+        
+        for suffix in suffixes_to_remove:
+            if simplified.endswith(suffix):
+                simplified = simplified[:-len(suffix)]
+                break
+        
+        # Remove common prefixes
+        prefixes_to_remove = [
+            "Project ",
+            "Epic "
+        ]
+        
+        for prefix in prefixes_to_remove:
+            if simplified.startswith(prefix):
+                simplified = simplified[len(prefix):]
+                break
+        
+        return simplified.strip()
 
 def main():
     """Test the intelligent router"""

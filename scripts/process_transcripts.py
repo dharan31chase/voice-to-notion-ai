@@ -30,7 +30,10 @@ def analyze_transcript(transcript_text):
     # Check for Note - look in last sentence OR anywhere if it's the only occurrence  
     note_occurrences = content_lower.count('note')
     if 'note' in last_sentence.lower() or (note_occurrences == 1 and 'note' in content_lower):
-        return process_note(content)
+        # Initialize router for icon selection
+        from intelligent_router import IntelligentRouter
+        router = IntelligentRouter()
+        return process_note(content, router=router)
     
     # CRITICAL FIX: Check for alternative format where task/note comes before project name
     # Look for project names in last 1-5 words, then check for task/note before that
@@ -44,7 +47,10 @@ def analyze_transcript(transcript_text):
             if 'task' in before_project.lower():
                 return process_tasks(content)
             elif 'note' in before_project.lower():
-                return process_note(content)
+                # Initialize router for icon selection
+                from intelligent_router import IntelligentRouter
+                router = IntelligentRouter()
+                return process_note(content, router=router)
     
     # Default to task with manual review tag if unclear
     else:
@@ -59,19 +65,23 @@ def analyze_transcript(transcript_text):
 def process_tasks(content):
     """Handle single or multiple tasks with project association"""
     
+    # Initialize router for icon selection
+    from intelligent_router import IntelligentRouter
+    router = IntelligentRouter()
+    
     # Split by periods and count 'Task' occurrences
     parts = content.split('.')
     task_occurrences = [i for i, part in enumerate(parts) if 'task' in part.lower().strip()]
     
     if len(task_occurrences) == 1:
         # Single task: [Task description]. [Project Name]. Task
-        return process_single_task(content, parts)
+        return process_single_task(content, parts, router=router)
     elif len(task_occurrences) > 1:
         # Multiple tasks: [Task 1]. Task. [Task 2]. Task. [Project Name]. Task
-        return process_multiple_tasks(content, parts, task_occurrences)
+        return process_multiple_tasks(content, parts, task_occurrences, router=router)
     else:
         # Fallback - treat as single task with manual review
-        return process_single_task(content, parts, manual_review=True)
+        return process_single_task(content, parts, manual_review=True, router=router)
 
 def extract_project_from_content(content: str, project_matcher: ProjectMatcher) -> str:
     """
@@ -137,7 +147,7 @@ def extract_project_from_content(content: str, project_matcher: ProjectMatcher) 
     print("  ❌ No project match found")
     return "Manual Review Required"
 
-def process_single_task(content, parts, manual_review=False):
+def process_single_task(content, parts, manual_review=False, router=None):
     """Process single task with project extraction"""
     
     # Initialize ProjectMatcher for fuzzy matching
@@ -177,10 +187,14 @@ def process_single_task(content, parts, manual_review=False):
         
         ai_title = response.choices[0].message.content.strip().strip('"').strip("'")
         
+        # Select icon based on title and project
+        task_icon = router.select_icon_for_analysis(ai_title, project_name) if router else "⁉️"
+        
         # Create the result object
         return {
             "category": "task",
             "title": ai_title,
+            "icon": task_icon,  # Add icon to result
             "content": task_content,
             "action_items": [],
             "key_insights": [],
@@ -191,10 +205,14 @@ def process_single_task(content, parts, manual_review=False):
     
     except Exception as e:
         print(f"Error analyzing single task: {e}")
-        # Fallback - return original
+        # Fallback - return original with default icon
+        fallback_title = task_content[:60]
+        fallback_icon = router.select_icon_for_analysis(fallback_title, project_name) if router else "⁉️"
+        
         return {
             "category": "task",
-            "title": task_content[:60],
+            "title": fallback_title,
+            "icon": fallback_icon,  # Add icon to fallback result
             "content": task_content,
             "action_items": [],
             "key_insights": [],
@@ -203,7 +221,7 @@ def process_single_task(content, parts, manual_review=False):
             "manual_review": manual_review
         }
 
-def process_multiple_tasks(content, parts, task_occurrences):
+def process_multiple_tasks(content, parts, task_occurrences, router=None):
     """Process multiple tasks and return list of task objects"""
     
     tasks = []
@@ -235,9 +253,13 @@ def process_multiple_tasks(content, parts, task_occurrences):
             task_content = task_content[:-1].strip()
         
         # Create task object
+        basic_title = task_content[:60]
+        basic_icon = router.select_icon_for_analysis(basic_title, project_name) if router else "⁉️"
+        
         task_obj = {
             "category": "task",
-            "title": task_content[:60],
+            "title": basic_title,
+            "icon": basic_icon,  # Add icon to basic task object
             "content": task_content,
             "action_items": [],
             "key_insights": [],
@@ -267,6 +289,10 @@ def process_multiple_tasks(content, parts, task_occurrences):
             task_obj["title"] = ai_title
             task_obj["confidence"] = "high"
             
+            # Select icon for this specific task
+            task_icon = router.select_icon_for_analysis(ai_title, project_name) if router else "⁉️"
+            task_obj["icon"] = task_icon
+            
         except Exception as e:
             print(f"Error analyzing task {i+1}: {e}")
             # Keep the basic task object
@@ -275,7 +301,7 @@ def process_multiple_tasks(content, parts, task_occurrences):
     
     return tasks
 
-def process_note(content):
+def process_note(content, router=None):
     """Process single note with project extraction"""
     
     # Initialize ProjectMatcher for fuzzy matching
@@ -322,10 +348,14 @@ def process_note(content):
         # Fallback to first words
         first_words = note_content.split()[:8]
         title = " ".join(first_words) + "..."
+    
+    # Select icon based on title and project
+    note_icon = router.select_icon_for_analysis(title, project_name) if router else "⁉️"
         
     return {
         "category": "note",
         "title": title,  # Smart AI title
+        "icon": note_icon,  # Add icon to result
         "content": note_content,  # Clean note content
         "action_items": [],
         "key_insights": [],

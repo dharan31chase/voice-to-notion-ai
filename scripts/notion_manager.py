@@ -23,13 +23,13 @@ class AdvancedNotionManager:
         """Create a task with AI-powered smart routing and clean formatting"""
         try:
             content = analysis.get("content", "")
-            original_title = analysis.get("title", "")
+            title = analysis.get("title", "")
             
-           # In create_intelligent_task method, after getting the cleaned title:
-            title = self.clean_task_title(content, original_title)
-
             # Extra safety check to remove any quotes
             title = title.strip('"').strip("'")
+            
+            # Clean and format the title to ensure Verb + Object + Context pattern
+            title = self.clean_task_title(title)
             
             # NEW: Clean the content to remove meta-commentary
             cleaned_content = self.organize_task_content(content)
@@ -70,6 +70,9 @@ class AdvancedNotionManager:
             if analysis.get("manual_review", False):
                 special_tags.append("🏷️ Needs Manual Review")
             
+            # Get icon for page-level setting
+            icon = analysis.get("icon", "⁉️")
+            
             # Add tags (existing)
             if special_tags:
                 properties["Tags"] = {"multi_select": [{"name": tag} for tag in special_tags]}
@@ -97,9 +100,10 @@ class AdvancedNotionManager:
                 }
             ]
             
-            # Create the page (existing code)
+            # Create the page with icon
             page = notion.pages.create(
                 parent={"database_id": self.tasks_db},
+                icon={"type": "emoji", "emoji": icon},
                 properties=properties,
                 children=content_blocks
             )
@@ -122,9 +126,6 @@ class AdvancedNotionManager:
             content = analysis.get("content", "")
             title = analysis.get("title", "")
             
-            # Get AI recommendations
-            project = self.router.detect_project(content)
-            
             # Build properties for Notes database
             properties = {
                 "Name": {"title": [{"text": {"content": title}}]},  # Using your actual title property name
@@ -145,8 +146,11 @@ class AdvancedNotionManager:
             else:
                 print(f"   📝 No project assigned (Manual Review Required or empty)")
             
+            # Get icon for page-level setting
+            icon = analysis.get("icon", "⁉️")
+            
             # Handle manual review cases
-            if project == "Manual Review Required":
+            if analysis_project == "Manual Review Required":
                 # Use Jessica's Input checkbox instead
                 properties["Need Jessica's Input"] = {"checkbox": True}
             
@@ -206,12 +210,13 @@ class AdvancedNotionManager:
             
             page = notion.pages.create(
                 parent={"database_id": self.notes_db},
+                icon={"type": "emoji", "emoji": icon},
                 properties=properties,
                 children=content_blocks
             )
             
             print(f"✅ Created organized note: {title}")
-            print(f"   🎯 Project: {project}")
+            print(f"   🎯 Project: {analysis_project}")
             print(f"   📝 Action items: {len(action_items)}")
             
             return page
@@ -416,8 +421,8 @@ class AdvancedNotionManager:
         
         return chunks
     
-    def clean_task_title(self, content, title):
-        """Generate clean 'Verb + Object + Essential Context' task titles"""
+    def clean_task_title(self, title):
+        """Clean and format title to Verb + Object + Context pattern"""
         
         # Common spelling corrections
         corrections = {
@@ -428,33 +433,25 @@ class AdvancedNotionManager:
             "jessy": "Jessi",
         }
         
-        # Apply corrections to both title and content
+        # Apply corrections to title
+        clean_title = title
         for wrong, right in corrections.items():
-            title = title.replace(wrong, right)
-            content = content.replace(wrong, right)
+            clean_title = clean_title.replace(wrong, right)
         
+        # Simple, direct prompt to ensure Verb + Object + Context format
         prompt = f"""
-    Create a clear task title using this format: [Verb] + [Object] + [Essential Context]
-
-    Original content: "{content}"
-    Current title: "{title}"
-
+    Format this task title to follow the pattern: [Verb] + [Object] + [Essential Context]
+    
+    Current title: "{clean_title}"
+    
     RULES:
-    1. Start with an action verb (Buy, Research, Call, Send, Schedule, Review, etc.)
+    1. Start with an action verb (Fix, Buy, Research, Call, Schedule, Review, etc.)
     2. Follow with the specific object/target
-    3. KEEP essential context like WHO (recipient names) or WHAT (specific project/item names)
+    3. Keep essential context like project names or locations
     4. Aim for 5-8 words when context is needed
-    5. Fix any spelling errors
-    6. DO NOT add quotation marks around the title
-
-    EXAMPLES:
-    "Write a tech article about how you built your notion second brain" → Write tech article about Notion Second Brain
-    "Send painting inspirations to Nina and Adrian" → Send painting inspirations to Nina and Adrian
-    "Create new project Studio Dharma" → Create new project Studio Dharma
-    "Email Elliot Greenberg about voice block" → Email Elliot Greenberg about voice block
-    "Research and buy the right trimmer" → Research and buy trimmer
-
-    Return ONLY the clean title without any quotes or punctuation marks around it.
+    5. DO NOT add quotation marks around the title
+    
+    Return ONLY the formatted title without quotes.
     """
         
         try:
