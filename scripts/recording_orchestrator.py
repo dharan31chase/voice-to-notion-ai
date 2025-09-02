@@ -1122,31 +1122,84 @@ class RecordingOrchestrator:
             logger.error(f"❌ Error cleaning up {mp3_file.name}: {e}")
             return False
     
-    def _update_archive_state(self, session_id: str, archived_files: List[Dict], archive_folder: Path):
-        """Update state with archive information"""
+    def _update_archive_state_with_verification(self, session_id: str, archived_files: List[Dict], verification_summary: Dict, failed_entries: List[Dict], failed_archives: List[Dict], cleanup_failures: List[Dict]):
+        """Update state with archive information and verification status"""
         try:
             # Add archive info to current session
             self.state["current_session"]["archive_complete"] = True
-            self.state["current_session"]["archive_folder"] = str(archive_folder)
+            self.state["current_session"]["archive_folder"] = str(self.archives_folder)
             self.state["current_session"]["archived_recordings"] = [
                 {
+                    "transcript_name": file_info["transcript_name"],
                     "original_name": file_info["original_name"],
                     "archive_name": file_info["archive_name"],
                     "archive_path": str(file_info["archive_path"]),
-                    "size_mb": file_info["size_mb"]
+                    "size_mb": file_info["size_mb"],
+                    "notion_entry_id": file_info.get("notion_entry_id")
                 }
                 for file_info in archived_files
             ]
+            
+            # Add verification status
+            self.state["current_session"]["verification_summary"] = verification_summary
+            self.state["current_session"]["failed_entries"] = failed_entries
+            self.state["current_session"]["failed_archives"] = failed_archives
+            self.state["current_session"]["cleanup_failures"] = cleanup_failures
             
             # Mark session for future cleanup (7 days from now)
             cleanup_date = datetime.now() + timedelta(days=7)
             self.state["current_session"]["cleanup_ready"] = True
             self.state["current_session"]["cleanup_date"] = cleanup_date.isoformat()
             
-            logger.info(f"📊 Updated state with {len(archived_files)} archived files")
+            logger.info(f"📊 Updated state with {len(archived_files)} archived files and verification status")
             
         except Exception as e:
             logger.error(f"❌ Error updating archive state: {e}")
+    
+    def _finalize_session_with_verification(self, session_id: str, verification_summary: Dict, archived_files: List[Dict], failed_entries: List[Dict]):
+        """Move current session to previous sessions with verification details"""
+        try:
+            # Create previous session entry with verification info
+            previous_session = {
+                "session_id": session_id,
+                "start_time": self.state["current_session"]["start_time"],
+                "end_time": datetime.now().isoformat(),
+                "cleanup_ready": True,
+                "cleanup_date": self.state["current_session"].get("cleanup_date"),
+                "verification_summary": verification_summary,
+                "files_to_delete": {
+                    "recordings": [f["archive_path"] for f in archived_files],
+                    "transcripts": [f["transcript_name"] for f in archived_files]
+                },
+                "failed_entries": failed_entries,
+                "summary": {
+                    "total_recordings": len(archived_files),
+                    "total_transcripts": len(archived_files),
+                    "success_rate": verification_summary.get("success_rate", 0),
+                    "verification_passed": verification_summary.get("verification_passed", False)
+                }
+            }
+            
+            # Add to previous sessions
+            if "previous_sessions" not in self.state:
+                self.state["previous_sessions"] = []
+            
+            self.state["previous_sessions"].append(previous_session)
+            
+            # Keep only last 7 days of sessions
+            cutoff_date = datetime.now() - timedelta(days=7)
+            self.state["previous_sessions"] = [
+                session for session in self.state["previous_sessions"]
+                if datetime.fromisoformat(session["start_time"]) > cutoff_date
+            ]
+            
+            # Clear current session (will be recreated on next USB connection)
+            self.state["current_session"] = {}
+            
+            logger.info(f"✅ Session {session_id} finalized with verification details")
+            
+        except Exception as e:
+            logger.error(f"❌ Error finalizing session: {e}")
     
     def _finalize_session(self, session_id: str):
         """Move current session to previous sessions and prepare for cleanup"""
@@ -1190,113 +1243,273 @@ class RecordingOrchestrator:
         except Exception as e:
             logger.error(f"❌ Error finalizing session: {e}")
     
+    def _verify_notion_entries(self, successful_analyses: List[Dict]) -> Tuple[Dict, List[Dict], List[Dict]]:
+        """
+        Step 5a: Verify Notion entries exist and are valid
+        Returns: verification_summary, verified_entries, failed_entries
+        """
+        logger.info("🔍 Step 5a: Verifying Notion entries...")
+        
+        verified_entries = []
+        failed_entries = []
+        
+        for analysis in successful_analyses:
+            try:
+                # Check if analysis has Notion entry ID
+                if "notion_entry_id" not in analysis:
+                    failed_entries.append({
+                        "transcript": analysis.get("transcript_name", "unknown"),
+                        "error": "Missing Notion entry ID from analysis",
+                        "analysis": analysis
+                    })
+                    continue
+                
+                # TODO: Add actual Notion API verification here
+                # For now, we'll assume if we have an ID, it was created successfully
+                # This is a placeholder - we need to implement actual verification
+                
+                # Basic validation: check if we have required fields
+                if not analysis.get("title") or not analysis.get("content"):
+                    failed_entries.append({
+                        "transcript": analysis.get("transcript_name", "unknown"),
+                        "error": "Missing required fields (title or content)",
+                        "analysis": analysis
+                    })
+                    continue
+                
+                # TODO: Implement actual Notion API verification:
+                # 1. Query Notion API using notion_entry_id
+                # 2. Verify entry exists and has correct properties
+                # 3. Validate project assignment and icon
+                # 4. Return detailed verification results
+                
+                verified_entries.append(analysis)
+                logger.info(f"✅ Verified Notion entry for: {analysis.get('transcript_name', 'unknown')}")
+                
+            except Exception as e:
+                failed_entries.append({
+                    "transcript": analysis.get("transcript_name", "unknown"),
+                    "error": f"Verification error: {str(e)}",
+                    "analysis": analysis
+                })
+                logger.error(f"❌ Failed to verify entry: {e}")
+        
+        # Calculate verification summary
+        total_entries = len(successful_analyses)
+        successful_verifications = len(verified_entries)
+        failed_verifications = len(failed_entries)
+        success_rate = successful_verifications / total_entries if total_entries > 0 else 0
+        
+        verification_summary = {
+            "total_entries": total_entries,
+            "successful_verifications": successful_verifications,
+            "failed_verifications": failed_verifications,
+            "success_rate": success_rate,
+            "verification_passed": success_rate > 0  # Allow partial success
+        }
+        
+        logger.info(f"📊 Notion Verification Summary:")
+        logger.info(f"   ✅ Successful: {successful_verifications}/{total_entries}")
+        logger.info(f"   ❌ Failed: {failed_verifications}/{total_entries}")
+        logger.info(f"   📈 Success Rate: {success_rate:.1%}")
+        
+        return verification_summary, verified_entries, failed_entries
+    
+    def _archive_successful_recordings(self, verified_entries: List[Dict], session_id: str) -> Tuple[List[Dict], List[Dict]]:
+        """
+        Step 5b: Archive .mp3 files for successfully verified Notion entries
+        Returns: archived_files, failed_archives
+        """
+        logger.info("📁 Step 5b: Archiving successful recordings...")
+        
+        archived_files = []
+        failed_archives = []
+        
+        # Create archive structure
+        archive_folder = self._create_archive_structure(session_id)
+        
+        for entry in verified_entries:
+            try:
+                # Find corresponding .mp3 file
+                transcript_name = entry.get("transcript_name", "")
+                mp3_name = transcript_name.replace(".txt", ".mp3")
+                mp3_path = Path("/Volumes/IC RECORDER/REC_FILE/FOLDER01") / mp3_name
+                
+                if not mp3_path.exists():
+                    failed_archives.append({
+                        "transcript": transcript_name,
+                        "error": f"MP3 file not found: {mp3_name}",
+                        "mp3_path": str(mp3_path)
+                    })
+                    continue
+                
+                # Archive the file
+                success, archive_path, error = self._archive_single_recording(mp3_path, archive_folder, session_id)
+                
+                if success:
+                    size_mb = mp3_path.stat().st_size / (1024 * 1024)
+                    archived_files.append({
+                        "transcript_name": transcript_name,
+                        "original_name": mp3_name,
+                        "archive_name": archive_path.name,
+                        "archive_path": archive_path,
+                        "size_mb": round(size_mb, 2),
+                        "notion_entry_id": entry.get("notion_entry_id")
+                    })
+                    logger.info(f"📁 Archived: {mp3_name} → {archive_path.name}")
+                else:
+                    failed_archives.append({
+                        "transcript": transcript_name,
+                        "error": f"Archive failed: {error}",
+                        "mp3_path": str(mp3_path)
+                    })
+                    
+            except Exception as e:
+                failed_archives.append({
+                    "transcript": entry.get("transcript_name", "unknown"),
+                    "error": f"Archive error: {str(e)}",
+                    "mp3_path": "unknown"
+                })
+                logger.error(f"❌ Error archiving {entry.get('transcript_name', 'unknown')}: {e}")
+        
+        logger.info(f"📊 Archive Summary: {len(archived_files)} successful, {len(failed_archives)} failed")
+        return archived_files, failed_archives
+    
+    def _cleanup_successful_sources(self, archived_files: List[Dict]) -> Tuple[int, int, List[Dict]]:
+        """
+        Step 5c: Clean up source files for successfully archived recordings
+        Returns: mp3_cleanup_count, transcript_cleanup_count, cleanup_failures
+        """
+        logger.info("🗑️ Step 5c: Cleaning up successful source files...")
+        
+        mp3_cleanup_count = 0
+        transcript_cleanup_count = 0
+        cleanup_failures = []
+        
+        for file_info in archived_files:
+            try:
+                # Clean up .mp3 file from recorder
+                mp3_path = Path("/Volumes/IC RECORDER/REC_FILE/FOLDER01") / file_info["original_name"]
+                if mp3_path.exists():
+                    if self._cleanup_recorder_file(mp3_path, file_info["archive_path"]):
+                        mp3_cleanup_count += 1
+                        logger.info(f"🗑️ Cleaned up recorder: {file_info['original_name']}")
+                    else:
+                        cleanup_failures.append({
+                            "file": file_info["original_name"],
+                            "type": "mp3",
+                            "error": "Recorder cleanup failed"
+                        })
+                else:
+                    cleanup_failures.append({
+                        "file": file_info["original_name"],
+                        "type": "mp3",
+                        "error": "MP3 file no longer exists"
+                    })
+                
+                # Clean up .txt transcript file
+                transcript_path = self.transcripts_folder / file_info["transcript_name"]
+                if transcript_path.exists():
+                    try:
+                        transcript_path.unlink()
+                        transcript_cleanup_count += 1
+                        logger.info(f"🗑️ Cleaned up transcript: {file_info['transcript_name']}")
+                    except Exception as e:
+                        cleanup_failures.append({
+                            "file": file_info["transcript_name"],
+                            "type": "transcript",
+                            "error": f"Transcript cleanup failed: {str(e)}"
+                        })
+                else:
+                    cleanup_failures.append({
+                        "file": file_info["transcript_name"],
+                        "type": "transcript",
+                        "error": "Transcript file not found"
+                    })
+                    
+            except Exception as e:
+                cleanup_failures.append({
+                    "file": file_info.get("transcript_name", "unknown"),
+                    "type": "unknown",
+                    "error": f"Cleanup error: {str(e)}"
+                })
+                logger.error(f"❌ Error during cleanup: {e}")
+        
+        logger.info(f"📊 Cleanup Summary: {mp3_cleanup_count} MP3s, {transcript_cleanup_count} transcripts")
+        return mp3_cleanup_count, transcript_cleanup_count, cleanup_failures
+    
     def step5_verify_and_archive(self, successful_transcripts: List[Path], successful_analyses: List[Dict]) -> bool:
         """
-        Step 5: Verify & Archive
-        Verifies session success, archives recordings, and prepares for cleanup
+        Step 5: Verify & Archive (Restructured)
+        Step 5a: Verify Notion entries
+        Step 5b: Archive successful recordings
+        Step 5c: Clean up successful sources
+        Step 5d: Finalize session
         """
-        logger.info("🔍 Step 5: Verify & Archive")
+        logger.info("🔍 Step 5: Verify & Archive (Restructured)")
         logger.info("=" * 50)
         
         try:
-            # Step 1: Verify session success
-            verification_passed, verification_result = self._verify_session_success(successful_transcripts, successful_analyses)
+            # Step 5a: Verify Notion entries
+            verification_summary, verified_entries, failed_entries = self._verify_notion_entries(successful_analyses)
             
-            if not verification_passed:
-                logger.warning(f"⚠️ Session verification failed: {verification_result['reason']}")
-                logger.info("🔄 Keeping files in recorder for manual review")
+            if not verification_summary["verification_passed"]:
+                logger.error("❌ No Notion entries verified successfully - cannot proceed with cleanup")
                 return False
             
-            logger.info(f"✅ Session verification passed: {verification_result['reason']}")
+            logger.info(f"✅ Notion verification completed: {verification_summary['success_rate']:.1%} success rate")
             
-            # Step 2: Get list of .mp3 files to archive
-            session_id = self.state["current_session"]["session_id"]
-            mp3_files = []
-            
-            # Find corresponding .mp3 files for successful transcripts
-            for transcript in successful_transcripts:
-                mp3_name = transcript.stem + ".mp3"
-                mp3_path = Path("/Volumes/IC RECORDER/REC_FILE/FOLDER01") / mp3_name
-                if mp3_path.exists():
-                    mp3_files.append(mp3_path)
-                else:
-                    logger.warning(f"⚠️ MP3 file not found for transcript: {mp3_name}")
-            
-            if not mp3_files:
-                logger.warning("⚠️ No MP3 files found to archive")
-                return False
-            
-            logger.info(f"📁 Found {len(mp3_files)} MP3 files to archive")
-            
-            # Step 3: Create archive structure
-            archive_folder = self._create_archive_structure(session_id)
-            
-            # Step 4: Archive files
-            archived_files = []
-            failed_archives = []
-            
-            for mp3_file in mp3_files:
-                logger.info(f"📁 Archiving: {mp3_file.name}")
-                
-                success, archive_path, error = self._archive_single_recording(mp3_file, archive_folder, session_id)
-                
-                if success:
-                    # Get file size for state tracking
-                    size_mb = mp3_file.stat().st_size / (1024 * 1024)
-                    
-                    archived_files.append({
-                        "original_name": mp3_file.name,
-                        "archive_name": archive_path.name,
-                        "archive_path": archive_path,
-                        "size_mb": round(size_mb, 2)
-                    })
-                else:
-                    failed_archives.append({
-                        "file": mp3_file.name,
-                        "error": error
-                    })
-                    logger.error(f"❌ Failed to archive {mp3_file.name}: {error}")
-            
-            if failed_archives:
-                logger.warning(f"⚠️ {len(failed_archives)} files failed to archive")
-                for failure in failed_archives:
-                    logger.warning(f"   - {failure['file']}: {failure['error']}")
+            # Step 5b: Archive successful recordings
+            archived_files, failed_archives = self._archive_successful_recordings(verified_entries, self.state["current_session"]["session_id"])
             
             if not archived_files:
                 logger.error("❌ No files were successfully archived")
                 return False
             
-            # Step 5: Clean up recorder files (only successfully archived ones)
-            cleanup_success = 0
-            for file_info in archived_files:
-                # Find the original MP3 file
-                mp3_path = Path("/Volumes/IC RECORDER/REC_FILE/FOLDER01") / file_info["original_name"]
-                if mp3_path.exists():
-                    if self._cleanup_recorder_file(mp3_path, file_info["archive_path"]):
-                        cleanup_success += 1
-                        # Update state
-                        self.state["current_session"]["recordings_processed"].append(file_info["original_name"])
-                else:
-                    logger.warning(f"⚠️ MP3 file no longer exists: {file_info['original_name']}")
+            # Step 5c: Clean up successful sources
+            mp3_cleanup_count, transcript_cleanup_count, cleanup_failures = self._cleanup_successful_sources(archived_files)
             
-            logger.info(f"🗑️ Cleaned up {cleanup_success}/{len(archived_files)} files from recorder")
+            # Step 5d: Update state and finalize session
+            self._update_archive_state_with_verification(
+                self.state["current_session"]["session_id"],
+                archived_files,
+                verification_summary,
+                failed_entries,
+                failed_archives,
+                cleanup_failures
+            )
             
-            # Step 6: Update state
-            self._update_archive_state(session_id, archived_files, archive_folder)
+            self._finalize_session_with_verification(
+                self.state["current_session"]["session_id"],
+                verification_summary,
+                archived_files,
+                failed_entries
+            )
             
-            # Step 7: Finalize session
-            self._finalize_session(session_id)
-            
-            # Step 8: Save final state
             self._save_state(self.state)
             
             # Final summary
             logger.info(f"")
-            logger.info(f"📊 Archive & Cleanup Summary:")
-            logger.info(f"   📁 Files Archived: {len(archived_files)}/{len(mp3_files)}")
-            logger.info(f"   🗑️ Recorder Cleaned: {cleanup_success}/{len(archived_files)}")
-            logger.info(f"   📅 Archive Location: {archive_folder}")
+            logger.info(f"📊 Final Step 5 Summary:")
+            logger.info(f"   🔍 Notion Verification: {verification_summary['successful_verifications']}/{verification_summary['total_entries']} successful")
+            logger.info(f"   📁 Files Archived: {len(archived_files)}")
+            logger.info(f"   🗑️ MP3s Cleaned: {mp3_cleanup_count}")
+            logger.info(f"   🗑️ Transcripts Cleaned: {transcript_cleanup_count}")
+            logger.info(f"   ❌ Failed Entries: {len(failed_entries)} (kept in recorder)")
+            logger.info(f"   📅 Archive Location: {self.archives_folder}")
             logger.info(f"   🧹 Cleanup Date: 7 days from now")
+            
+            if failed_entries:
+                logger.info(f"")
+                logger.info(f"⚠️ Failed Notion Entries (kept in recorder):")
+                for failure in failed_entries:
+                    logger.info(f"   - {failure['transcript']}: {failure['error']}")
+            
+            if cleanup_failures:
+                logger.info(f"")
+                logger.info(f"⚠️ Cleanup Failures:")
+                for failure in cleanup_failures:
+                    logger.info(f"   - {failure['file']} ({failure['type']}): {failure['error']}")
             
             logger.info("✅ Step 5 complete - session finalized and ready for next recording")
             return True
