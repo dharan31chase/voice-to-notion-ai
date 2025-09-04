@@ -1,0 +1,46 @@
+File: ._250903_0705.mp3
+Type: recording
+Error: /Users/dharanchandrahasan/.pyenv/versions/3.11.0/lib/python3.11/site-packages/whisper/transcribe.py:132: UserWarning: FP16 is not supported on CPU; using FP32 instead
+  warnings.warn("FP16 is not supported on CPU; using FP32 instead")
+Traceback (most recent call last):
+  File "/Users/dharanchandrahasan/.pyenv/versions/3.11.0/lib/python3.11/site-packages/whisper/audio.py", line 58, in load_audio
+    out = run(cmd, capture_output=True, check=True).stdout
+          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/dharanchandrahasan/.pyenv/versions/3.11.0/lib/python3.11/subprocess.py", line 569, in run
+    raise CalledProcessError(retcode, process.args,
+subprocess.CalledProcessError: Command '['ffmpeg', '-nostdin', '-threads', '0', '-i', '/Volumes/IC RECORDER/REC_FILE/FOLDER01/._250903_0705.mp3', '-f', 's16le', '-ac', '1', '-acodec', 'pcm_s16le', '-ar', '16000', '-']' returned non-zero exit status 183.
+
+The above exception was the direct cause of the following exception:
+
+Traceback (most recent call last):
+  File "/Users/dharanchandrahasan/.pyenv/versions/3.11.0/lib/python3.11/site-packages/whisper/transcribe.py", line 615, in cli
+    result = transcribe(model, audio_path, temperature=temperature, **args)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/dharanchandrahasan/.pyenv/versions/3.11.0/lib/python3.11/site-packages/whisper/transcribe.py", line 139, in transcribe
+    mel = log_mel_spectrogram(audio, model.dims.n_mels, padding=N_SAMPLES)
+          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/dharanchandrahasan/.pyenv/versions/3.11.0/lib/python3.11/site-packages/whisper/audio.py", line 140, in log_mel_spectrogram
+    audio = load_audio(audio)
+            ^^^^^^^^^^^^^^^^^
+  File "/Users/dharanchandrahasan/.pyenv/versions/3.11.0/lib/python3.11/site-packages/whisper/audio.py", line 60, in load_audio
+    raise RuntimeError(f"Failed to load audio: {e.stderr.decode()}") from e
+RuntimeError: Failed to load audio: ffmpeg version 8.0 Copyright (c) 2000-2025 the FFmpeg developers
+  built with Apple clang version 17.0.0 (clang-1700.0.13.3)
+  configuration: --prefix=/opt/homebrew/Cellar/ffmpeg/8.0_1 --enable-shared --enable-pthreads --enable-version3 --cc=clang --host-cflags= --host-ldflags='-Wl,-ld_classic' --enable-ffplay --enable-gnutls --enable-gpl --enable-libaom --enable-libaribb24 --enable-libbluray --enable-libdav1d --enable-libharfbuzz --enable-libjxl --enable-libmp3lame --enable-libopus --enable-librav1e --enable-librist --enable-librubberband --enable-libsnappy --enable-libsrt --enable-libssh --enable-libsvtav1 --enable-libtesseract --enable-libtheora --enable-libvidstab --enable-libvmaf --enable-libvorbis --enable-libvpx --enable-libwebp --enable-libx264 --enable-libx265 --enable-libxml2 --enable-libxvid --enable-lzma --enable-libfontconfig --enable-libfreetype --enable-frei0r --enable-libass --enable-libopencore-amrnb --enable-libopencore-amrwb --enable-libopenjpeg --enable-libspeex --enable-libsoxr --enable-libzmq --enable-libzimg --disable-libjack --disable-indev=jack --enable-videotoolbox --enable-audiotoolbox --enable-neon
+  libavutil      60.  8.100 / 60.  8.100
+  libavcodec     62. 11.100 / 62. 11.100
+  libavformat    62.  3.100 / 62.  3.100
+  libavdevice    62.  1.100 / 62.  1.100
+  libavfilter    11.  4.100 / 11.  4.100
+  libswscale      9.  1.100 /  9.  1.100
+  libswresample   6.  1.100 /  6.  1.100
+[mp3 @ 0x123804600] Format mp3 detected only with low score of 1, misdetection possible!
+[mp3 @ 0x123804600] Failed to find two consecutive MPEG audio frames.
+[in#0 @ 0x1238043a0] Error opening input: Invalid data found when processing input
+Error opening input file /Volumes/IC RECORDER/REC_FILE/FOLDER01/._250903_0705.mp3.
+Error opening input files: Invalid data found when processing input
+
+
+Timestamp: 2025-09-04T10:24:23.876663
+Original Path: /Volumes/IC RECORDER/REC_FILE/FOLDER01/._250903_0705.mp3
+Failed Path: /Users/dharanchandrahasan/Documents/1. Projects/ai-assistant/Failed/failed_recordings/._250903_0705_20250904_102423_FAILED__Users_dharanchandra.mp3

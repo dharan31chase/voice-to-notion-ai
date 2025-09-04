@@ -191,24 +191,31 @@ Return JSON format:
     
         return tags
 
-    def select_icon_for_analysis(self, title: str, project: str = "") -> str:
+    def select_icon_for_analysis(self, title: str, project: str = "", content: str = "") -> str:
         """
-        Select icon based on title first, then project fallback
+        Select icon based on content first, then title, then project fallback
         
         Args:
             title: AI-generated title for the task/note
             project: Project name (optional, used as fallback)
+            content: Original transcript content (optional, used as primary source)
             
         Returns:
             Selected emoji icon or default icon
         """
         try:
-            # First try title (primary source)
+            # First try original content (primary source) - this is where keywords are!
+            if content:
+                icon = self.icon_manager.select_icon(content, title)
+                if icon != self.icon_manager.default_icon:
+                    return icon
+            
+            # If no match in content, try title only (secondary source)
             icon = self.icon_manager.select_icon("", title)
             if icon != self.icon_manager.default_icon:
                 return icon
             
-            # If no match in title, try project name (secondary source)
+            # If no match in title, try project name (tertiary source)
             if project and project != "Manual Review Required":
                 # Use simplified project name for better matching
                 simplified_project = self._simplify_project_name(project)

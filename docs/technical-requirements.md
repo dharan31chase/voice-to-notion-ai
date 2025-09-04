@@ -95,6 +95,7 @@ The AI Assistant Transcript Processing System is designed to automatically proce
 ### 2.5 Smart Icon Assignment System
 - **Icon Selection**: AI-powered emoji assignment based on content keywords
 - **Matching Logic**: Priority-based keyword matching (longer phrases first)
+- **Content Source**: Uses original transcript content for keyword matching (not just AI-generated titles)
 - **Fallback**: Default to ⁉️ if no keywords match
 - **Configuration**: External JSON file for maintainable icon mappings
 - **Integration**: Page-level emoji icons in Notion (not database properties)
@@ -111,6 +112,8 @@ The AI Assistant Transcript Processing System is designed to automatically proce
 - **Error Recovery**: Robust failure handling with detailed logging
 - **Resource Monitoring**: CPU usage limits (50%) and disk space validation
 - **Archive Organization**: Date-based folder structure with session IDs
+- **Duplicate Handling**: Smart detection of previously processed files with graceful cleanup
+- **JSON Serialization**: Proper handling of Path objects in state files
 
 ## 3. Technical Requirements
 
@@ -266,6 +269,14 @@ ai-assistant/
     "transcripts_created": ["file1.txt", "file2.txt"],
     "ai_processing_success": ["file1.txt"],
     "ai_processing_failed": [],
+    "duplicate_skipped": ["file3.txt"],
+    "duplicate_cleanup_candidates": [
+      {
+        "transcript_name": "file3.txt",
+        "mp3_name": "file3.mp3",
+        "skip_reason": "duplicate"
+      }
+    ],
     "transcription_complete": true,
     "processing_complete": false,
     "archive_complete": false,
@@ -324,6 +335,16 @@ ai-assistant/
 - **Low Confidence**: Flag for manual review
 - **Cache Issues**: Fallback to hardcoded project list
 
+### 5.5 Duplicate Processing Errors
+- **Previously Processed Files**: Detect and skip AI processing, cleanup source files
+- **Archive Verification**: Ensure archive exists before cleanup
+- **State Corruption**: Handle JSON serialization issues with Path objects
+
+### 5.6 Icon Matching Errors
+- **No Keywords Found**: Default to ⁉️ icon
+- **Content Access Issues**: Fallback to title-only matching
+- **Pattern Matching Failures**: Graceful degradation to default icon
+
 ## 6. Performance Requirements
 
 ### 6.1 Processing Speed
@@ -376,6 +397,9 @@ ai-assistant/
 - **Orchestrator Pipeline**: Test complete 5-step workflow
 - **Icon System**: Test emoji assignment and Notion integration
 - **Archive Management**: Test file archiving and cleanup processes
+- **Duplicate Handling**: Test processing of previously processed files
+- **Icon Matching**: Test content-based icon selection with various keywords
+- **State Management**: Test JSON serialization and session tracking
 
 ### 8.3 Test Data
 - **Sample Transcripts**: Various formats and content types
@@ -406,15 +430,16 @@ ai-assistant/
 ## 10. Future Enhancements
 
 ### 10.1 Planned Features
+- **Auto Cleanup Scheduling**: Automated 7-day archive cleanup
 - **Multi-language Support**: Process transcripts in different languages
 - **Advanced Categorization**: More sophisticated content classification
 - **Batch Processing**: Process multiple files simultaneously
 - **Web Interface**: GUI for transcript processing
 - **Project Learning**: Improve matching based on user corrections
-- **Auto Cleanup Scheduling**: Automated 7-day archive cleanup
 - **Multi-Device Support**: Extend orchestrator to other recording devices
 - **Progress Tracking**: Real-time progress bars and status updates
 - **Email Notifications**: Success/failure alerts for completed sessions
+- **Performance Analytics**: Track processing times and resource usage
 
 ### 10.2 Potential Integrations
 - **Calendar Integration**: Auto-schedule tasks based on due dates

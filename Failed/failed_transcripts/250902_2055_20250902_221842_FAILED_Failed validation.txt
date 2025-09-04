@@ -1,0 +1,4 @@
+Task.
+Automate workflow of sending cloud artifacts directly to nodes in Notion.
+Notion second brain.
+Task.

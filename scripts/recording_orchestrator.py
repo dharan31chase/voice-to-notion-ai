@@ -607,6 +607,32 @@ class RecordingOrchestrator:
             logger.error(f"❌ Error checking disk space: {e}")
             return False
     
+    def _should_transcribe_audio(self, audio_file: Path) -> bool:
+        """Check if we should transcribe this audio file (prevents duplicates)"""
+        try:
+            # Ensure we have a Path object
+            if isinstance(audio_file, str):
+                audio_file = Path(audio_file)
+            
+            # Check if transcript already exists
+            transcript_file = self.transcripts_folder / f"{audio_file.stem}.txt"
+            
+            if transcript_file.exists():
+                # Check if transcript is recent (within last hour) and has content
+                transcript_age = time.time() - transcript_file.stat().st_mtime
+                if transcript_age < 3600:  # 1 hour
+                    with open(transcript_file, 'r', encoding='utf-8') as f:
+                        content = f.read().strip()
+                    if len(content) > 10:  # Has meaningful content
+                        logger.info(f"ℹ️ Transcript already exists: {transcript_file.name} (age: {transcript_age/60:.1f} min)")
+                        return False
+            
+            return True
+            
+        except Exception as e:
+            logger.warning(f"⚠️ Error checking transcript existence for {audio_file}: {e}")
+            return True  # Default to transcribing if check fails
+    
     def _monitor_cpu_usage(self) -> float:
         """Monitor current CPU usage percentage"""
         try:
@@ -722,6 +748,20 @@ class RecordingOrchestrator:
             processing_plan = self.state["current_session"].get("processing_plan", {})
             batch_size = processing_plan.get("batch_size", 4)
             
+            # Check for existing transcripts before starting
+            existing_transcripts = []
+            files_needing_transcription = []
+            for file_path in valid_files:
+                if self._should_transcribe_audio(file_path):
+                    files_needing_transcription.append(file_path)
+                else:
+                    transcript_path = self.transcripts_folder / f"{file_path.stem}.txt"
+                    if transcript_path.exists():
+                        existing_transcripts.append(transcript_path)
+            
+            if existing_transcripts:
+                logger.info(f"ℹ️ Found {len(existing_transcripts)} existing transcripts, {len(files_needing_transcription)} files need transcription")
+            
             # Create batches
             batches = self._create_processing_batches(valid_files, batch_size)
             
@@ -742,10 +782,28 @@ class RecordingOrchestrator:
                 
                 # Process files in parallel within batch
                 with ThreadPoolExecutor(max_workers=4) as executor:
-                    # Submit transcription tasks
+                    # Filter out files that already have transcripts
+                    files_to_transcribe = []
+                    for file_path in batch:
+                        if self._should_transcribe_audio(file_path):
+                            files_to_transcribe.append(file_path)
+                        else:
+                            # Add existing transcript to successful list
+                            transcript_path = self.transcripts_folder / f"{file_path.stem}.txt"
+                            if transcript_path.exists():
+                                successful_transcripts.append(transcript_path)
+                                batch_successes.append(file_path)
+                                # Update state
+                                self.state["current_session"]["transcripts_created"].append(transcript_path.name)
+                    
+                    if not files_to_transcribe:
+                        logger.info(f"   ℹ️ All files in batch {batch_num} already have transcripts")
+                        continue
+                    
+                    # Submit transcription tasks only for files that need transcription
                     future_to_file = {
                         executor.submit(self._transcribe_single_file, file_path, batch_num, i+1): file_path
-                        for i, file_path in enumerate(batch)
+                        for i, file_path in enumerate(files_to_transcribe)
                     }
                     
                     # Process completed transcriptions
@@ -821,6 +879,8 @@ class RecordingOrchestrator:
             logger.info(f"📊 Transcription Summary:")
             logger.info(f"   ✅ Successful: {len(successful_transcripts)}/{len(valid_files)} files")
             logger.info(f"   ❌ Failed: {len(failed_files)} files")
+            if existing_transcripts:
+                logger.info(f"   ℹ️ Reused existing: {len(existing_transcripts)} transcripts")
             logger.info(f"   📝 Transcripts Created: {len(successful_transcripts)}")
             logger.info(f"   📁 Failed Files: {len(failed_files)}")
             
@@ -895,6 +955,47 @@ class RecordingOrchestrator:
         except Exception as e:
             logger.error(f"❌ Error validating transcript {transcript_path}: {e}")
             return False
+    
+    def _get_transcript_processing_status(self, transcript_path: Path) -> str:
+        """Get detailed processing status for a transcript
+        
+        Returns:
+            "valid" - Ready for AI processing
+            "duplicate" - Already processed, skip AI but cleanup MP3
+            "invalid" - File problems, move to failed folder
+            "error" - Unexpected error during validation
+        """
+        try:
+            if not transcript_path.exists():
+                logger.warning(f"⚠️ Transcript file not found: {transcript_path}")
+                return "invalid"
+            
+            # Check file size
+            file_size = transcript_path.stat().st_size
+            if file_size < 10:  # Less than 10 bytes
+                logger.warning(f"⚠️ Transcript too small: {transcript_path} ({file_size} bytes)")
+                return "invalid"
+            
+            # Check if already processed
+            processed_file = self.project_root / "processed" / f"{transcript_path.stem}_processed.json"
+            if processed_file.exists():
+                logger.info(f"ℹ️ Transcript already processed: {transcript_path.stem}")
+                return "duplicate"
+            
+            # Read and validate content
+            with open(transcript_path, 'r', encoding='utf-8') as f:
+                content = f.read().strip()
+            
+            if len(content) < 10:
+                logger.warning(f"⚠️ Transcript content too short: {transcript_path}")
+                return "invalid"
+            
+            logger.info(f"✅ Transcript validated: {transcript_path.name} ({file_size} bytes, {len(content)} chars)")
+            return "valid"
+            
+        except Exception as e:
+            logger.error(f"❌ Error validating transcript {transcript_path}: {e}")
+            return "error"
     
     def _process_single_transcript(self, transcript_path: Path, process_function) -> Tuple[bool, Dict, str]:
         """Process a single transcript using the existing AI system"""
@@ -975,12 +1076,17 @@ class RecordingOrchestrator:
             
             # Validate transcripts before processing
             valid_transcripts = []
+            duplicate_transcripts = []
             invalid_transcripts = []
             
             for transcript in successful_transcripts:
-                if self._validate_transcript_for_processing(transcript):
+                status = self._get_transcript_processing_status(transcript)
+                
+                if status == "valid":
                     valid_transcripts.append(transcript)
-                else:
+                elif status == "duplicate":
+                    duplicate_transcripts.append(transcript)
+                else:  # status == "invalid" or "error"
                     invalid_transcripts.append(transcript)
             
             if invalid_transcripts:
@@ -988,9 +1094,30 @@ class RecordingOrchestrator:
                 for transcript in invalid_transcripts:
                     self._move_failed_transcript(transcript, "Failed validation")
             
+            if duplicate_transcripts:
+                logger.info(f"ℹ️ {len(duplicate_transcripts)} transcripts are duplicates (already processed)")
+                # Store duplicates in state for Step 5 cleanup
+                for transcript in duplicate_transcripts:
+                    self.state["current_session"]["duplicate_skipped"] = self.state["current_session"].get("duplicate_skipped", [])
+                    self.state["current_session"]["duplicate_skipped"].append(transcript.name)
+                    
+                    # Add to cleanup candidates for archiving and MP3 cleanup
+                    duplicate_cleanup_candidate = {
+                        "transcript_name": transcript.name,
+                        "original_name": transcript.stem + ".mp3",
+                        "skip_reason": "duplicate",
+                        "notion_entry_id": None  # No new Notion entry for duplicates
+                    }
+                    self.state["current_session"]["duplicate_cleanup_candidates"] = self.state["current_session"].get("duplicate_cleanup_candidates", [])
+                    self.state["current_session"]["duplicate_cleanup_candidates"].append(duplicate_cleanup_candidate)
+                    logger.info(f"📋 Added duplicate to cleanup candidates: {transcript.name}")
+            
             if not valid_transcripts:
-                logger.warning("⚠️ No valid transcripts to process")
-                return True, [], []
+                if duplicate_transcripts:
+                    logger.warning("⚠️ No valid transcripts to process, but duplicates will be cleaned up in Step 5")
+                else:
+                    logger.warning("⚠️ No valid transcripts to process")
+                    return True, [], []
             
             logger.info(f"🎯 Processing {len(valid_transcripts)} valid transcripts")
             
@@ -1005,22 +1132,38 @@ class RecordingOrchestrator:
                 success, result_data, error_reason = self._process_single_transcript(transcript, process_function)
                 
                 if success:
+                    # Extract notion_entry_id from the result data
+                    notion_entry_id = None
+                    if result_data.get("analysis") and result_data["analysis"].get("notion_entry_id"):
+                        # Single analysis case
+                        notion_entry_id = result_data["analysis"]["notion_entry_id"]
+                    elif result_data.get("analyses"):
+                        # Multiple analyses case - get the first one's ID
+                        if result_data["analyses"] and result_data["analyses"][0].get("notion_entry_id"):
+                            notion_entry_id = result_data["analyses"][0]["notion_entry_id"]
+                    
                     successful_analyses.append({
-                        "transcript": transcript.name,
+                        "transcript_name": transcript.name,
+                        "transcript": transcript.name,  # Keep both for compatibility
                         "result": result_data,
-                        "processed_file": f"{transcript.stem}_processed.json"
+                        "processed_file": f"{transcript.stem}_processed.json",
+                        "notion_entry_id": notion_entry_id,
+                        "title": result_data.get("analysis", {}).get("title") or 
+                                (result_data.get("analyses", [{}])[0].get("title") if result_data.get("analyses") else None),
+                        "content": result_data.get("analysis", {}).get("content") or 
+                                  (result_data.get("analyses", [{}])[0].get("content") if result_data.get("analyses") else None)
                     })
                     
                     # Update state
                     self.state["current_session"]["ai_processing_success"].append(transcript.name)
                     
                     # Check if Notion entry was created (based on processed file content)
-                    if result_data.get("analysis") or result_data.get("analyses"):
+                    if notion_entry_id:
                         self.state["current_session"]["notion_success"].append(transcript.name)
                         logger.info(f"   ✅ AI Analysis: Success")
-                        logger.info(f"   ✅ Notion Entry: Created")
+                        logger.info(f"   ✅ Notion Entry: Created (ID: {notion_entry_id[:8]}...)")
                     else:
-                        logger.warning(f"   ⚠️ AI Analysis: Success but no Notion entry")
+                        logger.warning(f"   ⚠️ AI Analysis: Success but no Notion entry ID found")
                         
                 else:
                     failed_transcripts.append(transcript)
@@ -1032,15 +1175,18 @@ class RecordingOrchestrator:
             logger.info(f"")
             logger.info(f"📊 Processing Summary:")
             logger.info(f"   ✅ Successful: {len(successful_analyses)}/{len(valid_transcripts)} transcripts")
+            logger.info(f"   ⏭️ Duplicates: {len(duplicate_transcripts)} transcripts")
             logger.info(f"   ❌ Failed: {len(failed_transcripts)} transcripts")
             logger.info(f"   🤖 AI Analysis: {len(successful_analyses)} successful")
             logger.info(f"   📝 Notion Entries: {len([a for a in successful_analyses if a['result'].get('analysis') or a['result'].get('analyses')])} created")
+            logger.info(f"   🧹 Cleanup Candidates: {len(self.state['current_session'].get('duplicate_cleanup_candidates', []))} duplicates")
             
             # Update state
             self.state["current_session"]["processing_complete"] = True
             self.state["current_session"]["processing_summary"] = {
                 "total_transcripts": len(valid_transcripts),
                 "successful_analyses": len(successful_analyses),
+                "duplicate_transcripts": len(duplicate_transcripts),
                 "failed_transcripts": len(failed_transcripts),
                 "notion_entries_created": len([a for a in successful_analyses if a['result'].get('analysis') or a['result'].get('analyses')]),
                 "success_rate": len(successful_analyses) / len(valid_transcripts) if valid_transcripts else 0
@@ -1109,15 +1255,96 @@ class RecordingOrchestrator:
             logger.error(f"❌ Error creating archive structure: {e}")
             raise
     
+    def _check_usb_file_permissions(self, mp3_file: Path) -> bool:
+        """Check if USB recorder file has proper permissions for reading"""
+        try:
+            if not mp3_file.exists():
+                logger.error(f"❌ USB file not found: {mp3_file}")
+                return False
+            
+            # Check if file is readable
+            if not os.access(mp3_file, os.R_OK):
+                logger.warning(f"⚠️ USB file not readable: {mp3_file}")
+                logger.info(f"💡 File permissions: {oct(mp3_file.stat().st_mode)[-3:]}")
+                logger.info(f"💡 Try: chmod 644 '{mp3_file}'")
+                return False
+            
+            # Check file size
+            file_size = mp3_file.stat().st_size
+            if file_size == 0:
+                logger.error(f"❌ USB file is empty: {mp3_file}")
+                return False
+            
+            logger.info(f"✅ USB file permissions OK: {mp3_file.name} ({file_size} bytes)")
+            return True
+            
+        except Exception as e:
+            logger.error(f"❌ Error checking USB file permissions: {e}")
+            return False
+    
+    def _ensure_archive_permissions(self, archive_folder: Path) -> bool:
+        """Ensure archive folder has proper permissions for writing"""
+        try:
+            # Create archive folder if it doesn't exist
+            archive_folder.mkdir(parents=True, exist_ok=True)
+            
+            # Check if folder is writable
+            if not os.access(archive_folder, os.W_OK):
+                logger.error(f"❌ Archive folder not writable: {archive_folder}")
+                logger.info(f"💡 Try: chmod 755 '{archive_folder}'")
+                return False
+            
+            # Check if we can create a test file
+            test_file = archive_folder / ".test_permissions"
+            try:
+                test_file.write_text("test")
+                test_file.unlink()  # Clean up test file
+                logger.info(f"✅ Archive folder permissions OK: {archive_folder}")
+                return True
+            except Exception as e:
+                logger.error(f"❌ Cannot write to archive folder: {e}")
+                return False
+                
+        except Exception as e:
+            logger.error(f"❌ Error checking archive permissions: {e}")
+            return False
+    
     def _archive_single_recording(self, mp3_file: Path, archive_folder: Path, session_id: str) -> Tuple[bool, Path, str]:
         """Archive a single .mp3 file with session ID"""
         try:
+            # Check USB file permissions first
+            if not self._check_usb_file_permissions(mp3_file):
+                return False, Path(), f"USB file permission check failed: {mp3_file}"
+            
+            # Ensure archive folder has proper permissions
+            if not self._ensure_archive_permissions(archive_folder):
+                return False, Path(), f"Archive folder permission check failed: {archive_folder}"
+            
             # Create archive filename with session ID
             archive_name = f"{mp3_file.stem}_{session_id}.mp3"
             archive_path = archive_folder / archive_name
             
             # Copy file to archive (safer than move during testing)
-            shutil.copy2(str(mp3_file), str(archive_path))
+            try:
+                # Try using shutil.copy2 first
+                shutil.copy2(str(mp3_file), str(archive_path))
+            except PermissionError as pe:
+                logger.warning(f"⚠️ Permission error with copy2, trying alternative methods...")
+                try:
+                    # Try using shutil.copy
+                    shutil.copy(str(mp3_file), str(archive_path))
+                except PermissionError as pe2:
+                    logger.warning(f"⚠️ Permission error with copy, trying file read/write...")
+                    try:
+                        # Try manual file read/write
+                        with open(mp3_file, 'rb') as src, open(archive_path, 'wb') as dst:
+                            dst.write(src.read())
+                    except Exception as e3:
+                        return False, archive_path, f"All copy methods failed: copy2={pe}, copy={pe2}, manual={e3}"
+                except OSError as ose2:
+                    return False, archive_path, f"OS error with copy: {ose2}"
+            except OSError as ose:
+                return False, archive_path, f"OS error with copy2: {ose}"
             
             # Verify archive was created successfully
             if not archive_path.exists():
@@ -1127,13 +1354,19 @@ class RecordingOrchestrator:
             if mp3_file.stat().st_size != archive_path.stat().st_size:
                 return False, archive_path, "File size mismatch after archiving"
             
+            # Set proper permissions on archived file (readable by owner and group)
+            try:
+                archive_path.chmod(0o644)  # rw-r--r--
+            except Exception as e:
+                logger.warning(f"⚠️ Could not set permissions on {archive_path.name}: {e}")
+            
             logger.info(f"📁 Archived: {mp3_file.name} → {archive_name}")
             return True, archive_path, ""
             
         except Exception as e:
             error_msg = f"Archive error: {str(e)}"
             logger.error(f"❌ {error_msg}")
-            return False, archive_path, error_msg
+            return False, Path(), error_msg
     
     def _cleanup_recorder_file(self, mp3_file: Path, archive_path: Path) -> bool:
         """Safely delete .mp3 file from recorder after successful archiving"""
@@ -1418,7 +1651,7 @@ class RecordingOrchestrator:
         
         return verification_summary, verified_entries, failed_entries
     
-    def _archive_successful_recordings(self, verified_entries: List[Dict], session_id: str) -> Tuple[List[Dict], List[Dict]]:
+    def _archive_successful_recordings(self, all_cleanup_candidates: List[Dict], session_id: str) -> Tuple[List[Dict], List[Dict]]:
         """
         Step 5b: Archive .mp3 files for successfully verified Notion entries
         Returns: archived_files, failed_archives
@@ -1431,7 +1664,7 @@ class RecordingOrchestrator:
         # Create archive structure
         archive_folder = self._create_archive_structure(session_id)
         
-        for entry in verified_entries:
+        for entry in all_cleanup_candidates:
             try:
                 # Find corresponding .mp3 file
                 transcript_name = entry.get("transcript_name", "")
@@ -1446,7 +1679,24 @@ class RecordingOrchestrator:
                     })
                     continue
                 
-                # Archive the file
+                # Handle duplicates (skip archiving, just cleanup)
+                if entry.get("skip_reason") == "duplicate":
+                    logger.info(f"⏭️ Processing duplicate for cleanup: {transcript_name} (archive should exist)")
+                    # Skip archiving, just add to cleanup list
+                    size_mb = mp3_path.stat().st_size / (1024 * 1024)
+                    archived_files.append({
+                        "transcript_name": transcript_name,
+                        "original_name": mp3_name,
+                        "archive_name": f"{mp3_name} (duplicate - already archived)",
+                        "archive_path": "already_archived",  # Placeholder
+                        "size_mb": round(size_mb, 2),
+                        "notion_entry_id": None,
+                        "skip_reason": "duplicate"
+                    })
+                    logger.info(f"⏭️ Added duplicate to cleanup: {mp3_name}")
+                    continue
+                
+                # Archive the file (normal flow for successful analyses)
                 success, archive_path, error = self._archive_single_recording(mp3_path, archive_folder, session_id)
                 
                 if success:
@@ -1455,7 +1705,7 @@ class RecordingOrchestrator:
                         "transcript_name": transcript_name,
                         "original_name": mp3_name,
                         "archive_name": archive_path.name,
-                        "archive_path": archive_path,
+                        "archive_path": str(archive_path),
                         "size_mb": round(size_mb, 2),
                         "notion_entry_id": entry.get("notion_entry_id")
                     })
@@ -1494,15 +1744,23 @@ class RecordingOrchestrator:
                 # Clean up .mp3 file from recorder
                 mp3_path = Path("/Volumes/IC RECORDER/REC_FILE/FOLDER01") / file_info["original_name"]
                 if mp3_path.exists():
-                    if self._cleanup_recorder_file(mp3_path, file_info["archive_path"]):
+                    # Handle duplicates (no archive path to verify)
+                    if file_info.get("skip_reason") == "duplicate":
+                        # For duplicates, just delete the MP3 (archive already exists)
+                        mp3_path.unlink()
                         mp3_cleanup_count += 1
-                        logger.info(f"🗑️ Cleaned up recorder: {file_info['original_name']}")
+                        logger.info(f"🗑️ Cleaned up duplicate recorder: {file_info['original_name']}")
                     else:
-                        cleanup_failures.append({
-                            "file": file_info["original_name"],
-                            "type": "mp3",
-                            "error": "Recorder cleanup failed"
-                        })
+                        # For successful analyses, verify archive before cleanup
+                        if self._cleanup_recorder_file(mp3_path, Path(file_info["archive_path"])):
+                            mp3_cleanup_count += 1
+                            logger.info(f"🗑️ Cleaned up recorder: {file_info['original_name']}")
+                        else:
+                            cleanup_failures.append({
+                                "file": file_info["original_name"],
+                                "type": "mp3",
+                                "error": "Recorder cleanup failed"
+                            })
                 else:
                     cleanup_failures.append({
                         "file": file_info["original_name"],
@@ -1556,18 +1814,31 @@ class RecordingOrchestrator:
             # Step 5a: Verify Notion entries
             verification_summary, verified_entries, failed_entries = self._verify_notion_entries(successful_analyses)
             
-            if not verification_summary["verification_passed"]:
-                logger.error("❌ No Notion entries verified successfully - cannot proceed with cleanup")
+            # Check if we have duplicates to clean up even if no Notion entries
+            duplicate_cleanup_candidates = self.state["current_session"].get("duplicate_cleanup_candidates", [])
+            
+            if not verification_summary["verification_passed"] and not duplicate_cleanup_candidates:
+                logger.error("❌ No Notion entries verified successfully and no duplicates to clean up - cannot proceed")
                 return False
+            elif not verification_summary["verification_passed"] and duplicate_cleanup_candidates:
+                logger.info("ℹ️ No Notion entries verified, but proceeding with duplicate cleanup")
             
             logger.info(f"✅ Notion verification completed: {verification_summary['success_rate']:.1%} success rate")
             
+            # Step 5a.5: Add duplicate cleanup candidates to verified entries
+            all_cleanup_candidates = verified_entries + duplicate_cleanup_candidates
+            
+            logger.info(f"🧹 Cleanup candidates: {len(verified_entries)} successful + {len(duplicate_cleanup_candidates)} duplicates")
+            
             # Step 5b: Archive successful recordings
-            archived_files, failed_archives = self._archive_successful_recordings(verified_entries, self.state["current_session"]["session_id"])
+            archived_files, failed_archives = self._archive_successful_recordings(all_cleanup_candidates, self.state["current_session"]["session_id"])
             
             if not archived_files:
-                logger.error("❌ No files were successfully archived")
-                return False
+                if duplicate_cleanup_candidates:
+                    logger.info("ℹ️ No files archived (duplicates skip archiving), but cleanup will proceed")
+                else:
+                    logger.error("❌ No files were successfully archived")
+                    return False
             
             # Step 5c: Clean up successful sources
             mp3_cleanup_count, transcript_cleanup_count, cleanup_failures = self._cleanup_successful_sources(archived_files)
@@ -1679,8 +1950,13 @@ class RecordingOrchestrator:
                 return False
             
             if not successful_analyses:
-                logger.info("✅ No successful analyses - orchestrator complete")
-                return True
+                # Check if there are duplicates to clean up
+                duplicate_candidates = self.state["current_session"].get("duplicate_cleanup_candidates", [])
+                if duplicate_candidates:
+                    logger.info("✅ No successful analyses, but duplicates will be cleaned up in Step 5")
+                else:
+                    logger.info("✅ No successful analyses - orchestrator complete")
+                    return True
             
             logger.info(f"🤖 Successfully processed {len(successful_analyses)} transcripts")
             logger.info("🔄 Next steps: Verify, Archive, Cleanup")

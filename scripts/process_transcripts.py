@@ -187,8 +187,8 @@ def process_single_task(content, parts, manual_review=False, router=None):
         
         ai_title = response.choices[0].message.content.strip().strip('"').strip("'")
         
-        # Select icon based on title and project
-        task_icon = router.select_icon_for_analysis(ai_title, project_name) if router else "⁉️"
+        # Select icon based on content, title and project
+        task_icon = router.select_icon_for_analysis(ai_title, project_name, content) if router else "⁉️"
         
         # Create the result object
         return {
@@ -207,7 +207,7 @@ def process_single_task(content, parts, manual_review=False, router=None):
         print(f"Error analyzing single task: {e}")
         # Fallback - return original with default icon
         fallback_title = task_content[:60]
-        fallback_icon = router.select_icon_for_analysis(fallback_title, project_name) if router else "⁉️"
+        fallback_icon = router.select_icon_for_analysis(fallback_title, project_name, content) if router else "⁉️"
         
         return {
             "category": "task",
@@ -254,7 +254,7 @@ def process_multiple_tasks(content, parts, task_occurrences, router=None):
         
         # Create task object
         basic_title = task_content[:60]
-        basic_icon = router.select_icon_for_analysis(basic_title, project_name) if router else "⁉️"
+        basic_icon = router.select_icon_for_analysis(basic_title, project_name, content) if router else "⁉️"
         
         task_obj = {
             "category": "task",
@@ -290,7 +290,7 @@ def process_multiple_tasks(content, parts, task_occurrences, router=None):
             task_obj["confidence"] = "high"
             
             # Select icon for this specific task
-            task_icon = router.select_icon_for_analysis(ai_title, project_name) if router else "⁉️"
+            task_icon = router.select_icon_for_analysis(ai_title, project_name, content) if router else "⁉️"
             task_obj["icon"] = task_icon
             
         except Exception as e:
@@ -350,7 +350,7 @@ def process_note(content, router=None):
         title = " ".join(first_words) + "..."
     
     # Select icon based on title and project
-    note_icon = router.select_icon_for_analysis(title, project_name) if router else "⁉️"
+    note_icon = router.select_icon_for_analysis(title, project_name, content) if router else "⁉️"
         
     return {
         "category": "note",
@@ -498,17 +498,6 @@ def process_transcript_file(file_path):
                     if task.get('manual_review', False):
                         print(f"   ⚠️ Task {i} marked for manual review")
                 
-                # Save processed result with multiple analyses structure
-                output_file = Path("processed") / f"{file_path.stem}_processed.json"
-                with open(output_file, 'w') as f:
-                    json.dump({
-                        "original_file": str(file_path),
-                        "analyses": analysis,  # Array of task objects
-                        "timestamp": str(Path(file_path).stat().st_mtime)
-                    }, f, indent=2)
-                
-                print(f"✅ Saved {len(analysis)} analyses to: {output_file}")
-                
                 # 🚀 AUTO-ROUTE TO NOTION! 🚀
                 try:
                     from notion_manager import AdvancedNotionManager
@@ -531,6 +520,17 @@ def process_transcript_file(file_path):
                 except Exception as e:
                     print(f"⚠️ Notion routing failed: {e}")
                 
+                # 🆕 SAVE ENHANCED ANALYSES WITH NOTION IDS
+                output_file = Path("processed") / f"{file_path.stem}_processed.json"
+                with open(output_file, 'w') as f:
+                    json.dump({
+                        "original_file": str(file_path),
+                        "analyses": analysis,  # Array of task objects with Notion IDs
+                        "timestamp": str(Path(file_path).stat().st_mtime)
+                    }, f, indent=2)
+                
+                print(f"✅ Saved {len(analysis)} enhanced analyses to: {output_file}")
+                
                 return analysis
                 
             else:
@@ -540,17 +540,6 @@ def process_transcript_file(file_path):
                 print(f"✅ Confidence: {analysis['confidence']}")
                 if analysis.get('manual_review', False):
                     print("⚠️ Marked for manual review")
-                
-                # Save processed result with single analysis structure
-                output_file = Path("processed") / f"{file_path.stem}_processed.json"
-                with open(output_file, 'w') as f:
-                    json.dump({
-                        "original_file": str(file_path),
-                        "analysis": analysis,  # Single object (backward compatible)
-                        "timestamp": str(Path(file_path).stat().st_mtime)
-                    }, f, indent=2)
-                
-                print(f"✅ Saved analysis to: {output_file}")
                 
                 # 🚀 AUTO-ROUTE TO NOTION! 🚀
                 try:
@@ -571,6 +560,17 @@ def process_transcript_file(file_path):
                         print("❌ Failed to create Notion content")
                 except Exception as e:
                     print(f"⚠️ Notion routing failed: {e}")
+                
+                # 🆕 SAVE ENHANCED ANALYSIS WITH NOTION ID
+                output_file = Path("processed") / f"{file_path.stem}_processed.json"
+                with open(output_file, 'w') as f:
+                    json.dump({
+                        "original_file": str(file_path),
+                        "analysis": analysis,  # Single object with Notion ID (backward compatible)
+                        "timestamp": str(Path(file_path).stat().st_mtime)
+                    }, f, indent=2)
+                
+                print(f"✅ Saved enhanced analysis to: {output_file}")
                 
                 return analysis
         else:

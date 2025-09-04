@@ -21,8 +21,8 @@
       ],
       "archived": false
     },
-    "Epic 2nd Brain Workflow in Notion": {
-      "name": "Epic 2nd Brain Workflow in Notion",
+    "Epic 2nd Brain Workflow": {
+      "name": "Epic 2nd Brain Workflow",
       "id": "2468369c-7305-80ca-a9bc-dd66fa7fc66c",
       "status": "In progress",
       "aliases": [],
@@ -57,7 +57,11 @@
       "aliases": [
         "tech writing",
         "ai writing",
-        "article"
+        "article",
+        "author",
+        "sci-fi",
+        "ethics",
+        "writer"
       ],
       "archived": false
     },
@@ -213,6 +217,10 @@
     "tech writing": "AI Ethics / Sci-Fi Author",
     "ai writing": "AI Ethics / Sci-Fi Author",
     "article": "AI Ethics / Sci-Fi Author",
+    "author": "AI Ethics / Sci-Fi Author",
+    "sci-fi": "AI Ethics / Sci-Fi Author",
+    "ethics": "AI Ethics / Sci-Fi Author",
+    "writer": "AI Ethics / Sci-Fi Author",
     "cousin it": "Convert Front Yard Japanese Maple into Cousin It",
     "japanese maple": "Convert Front Yard Japanese Maple into Cousin It",
     "nutrition": "Nutrition & Morning Routine",
@@ -251,12 +259,12 @@
     "home improvement": "Home Remodel"
   },
   "metadata": {
-    "last_fetch": "2025-08-29T09:50:00.857296",
+    "last_fetch": "2025-09-04T10:13:35.337669",
     "cache_age_minutes": 0,
     "source": "notion",
     "total_projects": 19,
-    "fetch_duration_ms": 2429,
-    "last_successful_fetch": "2025-08-29T09:50:00.857296",
+    "fetch_duration_ms": 766,
+    "last_successful_fetch": "2025-09-04T10:13:35.337669",
     "failed_fetch_attempts": 0
   }
 }

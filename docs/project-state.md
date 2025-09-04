@@ -1,6 +1,6 @@
 # Voice-to-Notion AI Assistant - Project State & Decisions
 
-## Current Status (Day 4-5 Complete - September 2, 2025)
+## Current Status (Day 6 Complete - September 4, 2025)
 - ✅ **Complete automation pipeline:** Voice → AI Analysis → Organized Notion PARA content
 - ✅ **Smart project detection:** 90%+ accuracy with few-shot learning
 - ✅ **Content preservation:** Full transcript preservation for long-form content (>800 words)
@@ -13,6 +13,9 @@
 - ✅ **Voice Recording Orchestrator:** Complete 5-step workflow for USB recorder integration
 - ✅ **Parallel Transcription:** OpenAI Whisper with CPU monitoring and batch processing
 - ✅ **Intelligent Archiving:** Date-based organization with 7-day retention and safety checks
+- ✅ **Duplicate Handling:** Smart detection and cleanup of previously processed recordings
+- ✅ **Icon Matching Fix:** Content-based icon selection using original transcript text
+- ✅ **Production Ready:** Comprehensive error handling and state management
 
 ## Major Architecture Decisions Made
 
@@ -80,6 +83,18 @@
 **Rationale:** Multiple recordings need efficient processing while respecting system resources
 **Implementation:** ThreadPoolExecutor with psutil monitoring and 50% CPU limits
 **Result:** 3-4x faster processing with system health protection
+
+### 12. Duplicate Detection and Smart Cleanup (Day 6)
+**Decision:** Intelligent duplicate handling vs. failing on reprocessed files
+**Rationale:** Users may accidentally reprocess files, system should handle gracefully
+**Implementation:** Check for existing processed files, skip AI processing, cleanup source files
+**Result:** No failures on duplicates, efficient cleanup without re-archiving
+
+### 13. Content-Based Icon Matching (Day 6)
+**Decision:** Use original transcript content for icon selection vs. AI-generated titles only
+**Rationale:** Keywords like "notion", "product", "home remodel" are in original content, not titles
+**Implementation:** Pass original transcript content to icon selection method
+**Result:** Accurate icon matching based on actual content keywords
 
 ## Technical Architecture
 
@@ -155,6 +170,21 @@
 **Solution:** JSON-based state with session management and failure logging
 **Principle:** State should be human-readable and recoverable
 
+### 10. JSON Serialization Issues with Path Objects (Day 6)
+**Issue:** `PosixPath` objects cannot be serialized to JSON, causing state file corruption
+**Solution:** Convert Path objects to strings before JSON serialization
+**Principle:** Always ensure data types are JSON-serializable before storage
+
+### 11. Icon Matching Needs Original Content Context (Day 6)
+**Issue:** Icon selection was only using AI-generated titles, missing keywords in original content
+**Solution:** Pass original transcript content to icon selection method for keyword matching
+**Principle:** Use the richest data source available for pattern matching
+
+### 12. Duplicate Processing Should Be Graceful (Day 6)
+**Issue:** System failed when encountering previously processed files
+**Solution:** Detect duplicates, skip AI processing, but still cleanup source files
+**Principle:** User errors should not break the system workflow
+
 ## Current Challenges Solved
 1. ✅ **Project Detection:** 90%+ accuracy with few-shot learning
 2. ✅ **Content Preservation:** Full transcript preservation for insights
@@ -170,13 +200,17 @@
 12. ✅ **Parallel Processing:** Efficient batch transcription with resource monitoring
 13. ✅ **Archive Management:** Intelligent file organization with safety validation
 14. ✅ **State Management:** Comprehensive session tracking and error recovery
+15. ✅ **JSON Serialization:** Fixed Path object serialization issues in state files
+16. ✅ **Icon Matching:** Content-based icon selection using original transcript text
+17. ✅ **Duplicate Handling:** Smart detection and cleanup of previously processed files
+18. ✅ **Error Recovery:** Robust handling of corrupted files and processing failures
 
 ## Remaining Technical Debt (Week 3 Roadmap)
 
 ### High Priority
-1. **File Duplication Prevention:** Timestamp-based processing to avoid reprocessing old files
+1. **Auto Cleanup Scheduling:** 7-day automatic archive cleanup (currently manual)
 2. **Project Relation Setup:** Full project database linking vs. manual assignment
-3. **Auto Cleanup Scheduling:** 7-day automatic archive cleanup (currently manual)
+3. **Performance Monitoring:** Track processing times and resource usage
 
 ### Medium Priority  
 4. **Learning System:** Correction feedback loop for improving project detection
@@ -195,16 +229,18 @@
 - ✅ **Day 3:** Flexible project extraction system with 92% success rate and dynamic project loading
 - ✅ **Day 4:** Smart icon assignment system with AI-powered emoji selection
 - ✅ **Day 5:** Complete Voice Recording Orchestrator with 5-step workflow
+- ✅ **Day 6:** Production-ready system with duplicate handling and icon matching fixes
 - ✅ **Time Saved:** Theoretical 30-45 min → 15 min daily organization time
 - ✅ **Quality Improvement:** AI-enhanced project routing, content preservation, and visual enhancement
 - ✅ **Automation Level:** Manual transcription → Fully automated USB recorder integration
+- ✅ **Reliability:** Robust error handling and graceful duplicate processing
 
 ## Next Session Priorities (Week 3)
-1. **Test Full Orchestrator Pipeline:** USB recorder → transcription → AI analysis → Notion → archiving
-2. **Implement Auto Cleanup:** 7-day automatic archive cleanup scheduling
-3. **Begin Email Intelligence System:** Outlook newsletter processing and routing
-4. **Performance Optimization:** Monitor and optimize transcription speed and resource usage
-5. **User Experience:** Add progress bars and better error messages for production use
+1. **Implement Auto Cleanup:** 7-day automatic archive cleanup scheduling
+2. **Begin Email Intelligence System:** Outlook newsletter processing and routing
+3. **Performance Optimization:** Monitor and optimize transcription speed and resource usage
+4. **User Experience:** Add progress bars and better error messages for production use
+5. **Advanced Features:** Multi-device support and enhanced error recovery
 
 ## Session Handoff Notes
 - **File Processing:** Use `python scripts/process_transcripts.py` for complete automation
@@ -214,9 +250,12 @@
 - **Architecture Philosophy:** Preserve user content over AI "enhancement"
 - **Project Extraction:** New flexible system handles various real-world patterns
 - **Project Matching:** Dynamic loading with 60-minute cache, fallback to hardcoded list
-- **Icon System:** Configurable via `config/icon_mapping.json`, AI-powered selection
+- **Icon System:** Configurable via `config/icon_mapping.json`, content-based selection
 - **Orchestrator State:** Stored in `.cache/recording_states.json` with session tracking
 - **Dependencies:** Requires `ffmpeg` and `openai-whisper` for transcription
+- **Duplicate Handling:** System gracefully handles previously processed files
+- **Icon Matching:** Uses original transcript content for accurate keyword matching
+- **Error Recovery:** Robust handling of corrupted files and JSON serialization issues
 
 ---
-*Last Updated: September 2, 2025 - Day 5 Complete - Voice Recording Orchestrator and Smart Icon System Implemented*
+*Last Updated: September 4, 2025 - Day 6 Complete - Production-Ready System with Duplicate Handling and Icon Matching Fixes*
