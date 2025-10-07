@@ -7,3 +7,15 @@ __pycache__/
 processed/
 scripts/debug_*.py
 scripts/test_*.py
+
+# Logs
+logs/
+*.log
+
+# Working transcripts and archives
+transcripts/*.txt
+transcripts_archive/
+
+# Failed recordings and logs
+Failed/failed_recordings/
+Failed/failure_logs/
