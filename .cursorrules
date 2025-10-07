@@ -1,0 +1,132 @@
+# AI Assistant Project - Cursor Rules
+## Collaborative Working Agreement: Claude (Strategy) ↔ Cursor (Engineering)
+
+### Our Working Relationship
+- **Claude (Strategy)**: Brainstorming, business logic, requirements, system design
+- **Cursor (Engineering)**: Implementation, coding, testing, technical execution
+- **Clean handoffs** between strategy and engineering phases
+
+## Core Interaction Principles
+
+### Assumptions & Rationale
+- Always state assumptions explicitly about codebase, requirements, environment, or user flow
+- Explain the "why" behind every recommended approach
+- Validate assumptions before proceeding with implementation
+
+### Multiple Approaches
+When several solutions exist, present them as:
+- **Quick Fix**: Fast solution with tradeoffs
+- **Robust Solution**: Comprehensive approach with long-term benefits
+- Show pros/cons for each approach
+
+### Approval Workflow
+- Ask for approval before implementing any changes
+- Present the plan first, then execute after confirmation
+- Respect the collaborative decision-making process
+
+### Clarifying Questions
+- Always ask when anything is ambiguous
+- Better to over-clarify than make wrong assumptions
+- Focus questions on business impact and user experience
+
+## Performance Standards
+
+### Success Rate Targets
+- **Primary Goal**: 99.9% end-to-end success rate (all transcript types)
+- **Critical Threshold**: 90% - when we drop below this, bug fixes become highest priority
+- **Stack ranking**: Bug fixes > New features when below threshold
+
+### Current Status
+- **Current Success Rate**: 73% (16/22 transcripts) - BELOW CRITICAL THRESHOLD
+- **Root Cause**: Incorrect indentation in `analyze_transcript()` function
+- **Failed Transcripts**: 250905_1910, 250906_1239, 250907_1642, and 3 others
+
+### Session Reporting
+Automatic end-of-session report including:
+- **Success Rate**: % of transcripts completing full workflow (including cleanup)
+- **Failure Analysis**: List of failures with hypothesized root causes
+- **Root Cause Breakdown**: Percentages to focus debugging efforts
+- **Confidence Levels**: How certain we are about each hypothesis
+
+## Testing Framework
+
+### Real-World Validation
+- Ask for fresh test case each session (user can choose to drag in existing file)
+- Test on actual use cases, not just synthetic examples
+
+### Synthetic Testing
+- Propose 10 synthetic test cases for each change (mix of normal + edge cases)
+- Explain testing strategy before creating tests
+- Seek approval before generating synthetic tests
+- Iterate and improve synthetic framework over time
+
+### End-to-End Verification
+- Test individual components first
+- Always verify complete workflow after component testing
+
+## Documentation & Tracking
+
+### Markdown Updates
+Auto-update these files with all changes:
+- Technical Requirements document
+- Project State file
+- Roadmap file (for backlog items discussed in session)
+
+### Handoff Documentation
+- Create handoff document for Claude ↔ Cursor communication
+- Clear division: Claude = strategy/business, Cursor = engineering/implementation
+
+## Session Management
+
+### Close Session
+When user says "close session":
+- Auto-commit all changes to Git with session summary
+- Auto-push to remote (including sensitive data exclusions)
+- Generate final session report
+
+### New Session Startup
+Brief, high-signal summary:
+- What we accomplished last session
+- Next steps identified
+- Critical bugs affecting success rate (if any)
+- Current success rate metric
+
+## Git Security Checklist
+
+### Never Commit:
+- API keys (OpenAI, Notion, Gmail)
+- Authentication tokens
+- Personal identifiers
+- Private database IDs
+- Email addresses or phone numbers
+- File paths with personal information
+- Any credentials in .env files
+
+### Safe to Commit:
+- Code logic and algorithms
+- Test cases (with anonymized data)
+- Documentation and markdown files
+- Project structure and configuration
+- Error handling and fallback logic
+
+## Project-Specific Guidelines
+
+### Critical Systems (Handle with Extreme Care)
+- **process_transcripts.py**: Core transcript processing - 27% failure rate needs immediate attention
+- **recording_orchestrator.py**: Production system - maintain stability
+- **intelligent_router.py**: High accuracy required - test thoroughly
+- **notion_manager.py**: 100% success rate required - preserve reliability
+
+### Current Performance Metrics
+- **Processing Speed**: 1.47 files/minute
+- **Notion Integration**: 100% success rate
+- **Archive Management**: Complete file organization
+- **Project Detection**: 90%+ accuracy with few-shot learning
+
+## Roadmap Integration
+- When discussing features to postpone → automatically add to roadmap.md
+- Include priority level and effort estimates
+- Track dependencies between roadmap items
+
+---
+*This is a living document - we'll refine it based on what works best for our collaboration.*

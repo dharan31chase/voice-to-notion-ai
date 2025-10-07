@@ -857,8 +857,8 @@ class RecordingOrchestrator:
                             # Monitor CPU usage
                             cpu_usage = self._monitor_cpu_usage()
                             if cpu_usage > 50:
-                                logger.warning(f"⚠️ High CPU usage: {cpu_usage:.1f}% - waiting 10 seconds")
-                                time.sleep(10)
+                                logger.warning(f"⚠️ High CPU usage: {cpu_usage:.1f}% - waiting 2 seconds")
+                                time.sleep(2)
                                 
                         except Exception as e:
                             logger.error(f"❌ Error processing {file_path.name}: {e}")

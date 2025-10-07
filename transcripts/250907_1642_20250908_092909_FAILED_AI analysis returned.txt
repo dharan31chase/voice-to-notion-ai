@@ -1,0 +1,8 @@
+Understand the intuitions behind probability. What are permutations and
+combinations? How do they change? I think it's got a huge significance in terms of
+predicting how it works. Mathematics is a very very important field and
+probability game theory, microeconomics. How does probability distribution change?
+How do you calculate probability for repeated events? Look at Harper's
+probability index. Understand which of those probabilities are important to
+build your knowledge around. Review core theory behind game theory.
+What are the core insights?

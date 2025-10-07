@@ -1,5 +1,31 @@
 {
   "projects": {
+    "Project Franklin": {
+      "name": "Project Franklin",
+      "id": "27d8369c-7305-8072-86fc-d8ebbdb4c8e9",
+      "status": "Ongoing",
+      "aliases": [],
+      "archived": false
+    },
+    "AMS Analytics Product Strategy": {
+      "name": "AMS Analytics Product Strategy",
+      "id": "2788369c-7305-80a5-98fe-e8a1fb7f7252",
+      "status": "In progress",
+      "aliases": [
+        "ams",
+        "analytics",
+        "product strategy",
+        "steven wolff"
+      ],
+      "archived": false
+    },
+    "Build Zazen UI on Figma": {
+      "name": "Build Zazen UI on Figma",
+      "id": "2788369c-7305-80c0-9ac4-d16d5bc66796",
+      "status": "In progress",
+      "aliases": [],
+      "archived": false
+    },
     "Apply to YCombinator": {
       "name": "Apply to YCombinator",
       "id": "25b8369c-7305-801b-bffa-c5c94e04202f",
@@ -31,7 +57,7 @@
     "Vermont Valaigappu \ud83c\udf42": {
       "name": "Vermont Valaigappu \ud83c\udf42",
       "id": "2438369c-7305-8060-8138-e035e68a1d1a",
-      "status": "Backlog",
+      "status": "In progress",
       "aliases": [
         "baby shower",
         "valaigappu"
@@ -53,7 +79,7 @@
     "AI Ethics / Sci-Fi Author": {
       "name": "AI Ethics / Sci-Fi Author",
       "id": "2418369c-7305-8036-b0a2-e3bb8f818933",
-      "status": "In progress",
+      "status": "Backlog",
       "aliases": [
         "tech writing",
         "ai writing",
@@ -75,8 +101,8 @@
       ],
       "archived": false
     },
-    "Nutrition & Morning Routine": {
-      "name": "Nutrition & Morning Routine",
+    "Nutrition & Wellness": {
+      "name": "Nutrition & Wellness",
       "id": "2258369c-7305-807d-9d52-efeef1f09c88",
       "status": "Backlog",
       "aliases": [
@@ -102,23 +128,12 @@
     "Become a Master Chef ": {
       "name": "Become a Master Chef ",
       "id": "2148369c-7305-8006-9503-fd112b8b1ec7",
-      "status": "Ongoing",
+      "status": "Backlog",
       "aliases": [],
       "archived": false
     },
-    "Tinker with Claude": {
-      "name": "Tinker with Claude",
-      "id": "20e8369c-7305-80c5-85d2-c45b480756f7",
-      "status": "Backlog",
-      "aliases": [
-        "claude",
-        "ai assistant",
-        "claude code"
-      ],
-      "archived": false
-    },
-    "Improve my Product Sense & Taste": {
-      "name": "Improve my Product Sense & Taste",
+    "Product Craftsman": {
+      "name": "Product Craftsman",
       "id": "2018369c-7305-8054-bf58-f1a8619b3ab5",
       "status": "Ongoing",
       "aliases": [
@@ -141,8 +156,8 @@
       ],
       "archived": false
     },
-    "Project 2035 - Zen Product Craftsman": {
-      "name": "Project 2035 - Zen Product Craftsman",
+    "Legacy AI": {
+      "name": "Legacy AI",
       "id": "1fb8369c-7305-8067-a153-ff0adbc5a291",
       "status": "Ongoing",
       "aliases": [],
@@ -181,13 +196,6 @@
       ],
       "archived": false
     },
-    "Green Card Application": {
-      "name": "Green Card Application",
-      "id": "1f78369c-7305-805a-a172-d6047b978055",
-      "status": "In progress",
-      "aliases": [],
-      "archived": false
-    },
     "Home Remodel": {
       "name": "Home Remodel",
       "id": "1f48369c-7305-807f-9f6b-fe533eb79702",
@@ -200,9 +208,20 @@
         "home improvement"
       ],
       "archived": false
+    },
+    "The Good Life": {
+      "name": "The Good Life",
+      "id": "1f48369c-7305-80ff-af02-f94ebbe9d653",
+      "status": "In progress",
+      "aliases": [],
+      "archived": false
     }
   },
   "aliases": {
+    "ams": "AMS Analytics Product Strategy",
+    "analytics": "AMS Analytics Product Strategy",
+    "product strategy": "AMS Analytics Product Strategy",
+    "steven wolff": "AMS Analytics Product Strategy",
     "yc": "Apply to YCombinator",
     "y combinator": "Apply to YCombinator",
     "woodworking": "Woodworking Projects",
@@ -223,22 +242,19 @@
     "writer": "AI Ethics / Sci-Fi Author",
     "cousin it": "Convert Front Yard Japanese Maple into Cousin It",
     "japanese maple": "Convert Front Yard Japanese Maple into Cousin It",
-    "nutrition": "Nutrition & Morning Routine",
-    "morning routine": "Nutrition & Morning Routine",
-    "wellness": "Nutrition & Morning Routine",
+    "nutrition": "Nutrition & Wellness",
+    "morning routine": "Nutrition & Wellness",
+    "wellness": "Nutrition & Wellness",
     "coaching": "Lume Coaching Notes & Meetings",
     "meredith": "Lume Coaching Notes & Meetings",
     "kevin": "Lume Coaching Notes & Meetings",
     "lume": "Lume Coaching Notes & Meetings",
     "loom": "Lume Coaching Notes & Meetings",
-    "claude": "Tinker with Claude",
-    "ai assistant": "Tinker with Claude",
-    "claude code": "Tinker with Claude",
-    "product sense": "Improve my Product Sense & Taste",
-    "pm skills": "Improve my Product Sense & Taste",
-    "product taste": "Improve my Product Sense & Taste",
-    "product skills": "Improve my Product Sense & Taste",
-    "shreyas doshi": "Improve my Product Sense & Taste",
+    "product sense": "Product Craftsman",
+    "pm skills": "Product Craftsman",
+    "product taste": "Product Craftsman",
+    "product skills": "Product Craftsman",
+    "shreyas doshi": "Product Craftsman",
     "wedding": "India Wedding Planning",
     "india wedding": "India Wedding Planning",
     "october 2026": "India Wedding Planning",
@@ -259,12 +275,12 @@
     "home improvement": "Home Remodel"
   },
   "metadata": {
-    "last_fetch": "2025-09-04T10:13:35.337669",
+    "last_fetch": "2025-10-06T21:44:39.967062",
     "cache_age_minutes": 0,
     "source": "notion",
-    "total_projects": 19,
-    "fetch_duration_ms": 766,
-    "last_successful_fetch": "2025-09-04T10:13:35.337669",
+    "total_projects": 21,
+    "fetch_duration_ms": 699,
+    "last_successful_fetch": "2025-10-06T21:44:39.967062",
     "failed_fetch_attempts": 0
   }
 }

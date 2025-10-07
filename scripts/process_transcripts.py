@@ -53,14 +53,13 @@ def analyze_transcript(transcript_text):
                 return process_note(content, router=router)
     
     # Default to task with manual review tag if unclear
+    # Check if this looks like unclear content (no clear task/note indicators)
+    words = content.split()
+    if len(words) > 10:  # Long content without clear indicators
+        return process_unclear_content(content)
     else:
-        # Check if this looks like unclear content (no clear task/note indicators)
-        words = content.split()
-        if len(words) > 10:  # Long content without clear indicators
-            return process_unclear_content(content)
-        else:
-            # For shorter content, try to process as task but with manual review
-            return process_single_task(content, content.split('.'), manual_review=True)
+        # For shorter content, try to process as task but with manual review
+        return process_single_task(content, content.split('.'), manual_review=True)
 
 def process_tasks(content):
     """Handle single or multiple tasks with project association"""
@@ -364,9 +363,9 @@ def process_note(content, router=None):
     }
 
 def process_unclear_content(content):
-    """Process unclear content as task with manual review tag"""
+    """Process unclear content as task with manual review tag - preserves original content exactly"""
     
-    # Try to extract a basic title from the content
+    # Create a simple title from the first 60 characters of original content
     title = content[:60]
     if len(content) > 60:
         title += "..."
@@ -374,52 +373,13 @@ def process_unclear_content(content):
     return {
         "category": "task",
         "title": title,
-        "content": content,
+        "content": content,  # Original transcript preserved exactly as-is
         "action_items": [],
         "key_insights": [],
         "confidence": "low",
-        "project": "",
+        "project": "Manual Review Required",  # Clear flag for manual review
         "manual_review": True
     }
-    
-    # If it's a NOTE or RESEARCH, preserve content but get smart title
-    if category in ["note", "research"]:
-        # Use AI ONLY for title generation
-        title_prompt = f"""
-        Create a concise, descriptive title for this note (4-8 words):
-        
-        {transcript_text[:500]}
-        
-        Focus on the MAIN TOPIC or KEY INSIGHT. Examples:
-        - "Preserving Authentic Voice in Writing"
-        - "Product Strategy Documentation Workflow"
-        - "Integration and Elusiveness in Eudaimonia"
-        - "High Signal Social Media Platform Concept"
-        
-        Return ONLY the title, no quotes, no extra text.
-        """
-        
-        try:
-            response = client.chat.completions.create(
-                model="gpt-3.5-turbo",
-                messages=[{"role": "user", "content": title_prompt}],
-                max_tokens=30
-            )
-            title = response.choices[0].message.content.strip().strip('"')
-        except Exception as e:
-            print(f"Error generating title: {e}")
-            # Fallback to first words
-            first_words = transcript_text.split()[:8]
-            title = " ".join(first_words) + "..."
-            
-        return {
-            "category": category,
-            "title": title,  # Smart AI title
-            "content": transcript_text,  # FULL ORIGINAL CONTENT
-            "action_items": [],
-            "key_insights": [],
-            "confidence": "high"
-        }
     
     # Only use AI for TASKS (existing code)
     if category == "task":
