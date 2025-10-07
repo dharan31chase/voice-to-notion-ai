@@ -1,0 +1,60 @@
+# AI Assistant Configuration
+# Main application settings
+
+# OpenAI API Configuration
+openai:
+  model: "gpt-3.5-turbo"
+  max_tokens:
+    title_generation: 50
+    task_analysis: 500
+    note_analysis: 800
+    project_detection: 100
+    duration_estimation: 200
+  temperature: 0.7
+  retry_attempts: 3
+  retry_delay_seconds: 2
+
+# File Paths (relative to project root)
+paths:
+  transcripts: "transcripts/"
+  processed: "processed/"
+  archives: "Recording Archives/"
+  failed: "Failed/"
+  cache: ".cache/"
+  config: "config/"
+  usb_recorder: "/Volumes/IC RECORDER/REC_FILE/FOLDER01"
+
+# Notion Integration
+# Note: Database IDs come from environment variables
+notion:
+  chunk_size: 2000  # Characters per block
+  retry_attempts: 3
+  retry_delay_seconds: 2
+
+# Feature Flags
+features:
+  enable_icon_matching: true
+  enable_duplicate_detection: true
+  enable_project_cache: true
+  cache_duration_minutes: 60
+
+# Processing Settings
+processing:
+  min_transcript_length: 10  # Characters
+  min_file_size: 10  # Bytes
+  parallel_transcription_workers: 4
+  cpu_usage_limit_percent: 50
+
+# Archive Settings
+archive:
+  retention_days: 7
+  organize_by_date: true
+  session_id_format: "session_%Y%m%d_%H%M%S"
+
+# Logging
+logging:
+  level: "INFO"  # DEBUG, INFO, WARNING, ERROR
+  format: "%(asctime)s - %(levelname)s - %(message)s"
+  file: "recording_orchestrator.log"
+  console_output: true
+

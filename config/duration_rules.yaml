@@ -1,0 +1,39 @@
+# Duration Estimation Rules
+# Extracted from intelligent_router.py
+
+# Duration categories and guidelines
+duration_categories:
+  QUICK:
+    max_minutes: 2
+    examples:
+      - "Calls"
+      - "Payments"
+      - "Quick Google searches"
+      - "Simple emails"
+    due_date: "today"
+    
+  MEDIUM:
+    min_minutes: 15
+    max_minutes: 30
+    examples:
+      - "Research tasks"
+      - "Planning"
+      - "Coordination"
+      - "Writing"
+    due_date: "end_of_week"
+    
+  LONG:
+    min_minutes: 60
+    examples:
+      - "Setup"
+      - "Installation"
+      - "Complex research"
+      - "Multi-step projects"
+    due_date: "end_of_month"
+
+# Due date calculation logic
+due_dates:
+  today: "Today is {today_str}"
+  end_of_week: "Next Friday is {end_of_week}"
+  end_of_month: "End of month is {end_of_month}"
+

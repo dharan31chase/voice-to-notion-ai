@@ -1,0 +1,44 @@
+# Tag Detection Configuration
+# Extracted from intelligent_router.py
+
+# Tag definitions and patterns
+tags:
+  Communications:
+    description: "Tasks involving actual communication with people"
+    patterns:
+      - "call"
+      - "email"
+      - "text"
+      - "message"
+      - "phone"
+      - "update parents"
+      - "contact"
+      - "coordinate with"
+      - "reach out"
+      - "follow up with"
+      - "send to"
+      - "notify"
+      - "inform"
+      - "tell"
+    people_indicators:
+      - "parents"
+      - "team"
+      - "client"
+      - "customer"
+      - "person"
+      - "people"
+      - "someone"
+      - "them"
+      - "him"
+      - "her"
+    
+  "Needs Jessica Input":
+    description: "Tasks requiring Jessica's input or decision"
+    keywords:
+      - "home remodel"
+      - "baby"
+      - "green card"
+      - "major decision"
+      - "couple decision"
+      - "jessica"
+

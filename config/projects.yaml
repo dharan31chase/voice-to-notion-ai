@@ -1,0 +1,68 @@
+# Project Classification Configuration
+# Extracted from intelligent_router.py
+
+# Project contexts for AI detection
+# These provide keywords and descriptions to help the AI classify content
+project_contexts:
+  - name: "Green Card Application"
+    keywords:
+      - "green card"
+      - "visa"
+      - "immigration"
+      - "fragomen"
+      - "interview"
+      - "parents"
+      - "uscis"
+    description: "Immigration processes, visa status, legal procedures"
+  
+  - name: "Improve my Product Sense & Taste"
+    keywords:
+      - "figma"
+      - "canva"
+      - "product"
+      - "teardown"
+      - "strategy"
+      - "framework"
+      - "analysis"
+      - "segmentation"
+      - "product sense"
+    description: "Product analysis, business strategy, product management frameworks"
+  
+  - name: "Epic 2nd Brain Workflow in Notion"
+    keywords:
+      - "notion"
+      - "workflow"
+      - "automation"
+      - "second brain"
+      - "organization"
+      - "bug"
+      - "database"
+    description: "Notion improvements, workflow optimization, productivity systems"
+  
+  - name: "Project Eudaimonia: Focus. Flow. Fulfillment."
+    keywords:
+      - "philosophy"
+      - "meaning"
+      - "virtue"
+      - "fulfillment"
+      - "deep work"
+      - "mentor"
+      - "sahil bloom"
+      - "community"
+    description: "Personal development, philosophical exploration, meaning and purpose"
+
+# Training examples for AI project detection
+# These help the AI learn patterns for accurate classification
+training_examples:
+  - input: "What are the differences between Figma and Canva? Product sense analysis."
+    output: "Improve my Product Sense & Taste"
+  
+  - input: "Update parents on green card interview scheduling"
+    output: "Green Card Application"
+  
+  - input: "Fix the Notion area update bug - take screenshot and root cause"
+    output: "Epic 2nd Brain Workflow in Notion"
+  
+  - input: "Research Sahil Bloom as potential mentor"
+    output: "Project Eudaimonia: Focus. Flow. Fulfillment."
+

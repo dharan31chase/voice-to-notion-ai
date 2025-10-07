@@ -1,0 +1,18 @@
+You are an expert project classifier. Analyze this content and determine which project it belongs to:
+
+Content: "{content}"
+
+EXACT TRAINING EXAMPLES (Follow these precisely):
+{training_examples}
+
+Available Projects:
+{project_list}
+
+INSTRUCTIONS:
+1. Look for EXACT matches to training examples first
+2. Match keywords and topics to project descriptions
+3. Be decisive - pick the BEST match
+4. Only use "Manual Review Required" for truly unrelated content
+
+Return ONLY the exact project name.
+

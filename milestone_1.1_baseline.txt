@@ -1,0 +1,33 @@
+✅ Baseline Status - Mon Oct  6 21:09:53 EDT 2025
+System working, intelligent_router imports successfully
+ M .cache/projects.json
+ M README.md
+ M docs/project-state.md
+ M docs/technical-requirements.md
+ M recording_orchestrator.log
+ M scripts/process_transcripts.py
+ M scripts/recording_orchestrator.py
+?? .cursorrules
+?? "Failed/failed_recordings/250909_1345_20250910_072906_FAILED_Transcription timeou.mp3"
+?? "Failed/failed_recordings/250919_0725_20250919_124843_FAILED_Transcription timeou.mp3"
+?? "Failed/failed_recordings/250919_0725_20250924_210837_FAILED_Transcription timeou.mp3"
+?? "Failed/failed_recordings/250919_0725_20250924_214629_FAILED_Transcription timeou.mp3"
+?? "Failed/failed_recordings/Doula conversation_20250912_115709_FAILED_Transcription timeou.mp3"
+?? Failed/failure_logs/failure_20250908_092749.log
+?? Failed/failure_logs/failure_20250908_092830.log
+?? Failed/failure_logs/failure_20250908_092834.log
+?? Failed/failure_logs/failure_20250908_092855.log
+?? Failed/failure_logs/failure_20250908_092909.log
+?? Failed/failure_logs/failure_20250912_115709.log
+?? "Recording Archives/2025-09-04/session_20250904_153914/"
+?? "Recording Archives/2025-09-08/"
+?? "Recording Archives/2025-09-10/"
+?? "Recording Archives/2025-09-11/"
+?? "Recording Archives/2025-09-12/"
+?? "Recording Archives/2025-09-14/"
+?? "Recording Archives/2025-09-19/"
+?? "Recording Archives/2025-09-29/"
+?? "Recording Archives/2025-09-30/"
+?? docs/refactoring-plan.md
+?? milestone_1.1_baseline.txt
+?? transcripts/

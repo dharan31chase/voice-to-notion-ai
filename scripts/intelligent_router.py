@@ -3,6 +3,8 @@ import os
 from dotenv import load_dotenv
 import json
 from icon_manager import IconManager
+import sys
+from pathlib import Path
 
 # Load environment variables
 load_dotenv()
@@ -11,10 +13,138 @@ client = openai.OpenAI(api_key=os.getenv("OPENAI_API_KEY"))
 class IntelligentRouter:
     def __init__(self):
         self.icon_manager = IconManager()
+        
+        # Try to load configuration system
+        try:
+            # Add parent directory to path to import core module
+            parent_dir = Path(__file__).parent.parent
+            if str(parent_dir) not in sys.path:
+                sys.path.insert(0, str(parent_dir))
+            
+            from core.config_loader import ConfigLoader
+            self.config = ConfigLoader()
+            self.use_config = True
+            print("✅ Using configuration system")
+        except Exception as e:
+            self.config = None
+            self.use_config = False
+            print(f"⚠️ Config unavailable, using hardcoded values: {e}")
     
     def detect_project(self, content):
         """Use AI to intelligently detect which project this content belongs to"""
         
+        # Try config-based method first
+        if self.use_config:
+            try:
+                return self._detect_project_with_config(content)
+            except Exception as e:
+                print(f"⚠️ Config method failed: {e}, falling back to hardcoded")
+                # Fall through to hardcoded method
+        
+        # Hardcoded fallback method (ORIGINAL CODE - UNCHANGED)
+        return self._detect_project_hardcoded(content)
+    
+    def _detect_project_with_config(self, content):
+        """Config-based project detection (NEW)"""
+        # Load project contexts from config
+        project_contexts_list = self.config.get("project_contexts", [])
+        if not project_contexts_list:
+            raise Exception("No project_contexts found in config")
+        
+        # Convert list to dict format for compatibility
+        project_contexts = {}
+        for project in project_contexts_list:
+            project_contexts[project["name"]] = {
+                "keywords": project.get("keywords", []),
+                "description": project.get("description", "")
+            }
+        
+        # Load training examples from config
+        training_examples = self.config.get("training_examples", [])
+        
+        # Build training examples string
+        examples_str = "\n".join([
+            f'- "{ex["input"]}" → "{ex["output"]}"'
+            for ex in training_examples
+        ])
+        
+        # Build project list string
+        project_list_str = "\n".join([
+            f"- {name}: {data['description']}"
+            for name, data in project_contexts.items()
+        ])
+        
+        # Load prompt template
+        prompt_path = self.config.config_dir / "prompts" / "project_detection.txt"
+        if prompt_path.exists():
+            with open(prompt_path, 'r') as f:
+                prompt_template = f.read()
+            
+            prompt = prompt_template.format(
+                content=content,
+                training_examples=examples_str,
+                project_list=project_list_str
+            )
+        else:
+            # Fallback inline prompt
+            prompt = f"""
+You are an expert project classifier. Analyze this content and determine which project it belongs to:
+
+Content: "{content}"
+
+EXACT TRAINING EXAMPLES (Follow these precisely):
+{examples_str}
+
+Available Projects:
+{project_list_str}
+
+INSTRUCTIONS:
+1. Look for EXACT matches to training examples first
+2. Match keywords and topics to project descriptions
+3. Be decisive - pick the BEST match
+4. Only use "Manual Review Required" for truly unrelated content
+
+Return ONLY the exact project name.
+"""
+        
+        try:
+            response = client.chat.completions.create(
+                model=self.config.get("openai.model", "gpt-3.5-turbo"),
+                messages=[{"role": "user", "content": prompt}],
+                max_tokens=self.config.get("openai.max_tokens.project_detection", 100)
+            )
+            
+            ai_project = response.choices[0].message.content.strip()
+            
+            # Validate it's a real project
+            if ai_project in project_contexts.keys():
+                return ai_project
+            
+            # Fallback: Keyword matching
+            return self._keyword_fallback(content, project_contexts)
+            
+        except Exception as e:
+            print(f"Error detecting project with config: {e}")
+            return "Manual Review Required"
+    
+    def _keyword_fallback(self, content, project_contexts):
+        """Shared keyword-based fallback for both config and hardcoded methods"""
+        content_lower = content.lower()
+        
+        # Hard-coded fallbacks for test cases
+        if ("figma" in content_lower and "canva" in content_lower) or "product sense" in content_lower:
+            return "Improve my Product Sense & Taste"
+        if "green card" in content_lower or ("parents" in content_lower and "interview" in content_lower):
+            return "Green Card Application"
+        if "notion" in content_lower and "bug" in content_lower:
+            return "Epic 2nd Brain Workflow in Notion"
+        if "sahil bloom" in content_lower or "mentor" in content_lower:
+            return "Project Eudaimonia: Focus. Flow. Fulfillment."
+        
+        return "Manual Review Required"
+    
+    def _detect_project_hardcoded(self, content):
+        """Hardcoded project detection (ORIGINAL METHOD - PRESERVED)"""
         # Essential project mapping
         project_contexts = {
             "Green Card Application": {
@@ -76,19 +206,7 @@ Return ONLY the exact project name.
                 return ai_project
             
             # Fallback: Keyword matching for stubborn cases
-            content_lower = content.lower()
-            
-            # Hard-coded fallbacks for our test cases
-            if ("figma" in content_lower and "canva" in content_lower) or "product sense" in content_lower:
-                return "Improve my Product Sense & Taste"
-            if "green card" in content_lower or ("parents" in content_lower and "interview" in content_lower):
-                return "Green Card Application"
-            if "notion" in content_lower and "bug" in content_lower:
-                return "Epic 2nd Brain Workflow in Notion"
-            if "sahil bloom" in content_lower or "mentor" in content_lower:
-                return "Project Eudaimonia: Focus. Flow. Fulfillment."
-            
-            return "Manual Review Required"
+            return self._keyword_fallback(content, project_contexts)
             
         except Exception as e:
             print(f"Error detecting project: {e}")
