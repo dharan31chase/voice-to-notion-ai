@@ -1,14 +1,25 @@
-import openai
 import os
-from dotenv import load_dotenv
 import json
-from icon_manager import IconManager
 import sys
 from pathlib import Path
+from dotenv import load_dotenv
+from icon_manager import IconManager
 
-# Load environment variables
+# Load environment variables first
 load_dotenv()
-client = openai.OpenAI(api_key=os.getenv("OPENAI_API_KEY"))
+
+# Add parent directory to path for core imports
+parent_dir = Path(__file__).parent.parent
+if str(parent_dir) not in sys.path:
+    sys.path.insert(0, str(parent_dir))
+
+# Import shared utilities
+from core.openai_client import get_openai_client
+from core.logging_utils import get_logger
+
+# Initialize logger and OpenAI client
+logger = get_logger(__name__)
+client = get_openai_client()
 
 class IntelligentRouter:
     def __init__(self):
@@ -24,11 +35,11 @@ class IntelligentRouter:
             from core.config_loader import ConfigLoader
             self.config = ConfigLoader()
             self.use_config = True
-            print("✅ Using configuration system")
+            logger.info("✅ Using configuration system")
         except Exception as e:
             self.config = None
             self.use_config = False
-            print(f"⚠️ Config unavailable, using hardcoded values: {e}")
+            logger.warning(f"⚠️ Config unavailable, using hardcoded values: {e}")
     
     def detect_project(self, content):
         """Use AI to intelligently detect which project this content belongs to"""
@@ -38,7 +49,7 @@ class IntelligentRouter:
             try:
                 return self._detect_project_with_config(content)
             except Exception as e:
-                print(f"⚠️ Config method failed: {e}, falling back to hardcoded")
+                logger.warning(f"⚠️ Config method failed: {e}, falling back to hardcoded")
                 # Fall through to hardcoded method
         
         # Hardcoded fallback method (ORIGINAL CODE - UNCHANGED)
@@ -124,7 +135,7 @@ Return ONLY the exact project name.
             return self._keyword_fallback(content, project_contexts)
             
         except Exception as e:
-            print(f"Error detecting project with config: {e}")
+            logger.error(f"Error detecting project with config: {e}")
             return "Manual Review Required"
     
     def _keyword_fallback(self, content, project_contexts):
@@ -209,7 +220,7 @@ Return ONLY the exact project name.
             return self._keyword_fallback(content, project_contexts)
             
         except Exception as e:
-            print(f"Error detecting project: {e}")
+            logger.error(f"Error detecting project: {e}")
             return "Manual Review Required"
     
     def estimate_duration_and_due_date(self, content):
@@ -267,7 +278,7 @@ Return JSON format:
             return result
         
         except Exception as e:
-            print(f"Error estimating duration: {e}")
+            logger.error(f"Error estimating duration: {e}")
             return {
             "duration_category": "MEDIUM", 
             "estimated_minutes": 20,
@@ -344,7 +355,7 @@ Return JSON format:
             return self.icon_manager.default_icon
             
         except Exception as e:
-            print(f"⚠️ Error in icon selection: {e}")
+            logger.warning(f"⚠️ Error in icon selection: {e}")
             return self.icon_manager.default_icon
     
     def _simplify_project_name(self, project: str) -> str:

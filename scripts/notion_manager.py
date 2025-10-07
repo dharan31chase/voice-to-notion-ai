@@ -1,4 +1,6 @@
 import os
+import sys
+from pathlib import Path
 from dotenv import load_dotenv
 from notion_client import Client
 import json
@@ -6,8 +8,21 @@ from datetime import datetime
 from intelligent_router import IntelligentRouter
 from project_matcher import ProjectMatcher
 
-# Load environment variables
+# Load environment variables first
 load_dotenv()
+
+# Add parent directory to path for core imports
+parent_dir = Path(__file__).parent.parent
+if str(parent_dir) not in sys.path:
+    sys.path.insert(0, str(parent_dir))
+
+# Import shared utilities
+from core.logging_utils import get_logger
+
+# Initialize logger
+logger = get_logger(__name__)
+
+# Load Notion client (no change needed - uses notion_client library)
 notion = Client(auth=os.getenv("NOTION_TOKEN"))
 
 class AdvancedNotionManager:

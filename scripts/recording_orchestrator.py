@@ -9,13 +9,23 @@ import json
 import time
 import subprocess
 import shutil
+import sys
 from pathlib import Path
 from datetime import datetime, timedelta
 from typing import List, Dict, Optional, Tuple
-import logging
 from concurrent.futures import ThreadPoolExecutor, as_completed
-import sys
 from dotenv import load_dotenv
+
+# Load environment variables first
+load_dotenv()
+
+# Add parent directory to path for core imports
+parent_dir = Path(__file__).parent.parent
+if str(parent_dir) not in sys.path:
+    sys.path.insert(0, str(parent_dir))
+
+# Import shared utilities
+from core.logging_utils import configure_root_logger, get_logger
 
 # Try to import Notion client, but don't fail if it's not available
 try:
@@ -25,16 +35,9 @@ except ImportError:
     NOTION_AVAILABLE = False
     Client = None
 
-# Configure logging
-logging.basicConfig(
-    level=logging.INFO,
-    format='%(asctime)s - %(levelname)s - %(message)s',
-    handlers=[
-        logging.FileHandler('recording_orchestrator.log'),
-        logging.StreamHandler()
-    ]
-)
-logger = logging.getLogger(__name__)
+# Configure unified logging
+configure_root_logger("INFO")
+logger = get_logger(__name__)
 
 class RecordingOrchestrator:
     def __init__(self):
@@ -72,7 +75,6 @@ class RecordingOrchestrator:
     def _setup_notion_client(self):
         """Initialize Notion client for entry verification"""
         try:
-            load_dotenv()
             self.notion_token = os.getenv('NOTION_TOKEN')
             
             if not self.notion_token:

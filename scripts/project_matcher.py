@@ -6,15 +6,27 @@ against the actual project list. Supports both hardcoded and future database-dri
 
 import difflib
 import os
+import sys
 import json
 from datetime import datetime, timedelta
 from typing import List, Optional, Dict, Any
-from notion_client import Client
 from dotenv import load_dotenv
+from notion_client import Client
 from pathlib import Path
 
-# Load environment variables
+# Load environment variables first
 load_dotenv()
+
+# Add parent directory to path for core imports
+parent_dir = Path(__file__).parent.parent
+if str(parent_dir) not in sys.path:
+    sys.path.insert(0, str(parent_dir))
+
+# Import shared utilities
+from core.logging_utils import get_logger
+
+# Initialize logger
+logger = get_logger(__name__)
 
 class ProjectCache:
     """In-memory cache for project data with file persistence"""

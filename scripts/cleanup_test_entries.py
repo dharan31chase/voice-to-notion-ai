@@ -6,9 +6,24 @@ Deletes test Notion entries created during testing.
 
 import json
 import os
+import sys
 from pathlib import Path
-from notion_client import Client
 from dotenv import load_dotenv
+from notion_client import Client
+
+# Load environment variables first
+load_dotenv()
+
+# Add parent directory to path for core imports
+parent_dir = Path(__file__).parent.parent
+if str(parent_dir) not in sys.path:
+    sys.path.insert(0, str(parent_dir))
+
+# Import shared utilities
+from core.logging_utils import get_logger
+
+# Initialize logger
+logger = get_logger(__name__)
 
 def load_processed_files():
     """Load all processed files to extract Notion IDs"""

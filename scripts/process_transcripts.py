@@ -1,15 +1,25 @@
-import openai
 import os
-from dotenv import load_dotenv
+import sys
 from pathlib import Path
 import json
+from dotenv import load_dotenv
 from project_matcher import ProjectMatcher
 
-# Load environment variables
+# Load environment variables first
 load_dotenv()
 
-# Initialize OpenAI client (THIS LINE MIGHT BE MISSING)
-client = openai.OpenAI(api_key=os.getenv("OPENAI_API_KEY"))
+# Add parent directory to path for core imports
+parent_dir = Path(__file__).parent.parent
+if str(parent_dir) not in sys.path:
+    sys.path.insert(0, str(parent_dir))
+
+# Import shared utilities
+from core.openai_client import get_openai_client
+from core.logging_utils import get_logger
+
+# Initialize logger and OpenAI client
+logger = get_logger(__name__)
+client = get_openai_client()
 
 def analyze_transcript(transcript_text):
     """Enhanced category detection with robust parsing for new format"""
@@ -91,7 +101,7 @@ def extract_project_from_content(content: str, project_matcher: ProjectMatcher) 
     - <Content><Project Name> <Task/Note> (no period)
     - Handles embedded periods, case insensitive, ignores junk words
     """
-    print(f"🔍 Extracting project from: '{content[:50]}{'...' if len(content) > 50 else ''}'")
+    logger.debug(f"🔍 Extracting project from: '{content[:50]}{'...' if len(content) > 50 else ''}'")
     
     # Step 1: Find last task/note keyword (case insensitive)
     content_lower = content.lower()
@@ -107,14 +117,14 @@ def extract_project_from_content(content: str, project_matcher: ProjectMatcher) 
         last_keyword_pos = last_task_pos
         keyword = 'task'
     else:
-        print("  ❌ No task/note keyword found")
+        logger.debug("  ❌ No task/note keyword found")
         return "Manual Review Required"
     
-    print(f"  Found keyword '{keyword}' at position {last_keyword_pos}")
+    logger.debug(f"  Found keyword '{keyword}' at position {last_keyword_pos}")
     
     # Step 2: Extract text before the keyword (ignore everything after)
     before_keyword = content[:last_keyword_pos].strip()
-    print(f"  Text before keyword: '{before_keyword}'")
+    logger.debug(f"  Text before keyword: '{before_keyword}'")
     
     # Step 3: Try word combinations from end (1-5 words)
     words = before_keyword.split()
@@ -128,22 +138,22 @@ def extract_project_from_content(content: str, project_matcher: ProjectMatcher) 
         ignored_keywords = ['task', 'note', 'project', 'tasks', 'notes', 'projects']
         normalized_lower = normalized_project.lower().strip()
         if normalized_lower in ignored_keywords:
-            print(f"  Skipping keyword: '{normalized_project}'")
+            logger.debug(f"  Skipping keyword: '{normalized_project}'")
             continue
         
-        print(f"  Trying word combination: '{potential_project}'")
+        logger.debug(f"  Trying word combination: '{potential_project}'")
         
         # Use fuzzy matching with error handling
         try:
             matched_project = project_matcher.fuzzy_match_project(normalized_project)
-            print(f"  Fuzzy match result: '{matched_project}'")
+            logger.debug(f"  Fuzzy match result: '{matched_project}'")
             if matched_project != "Manual Review Required":
                 return matched_project
         except Exception as e:
-            print(f"  ⚠️ Fuzzy matching failed: {e}")
+            logger.warning(f"  ⚠️ Fuzzy matching failed: {e}")
             continue
     
-    print("  ❌ No project match found")
+    logger.debug("  ❌ No project match found")
     return "Manual Review Required"
 
 def process_single_task(content, parts, manual_review=False, router=None):
@@ -203,7 +213,7 @@ def process_single_task(content, parts, manual_review=False, router=None):
         }
     
     except Exception as e:
-        print(f"Error analyzing single task: {e}")
+        logger.error(f"Error analyzing single task: {e}")
         # Fallback - return original with default icon
         fallback_title = task_content[:60]
         fallback_icon = router.select_icon_for_analysis(fallback_title, project_name, content) if router else "⁉️"
@@ -293,7 +303,7 @@ def process_multiple_tasks(content, parts, task_occurrences, router=None):
             task_obj["icon"] = task_icon
             
         except Exception as e:
-            print(f"Error analyzing task {i+1}: {e}")
+            logger.error(f"Error analyzing task {i+1}: {e}")
             # Keep the basic task object
         
         tasks.append(task_obj)
@@ -343,7 +353,7 @@ def process_note(content, router=None):
         )
         title = response.choices[0].message.content.strip().strip('"')
     except Exception as e:
-        print(f"Error generating title: {e}")
+        logger.error(f"Error generating title: {e}")
         # Fallback to first words
         first_words = note_content.split()[:8]
         title = " ".join(first_words) + "..."
@@ -412,7 +422,7 @@ def process_unclear_content(content):
             return result
             
         except Exception as e:
-            print(f"Error analyzing transcript: {e}")
+            logger.error(f"Error analyzing transcript: {e}")
             # Fallback - return original
             return {
                 "category": "task",
@@ -442,8 +452,8 @@ def process_transcript_file(file_path):
         with open(file_path, 'r', encoding='utf-8') as file:
             transcript_text = file.read()
         
-        print(f"Processing: {file_path.name}")
-        print(f"Content preview: {transcript_text[:100]}...")
+        logger.info(f"Processing: {file_path.name}")
+        logger.debug(f"Content preview: {transcript_text[:100]}...")
         
         # Analyze with AI
         analysis = analyze_transcript(transcript_text)
@@ -452,11 +462,11 @@ def process_transcript_file(file_path):
             # Handle both single analysis and multiple tasks
             if isinstance(analysis, list):
                 # Multiple tasks
-                print(f"✅ Processing {len(analysis)} tasks from transcript")
+                logger.info(f"✅ Processing {len(analysis)} tasks from transcript")
                 for i, task in enumerate(analysis, 1):
-                    print(f"   Task {i}: {task.get('title', 'No title')} → {task.get('project', 'No project')}")
+                    logger.info(f"   Task {i}: {task.get('title', 'No title')} → {task.get('project', 'No project')}")
                     if task.get('manual_review', False):
-                        print(f"   ⚠️ Task {i} marked for manual review")
+                        logger.warning(f"   ⚠️ Task {i} marked for manual review")
                 
                 # 🚀 AUTO-ROUTE TO NOTION! 🚀
                 try:
@@ -464,21 +474,21 @@ def process_transcript_file(file_path):
                     manager = AdvancedNotionManager()
                     result = manager.route_content(analysis)
                     if result and result["summary"]["successful"] > 0:
-                        print(f"🎉 Successfully routed {result['summary']['successful']}/{result['summary']['total']} to Notion!")
+                        logger.info(f"🎉 Successfully routed {result['summary']['successful']}/{result['summary']['total']} to Notion!")
                         
                         # 🆕 PHASE 1: CAPTURE NOTION ENTRY IDS FOR MULTIPLE ANALYSES
                         if isinstance(analysis, list) and result["successful"]:
                             for i, task in enumerate(analysis):
                                 if i < len(result["successful"]):
                                     task["notion_entry_id"] = result["successful"][i].get("id")
-                                    print(f"   📝 Task {i+1} Notion ID: {task['notion_entry_id'][:8]}...")
+                                    logger.info(f"   📝 Task {i+1} Notion ID: {task['notion_entry_id'][:8]}...")
                         
                         if result["summary"]["failed"] > 0:
-                            print(f"⚠️ {result['summary']['failed']} tasks failed to route")
+                            logger.warning(f"⚠️ {result['summary']['failed']} tasks failed to route")
                     else:
-                        print("❌ Failed to create Notion content")
+                        logger.error("❌ Failed to create Notion content")
                 except Exception as e:
-                    print(f"⚠️ Notion routing failed: {e}")
+                    logger.warning(f"⚠️ Notion routing failed: {e}")
                 
                 # 🆕 SAVE ENHANCED ANALYSES WITH NOTION IDS
                 output_file = Path("processed") / f"{file_path.stem}_processed.json"
@@ -489,17 +499,17 @@ def process_transcript_file(file_path):
                         "timestamp": str(Path(file_path).stat().st_mtime)
                     }, f, indent=2)
                 
-                print(f"✅ Saved {len(analysis)} enhanced analyses to: {output_file}")
+                logger.info(f"✅ Saved {len(analysis)} enhanced analyses to: {output_file}")
                 
                 return analysis
                 
             else:
                 # Single analysis (task or note)
-                print(f"✅ Category: {analysis['category']}")
-                print(f"✅ Title: {analysis['title']}")
-                print(f"✅ Confidence: {analysis['confidence']}")
+                logger.info(f"✅ Category: {analysis['category']}")
+                logger.info(f"✅ Title: {analysis['title']}")
+                logger.info(f"✅ Confidence: {analysis['confidence']}")
                 if analysis.get('manual_review', False):
-                    print("⚠️ Marked for manual review")
+                    logger.warning("⚠️ Marked for manual review")
                 
                 # 🚀 AUTO-ROUTE TO NOTION! 🚀
                 try:
@@ -507,19 +517,19 @@ def process_transcript_file(file_path):
                     manager = AdvancedNotionManager()
                     result = manager.route_content(analysis)
                     if result and result["summary"]["successful"] > 0:
-                        print(f"🎉 Successfully routed {result['summary']['successful']}/{result['summary']['total']} to Notion!")
+                        logger.info(f"🎉 Successfully routed {result['summary']['successful']}/{result['summary']['total']} to Notion!")
                         
                         # 🆕 PHASE 1: CAPTURE NOTION ENTRY ID FOR SINGLE ANALYSIS
                         if result["successful"]:
                             analysis["notion_entry_id"] = result["successful"][0].get("id")
-                            print(f"   📝 Notion ID: {analysis['notion_entry_id'][:8]}...")
+                            logger.info(f"   📝 Notion ID: {analysis['notion_entry_id'][:8]}...")
                         
                         if result["summary"]["failed"] > 0:
-                            print(f"⚠️ {result['summary']['failed']} tasks failed to route")
+                            logger.warning(f"⚠️ {result['summary']['failed']} tasks failed to route")
                     else:
-                        print("❌ Failed to create Notion content")
+                        logger.error("❌ Failed to create Notion content")
                 except Exception as e:
-                    print(f"⚠️ Notion routing failed: {e}")
+                    logger.warning(f"⚠️ Notion routing failed: {e}")
                 
                 # 🆕 SAVE ENHANCED ANALYSIS WITH NOTION ID
                 output_file = Path("processed") / f"{file_path.stem}_processed.json"
@@ -530,15 +540,15 @@ def process_transcript_file(file_path):
                         "timestamp": str(Path(file_path).stat().st_mtime)
                     }, f, indent=2)
                 
-                print(f"✅ Saved enhanced analysis to: {output_file}")
+                logger.info(f"✅ Saved enhanced analysis to: {output_file}")
                 
                 return analysis
         else:
-            print("❌ Failed to analyze transcript")
+            logger.error("❌ Failed to analyze transcript")
             return None
             
     except Exception as e:
-        print(f"Error processing {file_path}: {e}")
+        logger.error(f"Error processing {file_path}: {e}")
         return None
 
 def main():
@@ -548,28 +558,28 @@ def main():
     transcript_folder = Path("transcripts")
     
     if not transcript_folder.exists():
-        print("Creating transcripts folder...")
+        logger.info("Creating transcripts folder...")
         transcript_folder.mkdir()
-        print("📁 Please copy your .txt files from MacWhisper to the 'transcripts' folder")
+        logger.info("📁 Please copy your .txt files from MacWhisper to the 'transcripts' folder")
         return
     
     # Find all .txt files
     txt_files = list(transcript_folder.glob("*.txt"))
     
     if not txt_files:
-        print("No .txt files found in transcripts folder")
-        print("📁 Please copy your .txt files from MacWhisper to the 'transcripts' folder")
+        logger.warning("No .txt files found in transcripts folder")
+        logger.info("📁 Please copy your .txt files from MacWhisper to the 'transcripts' folder")
         return
     
-    print(f"Found {len(txt_files)} transcript files")
+    logger.info(f"Found {len(txt_files)} transcript files")
     
     # Process each file
     for txt_file in txt_files:
-        print(f"\n{'='*50}")
+        logger.info(f"\n{'='*50}")
         analysis = process_transcript_file(txt_file)
         if analysis:
-            print("🎉 Successfully processed!")
-        print(f"{'='*50}")
+            logger.info("🎉 Successfully processed!")
+        logger.info(f"{'='*50}")
 
 if __name__ == "__main__":
     main()
