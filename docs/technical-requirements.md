@@ -1,5 +1,9 @@
 # AI Assistant Transcript Processing System - Technical Requirements
 
+**Last Updated**: October 6, 2025  
+**System Status**: ✅ Production (Configuration System Active)  
+**Current Success Rate**: 85% (6/7 files in latest test)
+
 ## 1. System Overview
 
 ### 1.1 Purpose
@@ -10,9 +14,11 @@ The AI Assistant Transcript Processing System is designed to automatically proce
 - **Processing**: AI-powered analysis and categorization with flexible project extraction
 - **Output**: Structured JSON files and Notion database entries with project assignments and emoji icons
 - **Integration**: OpenAI GPT-3.5-turbo for AI analysis, OpenAI Whisper for transcription, Notion API for database management
+- **Configuration**: YAML-based configuration system with environment variable overrides
 - **Workflow Options**:
   - **Manual**: MacWhisper → .txt → AI Analysis → Notion
   - **Automated**: USB Recorder → Orchestrator → Whisper → AI Analysis → Notion → Archive
+- **Production Status**: Live system with configuration-driven architecture (October 2025)
 
 ## 2. Functional Requirements
 
@@ -92,13 +98,15 @@ The AI Assistant Transcript Processing System is designed to automatically proce
 - **AI Review Needed**: When project detection fails
 - **Manual Review**: When fuzzy matching confidence is below threshold
 
-### 2.5 Smart Icon Assignment System
+### 2.5 Smart Icon Assignment System ✅ (Enhanced Oct 2025)
 - **Icon Selection**: AI-powered emoji assignment based on content keywords
 - **Matching Logic**: Priority-based keyword matching (longer phrases first)
 - **Content Source**: Uses original transcript content for keyword matching (not just AI-generated titles)
 - **Fallback**: Default to ⁉️ if no keywords match
-- **Configuration**: External JSON file for maintainable icon mappings
+- **Configuration**: External JSON file for maintainable icon mappings (41 patterns, was 30)
+- **Enhancement**: Data-driven patterns based on 30 real Notion entries
 - **Integration**: Page-level emoji icons in Notion (not database properties)
+- **Performance**: 50% match rate (3/6 files), +17% improvement over baseline
 
 ### 2.6 Voice Recording Orchestrator
 - **USB Integration**: Automatic detection of Sony IC Recorder at `/Volumes/IC RECORDER/REC_FILE/FOLDER01`
@@ -123,6 +131,7 @@ openai==1.100.2
 notion-client==2.4.0
 python-dotenv==1.1.1
 psutil==5.9.0
+pyyaml>=6.0          # ✅ NEW: YAML configuration support
 pathlib (built-in)
 json (built-in)
 datetime (built-in)
@@ -148,23 +157,39 @@ shutil (built-in)
 ```
 ai-assistant/
 ├── scripts/
-│   ├── process_transcripts.py      # Main processing script with flexible extraction
-│   ├── intelligent_router.py       # AI routing logic with icon selection
-│   ├── notion_manager.py          # Notion integration with project assignment and icons
-│   ├── project_matcher.py         # Dynamic project loading and fuzzy matching
-│   ├── icon_manager.py            # AI-powered emoji selection
-│   ├── recording_orchestrator.py  # Complete USB recorder workflow
-│   └── test_*.py                  # Test scripts
-├── config/
-│   └── icon_mapping.json         # Configurable icon keyword mappings
+│   ├── core/                      # ✅ NEW: Shared infrastructure
+│   │   ├── __init__.py
+│   │   └── config_loader.py       # ✅ Centralized YAML configuration management
+│   ├── process_transcripts.py    # Main processing script with flexible extraction
+│   ├── intelligent_router.py     # AI routing logic with config integration
+│   ├── notion_manager.py         # Notion integration with project assignment and icons
+│   ├── project_matcher.py        # Dynamic project loading and fuzzy matching
+│   ├── icon_manager.py           # AI-powered emoji selection
+│   ├── recording_orchestrator.py # Complete USB recorder workflow
+│   └── cleanup_test_entries.py   # Utility scripts
+├── config/                        # ✅ ENHANCED: Configuration directory
+│   ├── settings.yaml              # ✅ Main configuration (paths, OpenAI, Notion, features)
+│   ├── projects.yaml              # ✅ Project contexts + training examples
+│   ├── duration_rules.yaml        # ✅ Duration estimation rules
+│   ├── tag_patterns.yaml          # ✅ Tag detection patterns
+│   ├── icon_mapping.json          # Enhanced icon keyword mappings (41 patterns)
+│   ├── icon_mapping_enhanced.json # Notion-based enhanced patterns
+│   └── prompts/                   # ✅ AI prompt templates
+│       └── project_detection.txt  # ✅ Project detection prompt template
 ├── transcripts/                   # Input transcript files
 ├── processed/                     # Output JSON files
 ├── .cache/                        # Project cache and orchestrator state
 ├── Failed/                        # Failed transcriptions and processing errors
 ├── Recording Archives/            # Organized .mp3 archives with 7-day retention
-├── docs/                         # Documentation
-├── requirements.txt              # Python dependencies
-└── README.md                     # Project overview
+├── docs/                          # Documentation
+│   ├── technical-requirements.md  # This document
+│   ├── project-state.md          # Project status and history
+│   ├── refactoring-plan.md       # Comprehensive refactoring roadmap
+│   ├── milestone-1.1-completion.md # ✅ Config system completion report
+│   ├── real-world-test-results.md  # ✅ Production testing results
+│   └── icon-mapping-analysis.md    # ✅ Icon enhancement analysis
+├── requirements.txt               # Python dependencies
+└── README.md                      # Project overview
 ```
 
 ### 3.4 API Requirements
@@ -354,6 +379,8 @@ ai-assistant/
 - **Project Caching**: 60-minute cache reduces API calls
 - **Transcription**: 3-4 files in parallel with Whisper, 50% CPU limit
 - **Orchestrator**: Complete workflow in 5-15 minutes depending on file count
+- **Live Performance**: Successfully processed 22 files in ~15 minutes (1.47 files/minute)
+- **Success Rate**: 73% processing success rate on real-world transcriptions
 
 ### 6.2 Resource Usage
 - **Memory**: Minimal memory footprint (<100MB)
@@ -427,9 +454,24 @@ ai-assistant/
 - **Test Data**: Maintain test files for regression testing
 - **Cache Files**: Backup project cache for recovery
 
-## 10. Future Enhancements
+## 10. Architecture & Refactoring
 
-### 10.1 Planned Features
+### 10.1 Configuration System ✅ (Implemented Oct 2025)
+- **YAML-based Configuration**: Centralized settings in `config/*.yaml`
+- **Environment Override**: Support for environment variable overrides
+- **Validation**: Sensible defaults with required key validation
+- **Prompt Templates**: External AI prompt files in `config/prompts/`
+- **Status**: Production-ready, validated with 6 real recordings
+- **Benefits**: 10.5-minute enhancement cycle, zero code changes for config updates
+
+### 10.2 Current Refactoring Status
+- **Phase 1**: Foundation (In Progress)
+  - ✅ Milestone 1.1: Configuration System (COMPLETED)
+  - 🔄 Milestone 1.2: Shared Utilities (Next)
+  - 🔄 Milestone 1.3: CLI Foundation (Planned)
+- **Documentation**: See `docs/refactoring-plan.md` for detailed roadmap
+
+### 10.3 Future Enhancements
 - **Auto Cleanup Scheduling**: Automated 7-day archive cleanup
 - **Multi-language Support**: Process transcripts in different languages
 - **Advanced Categorization**: More sophisticated content classification
@@ -441,15 +483,45 @@ ai-assistant/
 - **Email Notifications**: Success/failure alerts for completed sessions
 - **Performance Analytics**: Track processing times and resource usage
 
-### 10.2 Potential Integrations
+### 10.4 Potential Integrations
 - **Calendar Integration**: Auto-schedule tasks based on due dates
 - **Email Integration**: Send notifications for important tasks
 - **Slack Integration**: Post updates to team channels
 - **Analytics Dashboard**: Track productivity and task completion
 
-### 10.3 Scalability Improvements
+### 10.5 Scalability Improvements
 - **Database Storage**: Store processed data in local database
 - **Caching**: Cache AI analysis results for similar content
 - **Queue System**: Process transcripts asynchronously
 - **Microservices**: Split functionality into separate services
 - **Machine Learning**: Train custom models for project detection
+
+---
+
+## 11. Recent Updates & Changes
+
+### October 6, 2025 - Configuration System & Icon Enhancement
+- ✅ Implemented centralized YAML configuration system
+- ✅ Created 5 configuration files (settings, projects, tag_patterns, duration_rules, prompts)
+- ✅ Enhanced icon mapping with 41 patterns (was 30)
+- ✅ Integrated config system into `intelligent_router.py` with fallback
+- ✅ Production validated with 6 real recordings (85% success rate)
+- ✅ Demonstrated 10.5-minute enhancement cycle
+- ✅ Zero breaking changes, backward compatibility maintained
+
+### Key Improvements
+- **Configuration Management**: Externalized 40+ hardcoded values to YAML
+- **Icon Matching**: +17% improvement in match rate with data-driven patterns
+- **System Stability**: 100% config system stability during production testing
+- **Development Speed**: Quick iteration without code changes
+
+### Documentation Added
+- `docs/milestone-1.1-completion.md` - Detailed config system implementation
+- `docs/real-world-test-results.md` - Production testing results
+- `docs/icon-mapping-analysis.md` - Icon enhancement analysis
+- `docs/refactoring-plan.md` - Comprehensive refactoring roadmap
+
+---
+
+*End of Technical Requirements Document*  
+*Last Updated: October 6, 2025*
