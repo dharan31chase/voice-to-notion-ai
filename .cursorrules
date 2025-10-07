@@ -79,10 +79,19 @@ Auto-update these files with all changes:
 ## Session Management
 
 ### Close Session
-When user says "close session":
-- Auto-commit all changes to Git with session summary
-- Auto-push to remote (including sensitive data exclusions)
-- Generate final session report
+When user says "close session" or "end session":
+1. **Update Documentation** (First Step):
+   - Update `docs/refactoring-plan.md` with milestone progress
+   - Update `docs/project-state.md` with new features/decisions
+   - Update `docs/technical-requirements.md` with architecture changes
+   - Update `.cursorrules` if workflow improvements identified
+2. **Git Commit & Push**:
+   - Auto-commit all changes to Git with session summary
+   - Auto-push to remote (excluding sensitive data)
+3. **Generate Session Report**:
+   - Final session summary with accomplishments
+   - Success rate metrics (if applicable)
+   - Next steps identified
 
 ### New Session Startup
 Brief, high-signal summary:

@@ -1,7 +1,9 @@
 # Voice-to-Notion AI Assistant - Project State & Decisions
 
-## Current Status (Day 7 Complete - September 8, 2025)
+## Current Status (Milestone 1.2 Complete - October 7, 2025)
 - ✅ **Complete automation pipeline:** Voice → AI Analysis → Organized Notion PARA content
+- ✅ **Configuration System:** YAML-based config with environment variable overrides (Milestone 1.1)
+- ✅ **Shared Utilities:** Centralized OpenAI client, file utils, unified logging (Milestone 1.2)
 - ✅ **Smart project detection:** 90%+ accuracy with few-shot learning
 - ✅ **Content preservation:** Full transcript preservation for long-form content (>800 words)
 - ✅ **Real-world tested:** Validated with actual voice recordings and edge cases
@@ -9,16 +11,16 @@
 - ✅ **Flexible project extraction:** 92% success rate with new pattern matching system
 - ✅ **Dynamic project loading:** Real-time project fetching from Notion with caching
 - ✅ **Enhanced fuzzy matching:** Alias support and confidence-based matching
-- ✅ **Smart Icon System:** AI-powered emoji assignment based on content keywords
+- ✅ **Smart Icon System:** AI-powered emoji assignment based on 43 content patterns
 - ✅ **Voice Recording Orchestrator:** Complete 5-step workflow for USB recorder integration
 - ✅ **Parallel Transcription:** OpenAI Whisper with CPU monitoring and batch processing
 - ✅ **Intelligent Archiving:** Date-based organization with 7-day retention and safety checks
 - ✅ **Duplicate Handling:** Smart detection and cleanup of previously processed recordings
 - ✅ **Icon Matching Fix:** Content-based icon selection using original transcript text
 - ✅ **Production Ready:** Comprehensive error handling and state management
-- ✅ **Live Processing Success:** Successfully processed 16/22 transcripts (73% success rate) in latest run
-- ✅ **Notion Integration Verified:** 100% success rate on Notion entry creation and verification
-- ✅ **Archive Management:** Complete file archiving and cleanup with session tracking
+- ✅ **Unified Logging:** All scripts log to `logs/ai-assistant.log` with auto-rotation
+- ✅ **Retry Logic:** Automatic retry with exponential backoff for API calls
+- ✅ **Code Quality:** Reduced codebase by 7,160 lines (87% reduction in duplication)
 
 ## Major Architecture Decisions Made
 
@@ -188,6 +190,13 @@
 **Solution:** Detect duplicates, skip AI processing, but still cleanup source files
 **Principle:** User errors should not break the system workflow
 
+### 13. Shared Utilities for Code Quality (Milestone 1.2 - Oct 7)
+**Decision:** Extract duplicated code into centralized utilities vs. keeping scattered
+**Rationale:** DRY principle, single source of truth for common operations, easier maintenance
+**Implementation:** Created `core/openai_client.py`, `core/file_utils.py`, `core/logging_utils.py`
+**Result:** 87% code reduction (7,160 lines), automatic retry logic, unified logging, zero breaking changes
+**Principle:** Eliminate duplication early to prevent technical debt
+
 ## Current Challenges Solved
 1. ✅ **Project Detection:** 90%+ accuracy with few-shot learning
 2. ✅ **Content Preservation:** Full transcript preservation for insights
@@ -207,6 +216,9 @@
 16. ✅ **Icon Matching:** Content-based icon selection using original transcript text
 17. ✅ **Duplicate Handling:** Smart detection and cleanup of previously processed files
 18. ✅ **Error Recovery:** Robust handling of corrupted files and processing failures
+19. ✅ **Code Duplication:** Centralized utilities eliminate 7,160 lines of duplicate code (Milestone 1.2)
+20. ✅ **Retry Logic:** Automatic retry with exponential backoff for API reliability (Milestone 1.2)
+21. ✅ **Unified Logging:** All scripts log to single file with auto-rotation (Milestone 1.2)
 
 ## Remaining Technical Debt (Week 3 Roadmap)
 
@@ -292,4 +304,4 @@
 - **Error Recovery:** Robust handling of corrupted files and JSON serialization issues
 
 ---
-*Last Updated: September 8, 2025 - Day 7 Complete - Live Production Run with 16/22 Successful Transcriptions and Complete Workflow Validation*
+*Last Updated: October 7, 2025 - Milestone 1.2 Complete - Shared Utilities with 87% Code Reduction and Unified Logging*
