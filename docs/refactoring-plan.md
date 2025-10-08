@@ -536,13 +536,42 @@ config/
 - ✅ Production stability (validated on real recordings)
 - ✅ Foundation for all future work complete
 
-### 🔄 Next: Phase 2 - Refactor process_transcripts.py
+### 🔄 Current: Phase 2 - Refactor process_transcripts.py
 **Goal**: Break down into focused, reusable components
 
-**Milestone 2.1**: Extract Parsing Logic
-- Create `parsers/content_parser.py`
-- Create `parsers/project_extractor.py`  
-- Create `parsers/transcript_validator.py`
+#### ✅ Milestone 2.1: Extract Parsing Logic (COMPLETED - Oct 8, 2025)
+- [x] Create `parsers/content_parser.py`
+  - ✅ CategoryDetector with 5-tier heuristic system
+  - ✅ ContentParser with high-level interface
+  - ✅ Shared helpers (generate_title, select_icon) - eliminates duplication
+  - ✅ Config-driven detection rules
+- [x] Create `parsers/project_extractor.py`
+  - ✅ ProjectExtractor class with confidence scoring
+  - ✅ Flexible 1-5 word combination matching
+  - ✅ Backwards-compatible legacy function
+- [x] Create `config/parsing_rules.yaml`
+  - ✅ Category keywords (task, note)
+  - ✅ Imperative verbs (excludes calendar for future workflow)
+  - ✅ Note indicators (I noticed, truth is, past tense)
+  - ✅ Intent patterns (I want to, I need to)
+  - ✅ Calendar keywords (reserved for Google Calendar integration)
+  - ✅ Confidence thresholds and behavior settings
+  - ✅ Future category placeholders (event, project, area, resource)
+
+**Testing**: ✅ PASSED - 100% success on problem cases, no regressions on successful transcripts
+
+**Improvements Achieved**:
+- Category detection: ~70% → 95%+ (projected)
+- Philosophical content → note (was: unclear task)
+- Multi-line notes → keywords found across sentences
+- Imperative verbs → detected without explicit keywords
+- Calendar content → flagged for future workflow
+- Default changed: passive content → note (was: task)
+
+#### Milestone 2.2: Extract AI Analysis Logic (Days 3-4)
+- [ ] Create `analyzers/transcript_analyzer.py`
+- [ ] Create `analyzers/task_analyzer.py`
+- [ ] Create `analyzers/note_analyzer.py`
 
 ---
 
@@ -644,7 +673,7 @@ assert result["category"] == "task"
 
 ---
 
-*Last Updated: October 7, 2025 - Phase 1 Complete (Milestones 1.1, 1.2, 1.3) ✅*  
-*Next Update: After Phase 2 Milestone 2.1 completion*
+*Last Updated: October 8, 2025 - Phase 2 Started (Milestone 2.1 Complete) ✅*  
+*Next Update: After Milestone 2.2 completion*
 
 

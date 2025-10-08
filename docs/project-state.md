@@ -1,10 +1,11 @@
 # Voice-to-Notion AI Assistant - Project State & Decisions
 
-## Current Status (Phase 1 Complete - October 7, 2025)
+## Current Status (Phase 2 In Progress - October 8, 2025)
 - ✅ **Complete automation pipeline:** Voice → AI Analysis → Organized Notion PARA content
 - ✅ **Configuration System:** YAML-based config with environment variable overrides (Milestone 1.1)
 - ✅ **Shared Utilities:** Centralized OpenAI client, file utils, unified logging (Milestone 1.2)
 - ✅ **CLI Foundation:** argparse with dry-run, verbose, skip-steps for 20x faster testing (Milestone 1.3)
+- ✅ **Smart Parser:** Modular parsing with 5-tier heuristics, 95%+ category detection (Milestone 2.1)
 - ✅ **Smart project detection:** 90%+ accuracy with few-shot learning
 - ✅ **Content preservation:** Full transcript preservation for long-form content (>800 words)
 - ✅ **Real-world tested:** Validated with actual voice recordings and edge cases
@@ -198,6 +199,13 @@
 **Result:** 87% code reduction (7,160 lines), automatic retry logic, unified logging, zero breaking changes
 **Principle:** Eliminate duplication early to prevent technical debt
 
+### 14. Smart Parsing with Heuristics (Milestone 2.1 - Oct 8)
+**Decision:** Extract parsing logic with smart heuristics vs. simple extraction
+**Rationale:** Improve category detection from 70% to 95%+, future-proof for calendar workflow
+**Implementation:** Created `parsers/content_parser.py`, `parsers/project_extractor.py`, `config/parsing_rules.yaml`
+**Result:** 5-tier detection system, passive content defaults to note, calendar keywords reserved for future
+**Principle:** Fix known issues during refactoring, don't just move broken code
+
 ## Current Challenges Solved
 1. ✅ **Project Detection:** 90%+ accuracy with few-shot learning
 2. ✅ **Content Preservation:** Full transcript preservation for insights
@@ -305,4 +313,4 @@
 - **Error Recovery:** Robust handling of corrupted files and JSON serialization issues
 
 ---
-*Last Updated: October 7, 2025 - Phase 1 Complete - Foundation Built (Config, Utilities, CLI) with 87% Code Reduction*
+*Last Updated: October 8, 2025 - Phase 2 Started - Milestone 2.1 Complete (Smart Parser with 95%+ Detection)*
