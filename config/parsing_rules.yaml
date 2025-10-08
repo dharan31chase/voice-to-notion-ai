@@ -151,6 +151,14 @@ future_categories:
 validation:
   minimum_word_count: 3  # Transcripts shorter than this may be invalid
   minimum_char_count: 10  # Minimum characters
+  maximum_word_count: 10000  # Safety limit (sanity check)
+  
+# Content length categorization for preservation logic
+content_length:
+  short_threshold: 800  # Words - below this = full AI analysis
+  long_threshold: 800   # Words - above this = preserve original content
+  # Rationale: Long-form insights (Paul Graham essays) lose value when summarized
+  # Short content gets AI enhancement, long content preserved as-is
   
 # Multi-task detection
 multi_task:

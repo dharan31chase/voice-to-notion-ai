@@ -6,8 +6,9 @@
 - ✅ **Shared Utilities:** Centralized OpenAI client, file utils, unified logging (Milestone 1.2)
 - ✅ **CLI Foundation:** argparse with dry-run, verbose, skip-steps for 20x faster testing (Milestone 1.3)
 - ✅ **Smart Parser:** Modular parsing with 5-tier heuristics, 95%+ category detection (Milestone 2.1)
+- ✅ **Analyzer Architecture:** TaskAnalyzer, NoteAnalyzer with content preservation (Milestone 2.2)
 - ✅ **Smart project detection:** 90%+ accuracy with few-shot learning
-- ✅ **Content preservation:** Full transcript preservation for long-form content (>800 words)
+- ✅ **Content preservation:** Full transcript preservation for long-form content (>800 words - RESTORED)
 - ✅ **Real-world tested:** Validated with actual voice recordings and edge cases
 - ✅ **One-command operation:** `python scripts/process_transcripts.py` does everything
 - ✅ **Flexible project extraction:** 92% success rate with new pattern matching system
@@ -206,6 +207,21 @@
 **Result:** 5-tier detection system, passive content defaults to note, calendar keywords reserved for future
 **Principle:** Fix known issues during refactoring, don't just move broken code
 
+### 15. Analyzer Architecture with Content Preservation (Milestone 2.2 - Oct 8)
+**Decision:** Extract analysis logic into dedicated analyzers (TaskAnalyzer, NoteAnalyzer) with content preservation
+**Rationale:** Separate parsing from analysis, implement documented-but-missing >800 word preservation logic
+**Implementation:**
+  - `TaskAnalyzer`: Handles single/multiple tasks with preservation for long content
+  - `NoteAnalyzer`: Preservation-first approach (notes more valuable in original form)
+  - `TranscriptValidator`: File/content validation before AI processing
+  - Content >800 words: Preserve original, generate title only (no summarization)
+  - Content <800 words: Full AI analysis
+**Result:** 
+  - Removed 352 lines of legacy code (clean break approach)
+  - Zero linter errors, 100% test success rate
+  - Restored missing preservation logic from Day 2 architectural decision
+**Principle:** Notes capture authentic voice and insights that lose value when summarized
+
 ## Current Challenges Solved
 1. ✅ **Project Detection:** 90%+ accuracy with few-shot learning
 2. ✅ **Content Preservation:** Full transcript preservation for insights
@@ -222,12 +238,15 @@
 13. ✅ **Archive Management:** Intelligent file organization with safety validation
 14. ✅ **State Management:** Comprehensive session tracking and error recovery
 15. ✅ **JSON Serialization:** Fixed Path object serialization issues in state files
-16. ✅ **Icon Matching:** Content-based icon selection using original transcript text
-17. ✅ **Duplicate Handling:** Smart detection and cleanup of previously processed files
-18. ✅ **Error Recovery:** Robust handling of corrupted files and processing failures
-19. ✅ **Code Duplication:** Centralized utilities eliminate 7,160 lines of duplicate code (Milestone 1.2)
-20. ✅ **Retry Logic:** Automatic retry with exponential backoff for API reliability (Milestone 1.2)
-21. ✅ **Unified Logging:** All scripts log to single file with auto-rotation (Milestone 1.2)
+16. ✅ **Analyzer Architecture:** Separated parsing from analysis, removed 352 lines of legacy code (Milestone 2.2)
+17. ✅ **Validation:** File/content validation before AI processing prevents wasted API calls (Milestone 2.2)
+18. ✅ **Preserved Long Content:** Implemented missing >800-word preservation from Day 2 decision (Milestone 2.2)
+19. ✅ **Icon Matching:** Content-based icon selection using original transcript text
+20. ✅ **Duplicate Handling:** Smart detection and cleanup of previously processed files
+21. ✅ **Error Recovery:** Robust handling of corrupted files and processing failures
+22. ✅ **Code Duplication:** Centralized utilities eliminate 7,160 lines of duplicate code (Milestone 1.2)
+23. ✅ **Retry Logic:** Automatic retry with exponential backoff for API reliability (Milestone 1.2)
+24. ✅ **Unified Logging:** All scripts log to single file with auto-rotation (Milestone 1.2)
 
 ## Remaining Technical Debt (Week 3 Roadmap)
 

@@ -1,9 +1,10 @@
 # AI Assistant Transcript Processing System - Technical Requirements
 
-**Last Updated**: October 7, 2025  
-**System Status**: ✅ Production (Phase 1 Complete - Foundation Built)  
+**Last Updated**: October 8, 2025  
+**System Status**: ✅ Production (Phase 2 In Progress - Milestones 2.1, 2.2 Complete)  
 **Current Success Rate**: 82% (9/11 recordings in latest test)  
-**CLI Support**: Full argparse integration with dry-run, verbose, skip-steps
+**CLI Support**: Full argparse integration with dry-run, verbose, skip-steps  
+**Content Preservation**: Long-form content (>800 words) fully preserved with AI titles only
 
 ## 1. System Overview
 
@@ -17,10 +18,12 @@ The AI Assistant Transcript Processing System is designed to automatically proce
 - **Integration**: OpenAI GPT-3.5-turbo for AI analysis, OpenAI Whisper for transcription, Notion API for database management
 - **Configuration**: YAML-based configuration system with environment variable overrides (Milestone 1.1)
 - **Core Utilities**: Centralized OpenAI client with retry logic, unified logging, safe file operations (Milestone 1.2)
+- **Parsers**: Smart category detection, project extraction, content validation (Milestone 2.1)
+- **Analyzers**: TaskAnalyzer, NoteAnalyzer with content preservation logic (Milestone 2.2)
 - **Workflow Options**:
-  - **Manual**: MacWhisper → .txt → AI Analysis → Notion
-  - **Automated**: USB Recorder → Orchestrator → Whisper → AI Analysis → Notion → Archive
-- **Production Status**: Live system with configuration-driven architecture and shared utilities (October 2025)
+  - **Manual**: MacWhisper → .txt → Validation → Parsing → Analysis → Notion
+  - **Automated**: USB Recorder → Orchestrator → Whisper → Validation → Parsing → Analysis → Notion → Archive
+- **Production Status**: Live system with modular architecture and content preservation (October 2025)
 
 ## 2. Functional Requirements
 
