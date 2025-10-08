@@ -296,25 +296,15 @@ config/
 
 ---
 
-### 🔧 Phase 2: Refactor `process_transcripts.py` (Week 2)
+### 🔧 Phase 2: Refactor `process_transcripts.py` (Week 2) - IN PROGRESS
 **Goal**: Break down into focused, reusable components
 
-#### Milestone 2.1: Extract Parsing Logic (Days 1-2)
-- [ ] Create `parsers/content_parser.py`
-  - `parse_transcript(content) → Dict[category, parts, metadata]`
-  - Category detection (task/note/unclear)
-  - Content splitting logic
-- [ ] Create `parsers/project_extractor.py`
-  - Move `extract_project_from_content()` function
-  - Make it independent and testable
-- [ ] Create `parsers/transcript_validator.py`
-  - File size validation
-  - Content validation
-  - Format validation
-
-**Testing**: Parser can be imported and used independently
-
-#### Milestone 2.2: Extract AI Analysis Logic (Days 3-4)
+#### Milestone 2.2: Extract AI Analysis Logic + Validation (Days 3-4)
+- [ ] Create `parsers/transcript_validator.py` (DEFERRED from 2.1)
+  - File size validation (minimum bytes, word count)
+  - Content validation (UTF-8 encoding, not empty)
+  - Format validation (readable text, no garbage)
+  - Integration into process_transcripts.py for manual workflow
 - [ ] Create `analyzers/transcript_analyzer.py`
   - Base class for all analyzers
   - Common AI interaction patterns
@@ -325,7 +315,7 @@ config/
   - Move note analysis logic
   - Content preservation logic
 
-**Testing**: Analyzers work independently, can be mocked for testing
+**Testing**: Analyzers work independently, can be mocked for testing. Validator catches bad files before AI processing.
 
 #### Milestone 2.3: Refactor Main Script (Day 5)
 - [ ] Rewrite `process_transcripts.py` as coordinator
@@ -540,23 +530,35 @@ config/
 **Goal**: Break down into focused, reusable components
 
 #### ✅ Milestone 2.1: Extract Parsing Logic (COMPLETED - Oct 8, 2025)
-- [x] Create `parsers/content_parser.py`
-  - ✅ CategoryDetector with 5-tier heuristic system
+
+**What Was Built:**
+- [x] Create `parsers/content_parser.py` (370 lines)
+  - ✅ CategoryDetector with 5-tier heuristic system (ENHANCED beyond original plan)
   - ✅ ContentParser with high-level interface
-  - ✅ Shared helpers (generate_title, select_icon) - eliminates duplication
-  - ✅ Config-driven detection rules
-- [x] Create `parsers/project_extractor.py`
-  - ✅ ProjectExtractor class with confidence scoring
+  - ✅ Shared helpers (generate_title, select_icon) - eliminates duplication (BONUS)
+  - ✅ Config-driven detection rules (BONUS)
+  
+- [x] Create `parsers/project_extractor.py` (180 lines)
+  - ✅ ProjectExtractor class with confidence scoring (ENHANCED - was: simple function move)
   - ✅ Flexible 1-5 word combination matching
+  - ✅ Match quality calculation based on word count
   - ✅ Backwards-compatible legacy function
-- [x] Create `config/parsing_rules.yaml`
-  - ✅ Category keywords (task, note)
-  - ✅ Imperative verbs (excludes calendar for future workflow)
-  - ✅ Note indicators (I noticed, truth is, past tense)
+  
+- [x] Create `config/parsing_rules.yaml` (150 lines - BONUS, not in original plan!)
+  - ✅ Category keywords (task, note) with variations
+  - ✅ Task imperative verbs (excludes calendar for future Google Calendar workflow)
+  - ✅ Note indicators (I noticed, I realized, truth is, past tense verbs)
   - ✅ Intent patterns (I want to, I need to)
   - ✅ Calendar keywords (reserved for Google Calendar integration)
   - ✅ Confidence thresholds and behavior settings
   - ✅ Future category placeholders (event, project, area, resource)
+
+**What Was Deferred:**
+- [ ] `parsers/transcript_validator.py` → Moved to Milestone 2.2
+  - Rationale: Validation is separate concern from category detection
+  - Currently: Only orchestrator validates (automated workflow protected)
+  - Future: Add to process_transcripts.py for manual workflow protection
+  - Effort: 1-2 hours, will build with analyzers
 
 **Testing**: ✅ PASSED - 100% success on problem cases, no regressions on successful transcripts
 
@@ -564,9 +566,10 @@ config/
 - Category detection: ~70% → 95%+ (projected)
 - Philosophical content → note (was: unclear task)
 - Multi-line notes → keywords found across sentences
-- Imperative verbs → detected without explicit keywords
-- Calendar content → flagged for future workflow
+- Imperative verbs → detected without explicit keywords (send, create, fix, etc.)
+- Calendar content → flagged for future Google Calendar workflow
 - Default changed: passive content → note (was: task)
+- Config-driven: Change keywords without code changes
 
 #### Milestone 2.2: Extract AI Analysis Logic (Days 3-4)
 - [ ] Create `analyzers/transcript_analyzer.py`
