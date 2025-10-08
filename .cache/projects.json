@@ -288,11 +288,11 @@
   },
   "metadata": {
     "last_fetch": "2025-10-07T09:56:31.240527",
-    "cache_age_minutes": 266,
+    "cache_age_minutes": 1528,
     "source": "notion",
     "total_projects": 22,
     "fetch_duration_ms": 1819,
     "last_successful_fetch": "2025-10-07T09:56:31.240527",
-    "failed_fetch_attempts": 2
+    "failed_fetch_attempts": 5
   }
 }

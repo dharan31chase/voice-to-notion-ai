@@ -1,0 +1,160 @@
+# Parsing Rules Configuration
+# Controls category detection, heuristics, and confidence thresholds
+
+category_detection:
+  # Default behavior for unclear content
+  # Changed from "task" to "note" - passive/reflective content defaults to notes
+  default_category: "note"
+  default_confidence: 0.5
+  
+  # Tier 1: Explicit keywords (confidence: 0.9)
+  # These trigger immediate categorization
+  task_keywords:
+    - "task"
+    - "tasks"
+    - "to-do"
+    - "todo"
+    - "action item"
+    - "reminder"
+  
+  note_keywords:
+    - "note"
+    - "notes"
+    - "insight"
+    - "insights"
+    - "reflection"
+    - "learning"
+    - "idea"
+    - "takeaway"
+    - "observation"
+  
+  # Tier 2: Task imperative verbs (confidence: 0.8)
+  # Verbs at start or anywhere in text that indicate action items
+  # EXCLUDES calendar-related verbs (reserved for future calendar workflow)
+  task_imperative_verbs:
+    - "fix"
+    - "repair"
+    - "update"
+    - "change"
+    - "modify"
+    - "make"
+    - "create"
+    - "build"
+    - "develop"
+    - "design"
+    - "send"
+    - "email"
+    - "call"
+    - "text"
+    - "message"
+    - "contact"
+    - "reach out"
+    - "review"
+    - "check"
+    - "verify"
+    - "validate"
+    - "confirm"
+    - "learn"
+    - "research"
+    - "study"
+    - "investigate"
+    - "explore"
+    # NOTE: "block", "schedule", "book", "set" intentionally excluded
+    # These are reserved for future Google Calendar integration
+  
+  # Tier 3: Note indicators (confidence: 0.75)
+  # Patterns that suggest reflective/passive content
+  note_indicators:
+    - "I noticed"
+    - "I realized"
+    - "I thought"
+    - "I felt"
+    - "interesting that"
+    - "what if"
+    - "consider"
+    - "truth is"
+    - "reflection:"
+    - "insight:"
+    - "key takeaway"
+    # Past tense verbs suggesting reflection
+    - "was"
+    - "were"
+    - "had"
+    - "seemed"
+  
+  # Tier 4: Intent patterns (confidence: 0.75)
+  # Phrases indicating intention to act
+  task_intent_patterns:
+    - "I want to"
+    - "I need to"
+    - "I should"
+    - "I have to"
+    - "I must"
+    - "need to"
+    - "should"
+    - "have to"
+    - "must"
+  
+  # Tier 5: Calendar/scheduling keywords (confidence: 0.7, manual review)
+  # Reserved for future Google Calendar integration
+  # Currently routes to task with manual review flag
+  calendar_keywords:
+    - "block"
+    - "schedule"
+    - "book"
+    - "set a meeting"
+    - "set a calendar"
+    - "calendar"
+    - "appointment"
+    - "meeting"
+    - "booking"
+  
+  # Confidence thresholds
+  thresholds:
+    manual_review: 0.7  # Below this = requires manual review
+    high_confidence: 0.8  # Above this = very confident
+    
+  # Detection behavior
+  behavior:
+    check_entire_text: true  # Check full text, not just last sentence
+    case_insensitive: true   # Ignore case when matching
+    multiline_mode: true     # Treat multi-line as one block
+
+# Future category workflows (not implemented yet)
+# These are placeholders for upcoming integrations
+future_categories:
+  event:
+    target_system: "google_calendar"
+    keywords: ["calendar", "schedule", "meeting", "appointment", "block", "book"]
+    status: "planned"
+    description: "Calendar events and scheduling - will integrate with Google Calendar API"
+  
+  project:
+    target_system: "notion_projects"
+    keywords: ["new project", "start project", "create project"]
+    status: "planned"
+    description: "Project creation requests - will create in Notion Projects database"
+  
+  area:
+    target_system: "notion_areas"
+    keywords: ["new area", "area"]
+    status: "planned"
+    description: "Area-level content - will route to Notion Areas database"
+  
+  resource:
+    target_system: "notion_resources"
+    keywords: ["resource", "reference", "documentation"]
+    status: "planned"
+    description: "Reference material - will route to Notion Resources database"
+
+# Validation rules
+validation:
+  minimum_word_count: 3  # Transcripts shorter than this may be invalid
+  minimum_char_count: 10  # Minimum characters
+  
+# Multi-task detection
+multi_task:
+  enabled: true  # Support multiple tasks in one transcript
+  separator_pattern: "task"  # Pattern that separates tasks
+  max_tasks_per_transcript: 10  # Safety limit
+

@@ -18,58 +18,51 @@ if str(parent_dir) not in sys.path:
 from core.openai_client import get_openai_client
 from core.logging_utils import get_logger
 
+# Import new parsers
+from parsers.content_parser import ContentParser, CategoryDetector
+from parsers.project_extractor import ProjectExtractor
+
 # Initialize logger and OpenAI client
 logger = get_logger(__name__)
 client = get_openai_client()
 
+# Initialize parser (for improved category detection)
+content_parser = ContentParser()
+
 def analyze_transcript(transcript_text):
-    """Enhanced category detection with robust parsing for new format"""
+    """
+    Enhanced category detection using smart heuristics.
     
-    # Clean and normalize the text
+    Now uses ContentParser for improved accuracy:
+    - Tier 1: Explicit keywords (task, note) - 90% confidence
+    - Tier 2: Imperative verbs (fix, make, create) - 80% confidence
+    - Tier 3: Note indicators (I noticed, was, truth is) - 75% confidence
+    - Tier 4: Intent patterns (I want to, I need to) - 75% confidence
+    - Tier 5: Calendar keywords (block, schedule) - 70% confidence, manual review
+    - Default: Note (passive content) - 50% confidence, manual review
+    """
+    # Clean content
     content = transcript_text.strip()
-    content_lower = content.lower()
     
-    # Look for category indicators in the last sentence AND check for alternative formats
-    sentences = content.split('.')
-    last_sentence = sentences[-1].strip() if sentences else ""
+    # Use new smart category detector
+    detection = content_parser.parse(content)
+    category = detection["category"]
+    confidence = detection["confidence_score"]
+    manual_review = detection["manual_review"]
     
-    # Check for Task (multiple or single) - look in last sentence OR anywhere if it's the only occurrence
-    task_occurrences = content_lower.count('task')
-    if 'task' in last_sentence.lower() or (task_occurrences == 1 and 'task' in content_lower):
+    logger.debug(f"Smart detection: {category} (confidence: {confidence:.2f}, review: {manual_review})")
+    
+    # Route to appropriate processor based on detected category
+    if category == "task":
         return process_tasks(content)
-    
-    # Check for Note - look in last sentence OR anywhere if it's the only occurrence  
-    note_occurrences = content_lower.count('note')
-    if 'note' in last_sentence.lower() or (note_occurrences == 1 and 'note' in content_lower):
+    elif category == "note":
         # Initialize router for icon selection
         from intelligent_router import IntelligentRouter
         router = IntelligentRouter()
         return process_note(content, router=router)
-    
-    # CRITICAL FIX: Check for alternative format where task/note comes before project name
-    # Look for project names in last 1-5 words, then check for task/note before that
-    words = content.split()
-    if len(words) >= 3:
-        # Check last 1-5 words for potential project names
-        for i in range(1, min(6, len(words))):
-            potential_project = ' '.join(words[-i:])
-            # Look for task/note before this potential project
-            before_project = ' '.join(words[:-i])
-            if 'task' in before_project.lower():
-                return process_tasks(content)
-            elif 'note' in before_project.lower():
-                # Initialize router for icon selection
-                from intelligent_router import IntelligentRouter
-                router = IntelligentRouter()
-                return process_note(content, router=router)
-    
-    # Default to task with manual review tag if unclear
-    # Check if this looks like unclear content (no clear task/note indicators)
-    words = content.split()
-    if len(words) > 10:  # Long content without clear indicators
-        return process_unclear_content(content)
     else:
-        # For shorter content, try to process as task but with manual review
+        # Future: Handle other categories (event, project, etc.)
+        # For now, default to task with manual review
         return process_single_task(content, content.split('.'), manual_review=True)
 
 def process_tasks(content):
