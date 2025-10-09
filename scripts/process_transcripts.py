@@ -63,8 +63,8 @@ def analyze_transcript(transcript_text):
     logger.debug(f"Smart detection: {category} (confidence: {confidence:.2f}, review: {manual_review})")
     
     # Initialize router for analyzers
-        from intelligent_router import IntelligentRouter
-        router = IntelligentRouter()
+    from intelligent_router import IntelligentRouter
+    router = IntelligentRouter()
     
     # Initialize analyzers with router
     global task_analyzer, note_analyzer
