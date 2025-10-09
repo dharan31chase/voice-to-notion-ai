@@ -45,6 +45,17 @@ processing:
   parallel_transcription_workers: 4
   cpu_usage_limit_percent: 50
 
+# Whisper Transcription Settings
+whisper:
+  model: "large-v3"  # Options: tiny, base, small, medium, large, large-v2, large-v3, turbo
+  language: "en"     # Language code (en, es, fr, etc.)
+  output_format: "txt"  # Output format
+  # Model comparison:
+  # - tiny/base/small: Fast but less accurate
+  # - medium: Balanced speed and accuracy
+  # - large/large-v2/large-v3: Best accuracy, slower (~4x real-time)
+  # - turbo: Newest, optimized for speed with good accuracy
+
 # Archive Settings
 archive:
   retention_days: 7

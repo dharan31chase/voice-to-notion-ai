@@ -675,13 +675,18 @@ class RecordingOrchestrator:
             output_path = self.transcripts_folder / output_name
             
             # Whisper command
+            # Get Whisper settings from config
+            whisper_model = self.config.get("whisper.model", "small")
+            whisper_language = self.config.get("whisper.language", "en")
+            whisper_output_format = self.config.get("whisper.output_format", "txt")
+            
             cmd = [
                 'whisper',
                 str(file_path),
-                '--model', 'small',
-                '--language', 'en',
+                '--model', whisper_model,
+                '--language', whisper_language,
                 '--output_dir', str(self.transcripts_folder),
-                '--output_format', 'txt'
+                '--output_format', whisper_output_format
             ]
             
             logger.info(f"🎙️ Transcribing {file_path.name} (Batch {batch_num}, File {file_num})")
@@ -790,7 +795,11 @@ class RecordingOrchestrator:
             successful_transcripts = []
             failed_files = []
             
-            logger.info(f"🤖 Initializing Whisper (small model, English)")
+            # Get Whisper model from config for logging
+            whisper_model = self.config.get("whisper.model", "small")
+            whisper_language = self.config.get("whisper.language", "en")
+            
+            logger.info(f"🤖 Initializing Whisper ({whisper_model} model, {whisper_language.upper()})")
             logger.info(f"📊 Processing {len(valid_files)} files in {len(batches)} batches")
             
             # Process each batch
