@@ -163,25 +163,25 @@ def process_transcript_file(file_path, dry_run=False, output_dir='processed'):
                 
                 # 🚀 AUTO-ROUTE TO NOTION! 🚀
                 if not dry_run:
-                try:
-                    from notion_manager import AdvancedNotionManager
-                    manager = AdvancedNotionManager()
-                    result = manager.route_content(analysis)
-                    if result and result["summary"]["successful"] > 0:
+                    try:
+                        from notion_manager import AdvancedNotionManager
+                        manager = AdvancedNotionManager()
+                        result = manager.route_content(analysis)
+                        if result and result["summary"]["successful"] > 0:
                             logger.info(f"🎉 Successfully routed {result['summary']['successful']}/{result['summary']['total']} to Notion!")
-                        
-                        # 🆕 PHASE 1: CAPTURE NOTION ENTRY IDS FOR MULTIPLE ANALYSES
-                        if isinstance(analysis, list) and result["successful"]:
-                            for i, task in enumerate(analysis):
-                                if i < len(result["successful"]):
-                                    task["notion_entry_id"] = result["successful"][i].get("id")
+                            
+                            # 🆕 PHASE 1: CAPTURE NOTION ENTRY IDS FOR MULTIPLE ANALYSES
+                            if isinstance(analysis, list) and result["successful"]:
+                                for i, task in enumerate(analysis):
+                                    if i < len(result["successful"]):
+                                        task["notion_entry_id"] = result["successful"][i].get("id")
                                         logger.info(f"   📝 Task {i+1} Notion ID: {task['notion_entry_id'][:8]}...")
-                        
-                        if result["summary"]["failed"] > 0:
+                            
+                            if result["summary"]["failed"] > 0:
                                 logger.warning(f"⚠️ {result['summary']['failed']} tasks failed to route")
-                    else:
+                        else:
                             logger.error("❌ Failed to create Notion content")
-                except Exception as e:
+                    except Exception as e:
                         logger.warning(f"⚠️ Notion routing failed: {e}")
                 else:
                     logger.info("🔍 DRY RUN: Would create Notion entries for:")
@@ -226,23 +226,23 @@ def process_transcript_file(file_path, dry_run=False, output_dir='processed'):
                 
                 # 🚀 AUTO-ROUTE TO NOTION! 🚀
                 if not dry_run:
-                try:
-                    from notion_manager import AdvancedNotionManager
-                    manager = AdvancedNotionManager()
-                    result = manager.route_content(analysis)
-                    if result and result["summary"]["successful"] > 0:
+                    try:
+                        from notion_manager import AdvancedNotionManager
+                        manager = AdvancedNotionManager()
+                        result = manager.route_content(analysis)
+                        if result and result["summary"]["successful"] > 0:
                             logger.info(f"🎉 Successfully routed {result['summary']['successful']}/{result['summary']['total']} to Notion!")
-                        
-                        # 🆕 PHASE 1: CAPTURE NOTION ENTRY ID FOR SINGLE ANALYSIS
-                        if result["successful"]:
-                            analysis["notion_entry_id"] = result["successful"][0].get("id")
+                            
+                            # 🆕 PHASE 1: CAPTURE NOTION ENTRY ID FOR SINGLE ANALYSIS
+                            if result["successful"]:
+                                analysis["notion_entry_id"] = result["successful"][0].get("id")
                                 logger.info(f"   📝 Notion ID: {analysis['notion_entry_id'][:8]}...")
-                        
-                        if result["summary"]["failed"] > 0:
+                            
+                            if result["summary"]["failed"] > 0:
                                 logger.warning(f"⚠️ {result['summary']['failed']} tasks failed to route")
-                    else:
+                        else:
                             logger.error("❌ Failed to create Notion content")
-                except Exception as e:
+                    except Exception as e:
                         logger.warning(f"⚠️ Notion routing failed: {e}")
                 else:
                     logger.info("🔍 DRY RUN: Would create Notion entry:")
