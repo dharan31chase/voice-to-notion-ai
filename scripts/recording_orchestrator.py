@@ -524,10 +524,17 @@ class RecordingOrchestrator:
             file_metadata = []
             valid_files = []
             invalid_files = []
+            skipped_large_files = []
             
             for file_path in unprocessed_files:
                 metadata = self._extract_file_metadata(file_path)
                 if "error" not in metadata:
+                    # Skip files over 10 minutes
+                    if metadata["estimated_minutes"] > 10:
+                        skipped_large_files.append((file_path, metadata["estimated_minutes"]))
+                        logger.info(f"⏭️ Skipping large file: {file_path.name} (~{metadata['estimated_minutes']} min)")
+                        continue
+                    
                     file_metadata.append(metadata)
                     valid_files.append(file_path)
                 else:
@@ -551,6 +558,8 @@ class RecordingOrchestrator:
             # Log processing plan
             logger.info(f"📊 Processing Plan Generated")
             logger.info(f"   Total Files: {time_estimate['total_files']}")
+            if skipped_large_files:
+                logger.info(f"   Skipped (>10 min): {len(skipped_large_files)} files")
             logger.info(f"   Batch Size: {batch_size} files")
             logger.info(f"   Estimated Time: ~{time_estimate['estimated_processing_minutes']} minutes")
             logger.info(f"   Disk Space Required: ~{time_estimate['total_size_mb']} MB")
