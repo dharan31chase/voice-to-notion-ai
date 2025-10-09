@@ -27,6 +27,7 @@ if str(parent_dir) not in sys.path:
 
 # Import shared utilities
 from core.logging_utils import configure_root_logger, get_logger
+from core.config_loader import ConfigLoader
 
 # Try to import Notion client, but don't fail if it's not available
 try:
@@ -49,6 +50,9 @@ class RecordingOrchestrator:
         self.failed_folder = self.project_root / "Failed"
         self.state_file = self.project_root / ".cache" / "recording_states.json"
         self.cache_folder = self.project_root / ".cache"
+        
+        # Load configuration
+        self.config = ConfigLoader()
         
         # CLI options
         self.dry_run = dry_run
