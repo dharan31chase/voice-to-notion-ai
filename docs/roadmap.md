@@ -119,43 +119,92 @@ python recording_orchestrator.py --no-duration-filter
 python recording_orchestrator.py --min-duration 2 --max-duration 20
 ```
 
-#### **🔍 Transcription Quality Improvements** (NEW - Oct 9, 2025)
-**User Need**: "Improve transcription quality for longer files, experiment with models and cleanup"
+#### **🎯 Learning Note Formatter** (NEW - Oct 9, 2025 - CLARIFIED)
+**User Need**: "Format long-form learning notes (books/talks/lectures) into structured, reusable Notion pages"
 
-**Problem**: Current transcription is slow and quality varies for long recordings
+**Problem**: Raw transcripts from learning sessions lack structure and need manual cleanup
 
-**Proposed Solutions** (NEEDS CLARIFICATION):
+**Solution**: GPT-4 post-processing pipeline for long-form learning content
 
-**Option A: Better Whisper Configuration**
-- [ ] Experiment with different Whisper models (small → medium → large)
-- [ ] Add configurable prompts for Whisper (improve context understanding)
-- [ ] Model selection based on file duration
-  - Short files (< 5 min): `small` model (fast)
-  - Medium files (5-15 min): `medium` model (balanced)
-  - Long files (> 15 min): `large` model (accurate)
+**Workflow**:
+```
+Recording → Whisper → Raw Transcript → [GPT Formatter] → Structured Notion Page
+                                           ↑ NEW STEP
+```
 
-**Option B: Post-Processing with ChatGPT** 🔍 UNCLEAR
-- [ ] 🔍 Add optional ChatGPT cleanup layer after Whisper
-- [ ] 🔍 Cleanup prompts for:
-  - Grammar correction?
-  - Punctuation improvement?
-  - Filler word removal?
-  - Sentence restructuring?
-- [ ] 🔍 Configurable cleanup intensity (light/medium/heavy)?
+**Scope**:
+- [ ] **Detection Logic**
+  - Trigger: Duration ≥10 min + learning keywords (book/author/lecture/talk/podcast)
+  - Configurable keywords and min duration
+  - Manual override via CLI flag: `--format-as-learning`
 
-**Option C: Hybrid Approach**
-- [ ] Step 1: Whisper with optimal model for duration
-- [ ] Step 2: Optional GPT post-processing
-- [ ] Configuration: `transcription.cleanup.enabled: true/false`
+- [ ] **Formatter Module** (`formatters/learning_note_formatter.py`)
+  - Extract metadata (title, author/speaker)
+  - Generate executive summary (3-5 sentences)
+  - Organize content with clean Markdown headings (##, ###)
+  - Extract action items/questions → "Open Items" section
+  - Fix grammar, improve flow, preserve intent
+  - Output Notion-ready `.md` format
 
-**Questions to Clarify**:
-1. What specific quality issues are you seeing? (accuracy, formatting, grammar?)
-2. Is the slowness mainly Whisper or the whole pipeline?
-3. Should GPT cleanup be always-on or optional?
-4. Budget considerations for using larger Whisper models + GPT?
+- [ ] **Configuration** (`config/settings.yaml`)
+  ```yaml
+  formatters:
+    learning_note:
+      enabled: true
+      min_duration_minutes: 10
+      model: "gpt-4"  # Quality over cost for learning
+      keywords: [book, author, lecture, talk, podcast, chapter]
+      prompt_template: "config/prompts/learning_note_format.txt"
+  ```
 
-**Effort**: ~3-5 hours (depends on scope)  
-**Value**: High - better quality = less manual cleanup
+- [ ] **Prompt Template** (`config/prompts/learning_note_format.txt`)
+  - User-provided formatting instructions
+  - Metadata extraction rules
+  - Summary generation guidelines
+  - Open items format specification
+  - Easy to iterate without code changes
+
+- [ ] **Notion Integration**
+  - Create formatted learning note pages
+  - Preserve rich structure (headings, lists, checkboxes)
+  - Tag with source type (book/talk/lecture)
+  - Link to original project
+
+**Output Format**:
+```markdown
+# {Title} – {Author}
+
+{Executive Summary: 3-5 sentences capturing core purpose and key takeaways}
+
+## Core Concepts
+
+### Main Section
+...
+
+## Open Items
+
+**Action Items:**
+- [ ] Research X
+- [ ] Follow up on Y
+
+**Questions:**
+- How does Z relate to...?
+
+**Bookmarks/References:**
+- Page 42: Key quote about...
+```
+
+**Model Choice**: GPT-4 (superior formatting quality for learning content)
+
+**Effort**: ~3-4 hours
+- 1 hour: Formatter module + detection logic
+- 1 hour: Configuration + prompt template setup
+- 1 hour: Notion integration for formatted notes
+- 1 hour: Testing + prompt refinement
+
+**Value**: High - transforms raw learning transcripts into valuable, reusable knowledge base entries
+
+**Priority**: Medium-High - High value for learning workflow, add after Milestone 2.3
 
 ### 📋 Future Enhancements
 - [ ] **Actual Audio Duration Detection** (via ffprobe)
@@ -426,10 +475,9 @@ python recording_orchestrator.py --min-duration 2 --max-duration 20
 
 These items are tagged for follow-up discussion:
 
-1. **Transcription Quality Improvements** (Recording & Transcription Initiative)
-   - What specific quality issues need fixing?
-   - Should ChatGPT cleanup be always-on or optional?
-   - Budget for larger Whisper models + GPT processing?
+1. ~~**Transcription Quality Improvements**~~ → **✅ CLARIFIED** as "Learning Note Formatter" (Oct 9, 2025)
+   - GPT-4 post-processing for long-form learning content
+   - See Recording & Transcription Initiative for full spec
 
 2. **Performance Issues** (Performance & Scale Initiative)
    - Which part is slow: Whisper, AI analysis, or Notion?
