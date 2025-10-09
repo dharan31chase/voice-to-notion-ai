@@ -4,6 +4,33 @@
 
 ---
 
+## 🚨 P0 CRITICAL BUGS (Block All Other Work)
+
+### 🔴 **Data Loss on Notion Failure** (Discovered: Oct 9, 2025)
+**Severity**: CRITICAL - Data loss occurring in production  
+**Impact**: 4 recordings lost today (Milwaukee drill task + 3 others)
+
+**Root Cause**: 
+- `process_transcripts.py` saves processed JSON regardless of Notion API success
+- Orchestrator sees JSON file → assumes "already processed" → deletes MP3/transcript
+- No archive created, no Notion entry, files permanently lost
+
+**Immediate Fix** (All 4 in one go):
+1. Only save processed JSON if Notion succeeds
+2. Add Notion verification in orchestrator before cleanup
+3. Archive files BEFORE deletion (not after)
+4. Track failed entries separately in state file
+
+**Architecture Changes** (SRP):
+- Extract: `validators/notion_validator.py` for verification logic
+- Update: `cleanup_manager.py` for safe cleanup
+- Minimal testing on critical path only
+
+**Status**: 🔄 IN PROGRESS - Blocking all other work until resolved  
+**ETA**: 2-3 hours
+
+---
+
 ## 📊 Roadmap Overview
 
 This document consolidates all planned work across the AI Assistant project, organized by strategic initiative. Items marked with 🔍 need clarification.
