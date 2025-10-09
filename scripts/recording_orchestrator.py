@@ -41,7 +41,7 @@ configure_root_logger("INFO")
 logger = get_logger(__name__)
 
 class RecordingOrchestrator:
-    def __init__(self, dry_run=False, skip_steps=None):
+    def __init__(self, dry_run=False, skip_steps=None, auto_continue=False):
         self.project_root = Path(__file__).parent.parent
         self.recorder_path = Path("/Volumes/IC RECORDER/REC_FILE/FOLDER01")
         self.transcripts_folder = self.project_root / "transcripts"
@@ -53,6 +53,7 @@ class RecordingOrchestrator:
         # CLI options
         self.dry_run = dry_run
         self.skip_steps = set(skip_steps) if skip_steps else set()
+        self.auto_continue = auto_continue
         
         if self.dry_run:
             logger.info("🔍 DRY RUN MODE - No file operations will be performed")
@@ -877,7 +878,7 @@ class RecordingOrchestrator:
                             
                             # Monitor CPU usage
                             cpu_usage = self._monitor_cpu_usage()
-                            if cpu_usage > 50:
+                            if cpu_usage > 75:
                                 logger.warning(f"⚠️ High CPU usage: {cpu_usage:.1f}% - waiting 2 seconds")
                                 time.sleep(2)
                                 
@@ -1978,9 +1979,11 @@ class RecordingOrchestrator:
             logger.info("🔄 Next steps: Stage, Process, Verify, Archive, Cleanup")
             logger.info("⏸️ Stopping here for Step 3 validation")
             
-            # Wait for user signal to proceed (skip if dry-run or auto-mode)
-            if not self.dry_run:
+            # Wait for user signal to proceed (skip if dry-run or auto-continue)
+            if not self.dry_run and not self.auto_continue:
                 input("\n🎯 Press Enter to proceed to Step 4 (Stage & Process)...")
+            elif self.auto_continue:
+                logger.info("⚡ AUTO-CONTINUE: Proceeding to Step 4...")
             else:
                 logger.info("🔍 DRY RUN: Auto-continuing to Step 4...")
             
@@ -2009,9 +2012,11 @@ class RecordingOrchestrator:
             logger.info("🔄 Next steps: Verify, Archive, Cleanup")
             logger.info("⏸️ Stopping here for Step 4 validation")
             
-            # Wait for user signal to proceed (skip if dry-run or auto-mode)
-            if not self.dry_run and 'archive' not in self.skip_steps:
+            # Wait for user signal to proceed (skip if dry-run or auto-continue)
+            if not self.dry_run and not self.auto_continue and 'archive' not in self.skip_steps:
                 input("\n🎯 Press Enter to proceed to Step 5 (Verify & Archive)...")
+            elif self.auto_continue:
+                logger.info("⚡ AUTO-CONTINUE: Proceeding to Step 5...")
             else:
                 logger.info("🔍 DRY RUN/SKIP: Auto-continuing to Step 5...")
             
@@ -2095,6 +2100,12 @@ Available steps to skip:
         help='Use custom configuration file (not yet implemented - placeholder for future)'
     )
     
+    parser.add_argument(
+        '--auto-continue',
+        action='store_true',
+        help='Auto-continue through all steps without manual approval prompts'
+    )
+    
     return parser.parse_args()
 
 def main():
@@ -2130,7 +2141,11 @@ def main():
         logger.info("=" * 60)
     
     # Create orchestrator with options
-    orchestrator = RecordingOrchestrator(dry_run=args.dry_run, skip_steps=skip_steps)
+    orchestrator = RecordingOrchestrator(
+        dry_run=args.dry_run, 
+        skip_steps=skip_steps,
+        auto_continue=args.auto_continue
+    )
     success = orchestrator.run()
     
     if success:

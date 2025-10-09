@@ -63,8 +63,8 @@ def analyze_transcript(transcript_text):
     logger.debug(f"Smart detection: {category} (confidence: {confidence:.2f}, review: {manual_review})")
     
     # Initialize router for analyzers
-    from intelligent_router import IntelligentRouter
-    router = IntelligentRouter()
+        from intelligent_router import IntelligentRouter
+        router = IntelligentRouter()
     
     # Initialize analyzers with router
     global task_analyzer, note_analyzer
@@ -163,25 +163,25 @@ def process_transcript_file(file_path, dry_run=False, output_dir='processed'):
                 
                 # 🚀 AUTO-ROUTE TO NOTION! 🚀
                 if not dry_run:
-                    try:
-                        from notion_manager import AdvancedNotionManager
-                        manager = AdvancedNotionManager()
-                        result = manager.route_content(analysis)
-                        if result and result["summary"]["successful"] > 0:
+                try:
+                    from notion_manager import AdvancedNotionManager
+                    manager = AdvancedNotionManager()
+                    result = manager.route_content(analysis)
+                    if result and result["summary"]["successful"] > 0:
                             logger.info(f"🎉 Successfully routed {result['summary']['successful']}/{result['summary']['total']} to Notion!")
-                            
-                            # 🆕 PHASE 1: CAPTURE NOTION ENTRY IDS FOR MULTIPLE ANALYSES
-                            if isinstance(analysis, list) and result["successful"]:
-                                for i, task in enumerate(analysis):
-                                    if i < len(result["successful"]):
-                                        task["notion_entry_id"] = result["successful"][i].get("id")
+                        
+                        # 🆕 PHASE 1: CAPTURE NOTION ENTRY IDS FOR MULTIPLE ANALYSES
+                        if isinstance(analysis, list) and result["successful"]:
+                            for i, task in enumerate(analysis):
+                                if i < len(result["successful"]):
+                                    task["notion_entry_id"] = result["successful"][i].get("id")
                                         logger.info(f"   📝 Task {i+1} Notion ID: {task['notion_entry_id'][:8]}...")
-                            
-                            if result["summary"]["failed"] > 0:
+                        
+                        if result["summary"]["failed"] > 0:
                                 logger.warning(f"⚠️ {result['summary']['failed']} tasks failed to route")
-                        else:
+                    else:
                             logger.error("❌ Failed to create Notion content")
-                    except Exception as e:
+                except Exception as e:
                         logger.warning(f"⚠️ Notion routing failed: {e}")
                 else:
                     logger.info("🔍 DRY RUN: Would create Notion entries for:")
@@ -191,21 +191,30 @@ def process_transcript_file(file_path, dry_run=False, output_dir='processed'):
                         logger.info(f"      Icon: {task.get('icon', 'No icon')}")
                 
                 # 🆕 SAVE ENHANCED ANALYSES WITH NOTION IDS
+                # 🔒 FIX #1: Only save JSON if at least one Notion entry was created
                 if not dry_run:
-                    output_file = Path(output_dir) / f"{file_path.stem}_processed.json"
-                    output_file.parent.mkdir(parents=True, exist_ok=True)
-                    with open(output_file, 'w') as f:
-                        json.dump({
-                            "original_file": str(file_path),
-                            "analyses": analysis,  # Array of task objects with Notion IDs
-                            "timestamp": str(Path(file_path).stat().st_mtime)
-                        }, f, indent=2)
+                    # Check if at least one task has a Notion ID
+                    has_notion_ids = any(task.get('notion_entry_id') for task in analysis)
                     
-                    logger.info(f"✅ Saved {len(analysis)} enhanced analyses to: {output_file}")
+                    if has_notion_ids:
+                        output_file = Path(output_dir) / f"{file_path.stem}_processed.json"
+                        output_file.parent.mkdir(parents=True, exist_ok=True)
+                        with open(output_file, 'w') as f:
+                            json.dump({
+                                "original_file": str(file_path),
+                                "analyses": analysis,  # Array of task objects with Notion IDs
+                                "timestamp": str(Path(file_path).stat().st_mtime)
+                            }, f, indent=2)
+                        
+                        logger.info(f"✅ Saved {len(analysis)} enhanced analyses to: {output_file}")
+                    else:
+                        logger.error(f"🚨 NOT saving JSON - no Notion entries created (prevents data loss)")
+                        logger.error(f"   File retained for retry: {file_path.name}")
+                        return None  # Return None to signal failure to orchestrator
                 else:
                     logger.info(f"🔍 DRY RUN: Would save to: {output_dir}/{file_path.stem}_processed.json")
                 
-                return analysis
+                return analysis if has_notion_ids or dry_run else None
                 
             else:
                 # Single analysis (task or note)
@@ -217,23 +226,23 @@ def process_transcript_file(file_path, dry_run=False, output_dir='processed'):
                 
                 # 🚀 AUTO-ROUTE TO NOTION! 🚀
                 if not dry_run:
-                    try:
-                        from notion_manager import AdvancedNotionManager
-                        manager = AdvancedNotionManager()
-                        result = manager.route_content(analysis)
-                        if result and result["summary"]["successful"] > 0:
+                try:
+                    from notion_manager import AdvancedNotionManager
+                    manager = AdvancedNotionManager()
+                    result = manager.route_content(analysis)
+                    if result and result["summary"]["successful"] > 0:
                             logger.info(f"🎉 Successfully routed {result['summary']['successful']}/{result['summary']['total']} to Notion!")
-                            
-                            # 🆕 PHASE 1: CAPTURE NOTION ENTRY ID FOR SINGLE ANALYSIS
-                            if result["successful"]:
-                                analysis["notion_entry_id"] = result["successful"][0].get("id")
+                        
+                        # 🆕 PHASE 1: CAPTURE NOTION ENTRY ID FOR SINGLE ANALYSIS
+                        if result["successful"]:
+                            analysis["notion_entry_id"] = result["successful"][0].get("id")
                                 logger.info(f"   📝 Notion ID: {analysis['notion_entry_id'][:8]}...")
-                            
-                            if result["summary"]["failed"] > 0:
+                        
+                        if result["summary"]["failed"] > 0:
                                 logger.warning(f"⚠️ {result['summary']['failed']} tasks failed to route")
-                        else:
+                    else:
                             logger.error("❌ Failed to create Notion content")
-                    except Exception as e:
+                except Exception as e:
                         logger.warning(f"⚠️ Notion routing failed: {e}")
                 else:
                     logger.info("🔍 DRY RUN: Would create Notion entry:")
@@ -244,21 +253,30 @@ def process_transcript_file(file_path, dry_run=False, output_dir='processed'):
                     logger.info(f"   Confidence: {analysis.get('confidence', 'unknown')}")
                 
                 # 🆕 SAVE ENHANCED ANALYSIS WITH NOTION ID
+                # 🔒 FIX #1: Only save JSON if Notion entry was created
                 if not dry_run:
-                    output_file = Path(output_dir) / f"{file_path.stem}_processed.json"
-                    output_file.parent.mkdir(parents=True, exist_ok=True)
-                    with open(output_file, 'w') as f:
-                        json.dump({
-                            "original_file": str(file_path),
-                            "analysis": analysis,  # Single object with Notion ID (backward compatible)
-                            "timestamp": str(Path(file_path).stat().st_mtime)
-                        }, f, indent=2)
+                    # Check if analysis has a Notion ID
+                    has_notion_id = analysis.get('notion_entry_id') is not None
                     
-                    logger.info(f"✅ Saved enhanced analysis to: {output_file}")
+                    if has_notion_id:
+                        output_file = Path(output_dir) / f"{file_path.stem}_processed.json"
+                        output_file.parent.mkdir(parents=True, exist_ok=True)
+                        with open(output_file, 'w') as f:
+                            json.dump({
+                                "original_file": str(file_path),
+                                "analysis": analysis,  # Single object with Notion ID (backward compatible)
+                                "timestamp": str(Path(file_path).stat().st_mtime)
+                            }, f, indent=2)
+                        
+                        logger.info(f"✅ Saved enhanced analysis to: {output_file}")
+                    else:
+                        logger.error(f"🚨 NOT saving JSON - no Notion entry created (prevents data loss)")
+                        logger.error(f"   File retained for retry: {file_path.name}")
+                        return None  # Return None to signal failure to orchestrator
                 else:
                     logger.info(f"🔍 DRY RUN: Would save to: {output_dir}/{file_path.stem}_processed.json")
                 
-                return analysis
+                return analysis if has_notion_id or dry_run else None
         else:
             logger.error("❌ Failed to analyze transcript")
             return None
@@ -368,21 +386,21 @@ def main():
     else:
         # Process all files in input directory
         transcript_folder = Path(args.input_dir)
-        
-        if not transcript_folder.exists():
+    
+    if not transcript_folder.exists():
             logger.info(f"Creating {args.input_dir} folder...")
             transcript_folder.mkdir(parents=True, exist_ok=True)
             logger.info(f"📁 Please copy your .txt files to the '{args.input_dir}' folder")
-            return
-        
-        # Find all .txt files
-        txt_files = list(transcript_folder.glob("*.txt"))
-        
-        if not txt_files:
+        return
+    
+    # Find all .txt files
+    txt_files = list(transcript_folder.glob("*.txt"))
+    
+    if not txt_files:
             logger.warning(f"No .txt files found in {args.input_dir} folder")
             logger.info(f"📁 Please copy your .txt files to the '{args.input_dir}' folder")
-            return
-        
+        return
+    
         logger.info(f"Found {len(txt_files)} transcript files in {args.input_dir}")
     
     # Process each file
