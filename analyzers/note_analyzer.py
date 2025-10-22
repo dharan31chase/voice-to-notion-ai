@@ -137,3 +137,4 @@ class NoteAnalyzer:
                 "ai_enhanced": True  # Title + light formatting
             }
 
+

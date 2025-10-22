@@ -162,3 +162,4 @@ class TranscriptValidator:
         """Get word count of text"""
         return len(text.split())
 
+

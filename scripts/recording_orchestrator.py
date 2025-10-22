@@ -172,9 +172,17 @@ class RecordingOrchestrator:
             return False
     
     def _scan_mp3_files(self) -> List[Path]:
-        """Scan recorder folder for .mp3 files"""
+        """Scan recorder folder for .mp3 files, excluding macOS hidden files"""
         try:
-            mp3_files = list(self.recorder_path.glob("*.mp3"))
+            all_mp3_files = list(self.recorder_path.glob("*.mp3"))
+            
+            # Filter out macOS hidden files (._* prefix)
+            mp3_files = [f for f in all_mp3_files if not f.name.startswith('._')]
+            
+            hidden_count = len(all_mp3_files) - len(mp3_files)
+            if hidden_count > 0:
+                logger.debug(f"⏭️ Filtered out {hidden_count} macOS hidden files (._* prefix)")
+            
             logger.info(f"📁 Found {len(mp3_files)} .mp3 files in {self.recorder_path}")
             return mp3_files
         except Exception as e:
