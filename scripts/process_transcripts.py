@@ -385,22 +385,22 @@ def main():
     else:
         # Process all files in input directory
         transcript_folder = Path(args.input_dir)
-    
-    if not transcript_folder.exists():
-        logger.info(f"Creating {args.input_dir} folder...")
-        transcript_folder.mkdir(parents=True, exist_ok=True)
-        logger.info(f"📁 Please copy your .txt files to the '{args.input_dir}' folder")
-        return
-    
-    # Find all .txt files
-    txt_files = list(transcript_folder.glob("*.txt"))
-    
-    if not txt_files:
-        logger.warning(f"No .txt files found in {args.input_dir} folder")
-        logger.info(f"📁 Please copy your .txt files to the '{args.input_dir}' folder")
-        return
-    
-    logger.info(f"Found {len(txt_files)} transcript files in {args.input_dir}")
+        
+        if not transcript_folder.exists():
+            logger.info(f"Creating {args.input_dir} folder...")
+            transcript_folder.mkdir(parents=True, exist_ok=True)
+            logger.info(f"📁 Please copy your .txt files to the '{args.input_dir}' folder")
+            return
+        
+        # Find all .txt files
+        txt_files = list(transcript_folder.glob("*.txt"))
+        
+        if not txt_files:
+            logger.warning(f"No .txt files found in {args.input_dir} folder")
+            logger.info(f"📁 Please copy your .txt files to the '{args.input_dir}' folder")
+            return
+        
+        logger.info(f"Found {len(txt_files)} transcript files in {args.input_dir}")
     
     # Process each file
     for txt_file in txt_files:
