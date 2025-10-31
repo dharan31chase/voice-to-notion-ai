@@ -331,28 +331,118 @@ Recording → Whisper → Raw Transcript → [GPT Formatter] → Structured Noti
 ## ⚡ Performance & Scale Initiative
 **Goal**: Faster processing, better resource usage, scale to more files
 
-### 🔍 Known Issues (NEEDS INVESTIGATION)
-- 🔍 **Slow Transcription** - User reports "kinda really slow"
-  - Current: Whisper small model, parallel batches
-  - Question: Is it Whisper itself or API calls?
-  - Question: Which files are slowest? (long files only or all?)
+### 🔥 **Critical Performance Issue (IMMEDIATE PRIORITY)**
+- 🔴 **Slow Transcription** - Current bottleneck: 32 minutes for 6 files (unacceptable)
+  - Current: 20-30 seconds per 3-minute recording with local Whisper
+  - Root causes: USB I/O bottleneck, inefficient retries, CPU throttling, no pipelining
+  - Impact: Blocks user workflow, poor user experience
 
 ### 📋 Planned Improvements
 
-#### **Transcription Performance**
-- [ ] **Model Selection Strategy**
-  - Tiny model for quick reminders (< 1 min)
-  - Small model for normal recordings (1-10 min)
-  - Medium model only when needed (10-30 min)
-  - Cache model in memory (avoid reload)
-- [ ] **Parallel Processing Optimization**
-  - Current: 4 files per batch
-  - Experiment: Dynamic batch size based on CPU/memory
-  - Smart batching: Group similar-duration files
-- [ ] **GPU Acceleration** (if available)
-  - Detect CUDA/Metal support
-  - Use GPU for Whisper if present
-  - Fallback to CPU gracefully
+#### **🎯 Intelligent Transcription Orchestrator** (IMMEDIATE - 3 Phase Plan)
+
+**Goal**: 10-20x speed improvement (32 min → 30 seconds) with automatic online/offline switching
+
+**Phase 1: Local Optimization Foundation** ✅ **COMPLETE** (Oct 31, 2025)
+**Effort**: 1-2 days  
+**Target**: 6 files in <8-10 minutes (5-6x improvement)
+**Actual Result**: 5 files in 8 minutes (4.2x improvement, 76% faster!)
+
+**Implementation**:
+- [x] **USB Staging Pipeline**
+  - Copy MP3 files from USB to local SSD before transcription
+  - Eliminate USB I/O bottleneck and permission errors
+  - Transcribe from fast local storage, archive from local copies
+- [x] **Smart Retry Policy**
+  - Hard-stop on permission errors (no retry)
+  - Hard-stop on "too short" audio (no retry)
+  - Only retry transient I/O errors (EIO), timeouts, rate limits
+- [x] **Concurrency Optimization**
+  - Target 65-70% sustained CPU (not 87%+ with throttling)
+  - Reduced concurrent transcribes to 3 files (vs previous 4)
+  - Increased CPU limit to 70% to reduce throttling cycles
+- [x] **Duration-Aware Batching**
+  - Fill batches to ~7 minute "work budget" (not fixed file count)
+  - Prevent single long file from dominating batch time
+  - Better load balancing across batches
+- [x] **Skip Rules for Invalid Files**
+  - Auto-skip files <2 seconds (post-VAD not implemented yet)
+  - Log skip reason, no retry attempts
+  - Prevents wasted processing time
+- [x] **Turbo Model Upgrade**
+  - Switched from "small" to "turbo" Whisper model
+  - Faster transcription with good accuracy
+
+**Success Metrics Achieved**:
+- ✅ End-to-end: 5 files in 8 minutes (vs 33 minutes before) = 4.2x improvement!
+- ✅ Zero permission retries (fixed through staging)
+- ✅ Zero retries for <2s audio (smart skip logic)
+- ✅ Clean CPU usage without throttling
+- ✅ 100% success rate maintained
+
+---
+
+**Phase 2: Groq Cloud Migration** ⏭️ **AFTER Phase 1**
+**Effort**: 70 minutes  
+**Target**: 6 files in <30 seconds (10-20x improvement from current baseline)
+
+**Implementation**:
+- [ ] **Create Transcription Service Abstraction**
+  - New file: `scripts/transcription_service.py`
+  - Supports multiple backends: Groq, OpenAI, local
+  - Fallback chain: Groq → OpenAI → local (never fails)
+- [ ] **Integrate Groq API** (Primary backend)
+  - Model: whisper-large-v3 (95-97% accuracy)
+  - Speed: 1-5 seconds per 3-minute file
+  - Free tier: 14,400 seconds/day (240 minutes)
+  - Add `GROQ_API_KEY` to `.env`
+- [ ] **Update Recording Orchestrator**
+  - Replace local Whisper calls with `TranscriptionService`
+  - Maintain backward compatibility (can still use local)
+  - Configuration via `TRANSCRIPTION_BACKEND=groq` in `.env`
+- [ ] **Test & Benchmark**
+  - Verify Groq integration works
+  - Test fallback chain (disable Groq, verify OpenAI/local works)
+  - Benchmark: Groq vs OpenAI vs local
+
+**Success Metrics**:
+- ✅ Transcription speed: <10 seconds for 3-minute recording
+- ✅ Accuracy: ≥95% (Large-v3 model)
+- ✅ End-to-end: 6 files in <30 seconds
+- ✅ Fallback reliability: 100% (at least one backend always works)
+- ✅ Zero user setup time (no model downloads)
+
+---
+
+**Phase 3: Intelligent Auto-Switching** ⏭️ **AFTER Phase 2**
+**Effort**: ~30 minutes  
+**Target**: Automatic mode selection, zero user intervention
+
+**Implementation**:
+- [ ] **Internet Connectivity Detection**
+  - Auto-detect if online/offline
+  - Test Groq API availability (quick health check)
+  - Fallback to local if cloud unavailable
+- [ ] **Configuration Options**
+  - `TRANSCRIPTION_MODE=auto` (default) - auto-detect and switch
+  - `TRANSCRIPTION_MODE=groq` - force cloud (fail if offline)
+  - `TRANSCRIPTION_MODE=local` - force local (always offline)
+  - CLI flag override: `--transcription-mode groq|local|auto`
+- [ ] **Smart Mode Selection Logic**
+  - If online + Groq available → use Groq (fastest)
+  - If online + Groq down → use OpenAI (reliable fallback)
+  - If offline → use local optimization (Phase 1 improvements)
+  - Log mode selection for transparency
+- [ ] **Hybrid Optimization**
+  - Combine Groq speed with local optimization reliability
+  - Local staging still benefits cloud processing (faster uploads)
+  - Smart retry/skip rules apply to all modes
+
+**Success Metrics**:
+- ✅ Automatic mode selection (zero user intervention)
+- ✅ Graceful offline/online transitions
+- ✅ Fastest mode always selected automatically
+- ✅ Manual override available when needed
 
 #### **AI Analysis Performance**
 - [ ] **Caching & Reuse**
@@ -459,13 +549,23 @@ Recording → Whisper → Raw Transcript → [GPT Formatter] → Structured Noti
 
 ### 🔥 **Immediate (This Week)**
 1. ✅ Complete Milestone 2.2 (Analyzers) - DONE
-2. ⏳ Complete Milestone 2.3 (Coordinator) - IN PROGRESS
-3. 🎯 Add Configurable Duration Filter (~1 hour)
+2. ✅ Complete Milestone 2.3 (Coordinator) - DONE
+3. 🎯 **Phase 1: Local Transcription Optimization** (1-2 days) - **CRITICAL PRIORITY**
+   - Address 32-minute bottleneck (unacceptable performance)
+   - Target: 6 files in <8-10 minutes (5-6x improvement)
+   - Foundation for intelligent orchestrator
+4. 🎯 Add Configurable Duration Filter (~1 hour)
 
 ### 📅 **Short-term (Next 2 Weeks)**
-1. Phase 3: Refactor intelligent_router.py
-2. Investigate & fix transcription performance issues 🔍
-3. Experiment with transcription quality improvements 🔍
+1. 🎯 **Phase 2: Groq Cloud Migration** (70 minutes) - **HIGH PRIORITY**
+   - 10-20x speed improvement (6 files in <30 seconds)
+   - 95-97% accuracy with Large-v3 model
+   - Fallback chain for reliability
+2. 🎯 **Phase 3: Intelligent Auto-Switching** (30 minutes) - **HIGH PRIORITY**
+   - Automatic online/offline mode selection
+   - Zero user intervention required
+3. Phase 3: Refactor intelligent_router.py
+4. Learning Note Formatter (GPT-4 post-processing for long-form content)
 
 ### 📅 **Medium-term (Next Month)**
 1. Phase 4: Refactor recording_orchestrator.py (production-critical)
@@ -484,14 +584,21 @@ Recording → Whisper → Raw Transcript → [GPT Formatter] → Structured Noti
 
 ### Current Baseline (Oct 2025)
 - **Success Rate**: 82% (goal: 95%+)
-- **Processing Speed**: 1.47 files/minute
+- **Processing Speed**: 1.47 files/minute (current bottleneck: 32 min for 6 files)
+- **Transcription Speed**: 20-30 seconds per 3-minute recording (local Whisper)
 - **Code Quality**: 87% reduction in duplication (7,160 lines removed)
 - **Notion Integration**: 100% success rate
 - **Manual Review Rate**: ~15-20% of files
 
 ### Target Metrics (Q1 2026)
 - **Success Rate**: 95%+ end-to-end
-- **Processing Speed**: 3+ files/minute (2x improvement)
+- **Processing Speed**: 
+  - Phase 1 Target: 6 files in <8-10 minutes (local optimization)
+  - Phase 2 Target: 6 files in <30 seconds (Groq cloud) - **10-20x improvement**
+- **Transcription Speed**: 
+  - Phase 1: 5-10 seconds per 3-minute file (local optimization)
+  - Phase 2: 1-5 seconds per 3-minute file (Groq cloud)
+- **Transcription Accuracy**: 95-97% (Large-v3 model with Groq)
 - **Code Maintainability**: 90%+ test coverage
 - **Notion Integration**: <1% failure rate
 - **Manual Review Rate**: <5% of files
@@ -540,6 +647,6 @@ These items are tagged for follow-up discussion:
 
 ---
 
-*Last Updated: October 9, 2025*  
-*Next Review: After Milestone 2.3 completion*
+*Last Updated: October 30, 2025*  
+*Next Review: After Phase 1 Local Optimization completion*
 

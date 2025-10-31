@@ -42,46 +42,56 @@ configure_root_logger("INFO")
 logger = get_logger(__name__)
 
 class RecordingOrchestrator:
-    def __init__(self, dry_run=False, skip_steps=None, auto_continue=False):
+    def __init__(self, dry_run=False, skip_steps=None, auto_continue=False, max_files=None):
         self.project_root = Path(__file__).parent.parent
         self.recorder_path = Path("/Volumes/IC RECORDER/REC_FILE/FOLDER01")
         self.transcripts_folder = self.project_root / "transcripts"
         self.archives_folder = self.project_root / "Recording Archives"
         self.failed_folder = self.project_root / "Failed"
+        self.staging_folder = self.project_root / "staging"  # Phase 1: Local staging
         self.state_file = self.project_root / ".cache" / "recording_states.json"
         self.cache_folder = self.project_root / ".cache"
-        
+
         # Load configuration
         self.config = ConfigLoader()
-        
+
         # CLI options
         self.dry_run = dry_run
         self.skip_steps = set(skip_steps) if skip_steps else set()
         self.auto_continue = auto_continue
-        
+        self.max_files = max_files  # Phase 1: Limit files for testing
+
         if self.dry_run:
             logger.info("🔍 DRY RUN MODE - No file operations will be performed")
         if self.skip_steps:
             logger.info(f"⏭️ Skipping steps: {', '.join(sorted(self.skip_steps))}")
-        
+        if self.max_files:
+            logger.info(f"📊 Max files limit: {self.max_files}")
+
         # Ensure required folders exist
         self._setup_folders()
-        
+
         # Load or create state
         self.state = self._load_state()
-        
+
         # Current session info
         self.current_session_id = None
         self.session_start_time = None
-        
+
         # Initialize Notion client for verification
         self._setup_notion_client()
+
+        # Phase 1: Performance tracking
+        from core.performance_tracker import PerformanceTracker
+        self.performance_tracker = PerformanceTracker()
+        self.performance_tracker.set_baseline({'duration_minutes': 32})  # From latest run
         
     def _setup_folders(self):
         """Create necessary folders if they don't exist"""
         self.transcripts_folder.mkdir(exist_ok=True)
         self.archives_folder.mkdir(exist_ok=True)
         self.failed_folder.mkdir(exist_ok=True)
+        self.staging_folder.mkdir(exist_ok=True)  # Phase 1: Local staging folder
         (self.failed_folder / "failed_recordings").mkdir(exist_ok=True)
         (self.failed_folder / "failed_transcripts").mkdir(exist_ok=True)
         (self.failed_folder / "failure_logs").mkdir(exist_ok=True)
@@ -334,11 +344,23 @@ class RecordingOrchestrator:
             
             # Get unprocessed files
             unprocessed_files = self._get_unprocessed_files(valid_files)
-            
+
+            # Phase 1: Apply max_files limit if set
+            if self.max_files and len(unprocessed_files) > self.max_files:
+                logger.info(f"📊 Limiting to first {self.max_files} files (--max-files flag)")
+                unprocessed_files = unprocessed_files[:self.max_files]
+
+            # Phase 1: Copy files to staging
+            staged_files, staging_failures = self._copy_files_to_staging(unprocessed_files)
+
+            if not staged_files:
+                logger.error("❌ No files successfully staged")
+                return False, []
+
             # Generate session ID
             self.current_session_id = self._generate_session_id()
             self.session_start_time = datetime.now()
-            
+
             # Initialize current session in state
             self.state["current_session"] = {
                 "session_id": self.current_session_id,
@@ -354,24 +376,37 @@ class RecordingOrchestrator:
                 "preparation_complete": False,
                 "processing_plan": {},
                 "transcription_complete": False,
-                "processing_complete": False
+                "processing_complete": False,
+                "usb_files_map": {}  # Phase 1: Map staging files to original USB paths
             }
-            
+
+            # Phase 1: Store USB-to-staging mapping for later cleanup
+            for usb_file in unprocessed_files:
+                staging_file = self.staging_folder / usb_file.name
+                if staging_file in staged_files:
+                    self.state["current_session"]["usb_files_map"][str(staging_file)] = str(usb_file)
+
             # Log discovery summary
             logger.info(f"🆔 Session ID: {self.current_session_id}")
             logger.info(f"📊 Valid files found: {len(valid_files)}")
-            logger.info(f"📋 New files to process: {len(unprocessed_files)}")
+            logger.info(f"📋 Files staged for processing: {len(staged_files)}")
+            if staging_failures:
+                logger.info(f"⏭️ Files skipped: {len(staging_failures)}")
             logger.info(f"⚠️ Invalid files: {len(invalid_files)}")
-            
+
             if invalid_files:
                 for file_path, message in invalid_files:
                     logger.warning(f"   - {file_path.name}: {message}")
-            
+
+            if staging_failures:
+                for file_path, reason in staging_failures:
+                    logger.info(f"   ⏭️ {file_path.name}: {reason}")
+
             # Save state
             self._save_state(self.state)
-            
-            logger.info("✅ Step 1 complete - ready for transcription")
-            return True, unprocessed_files
+
+            logger.info("✅ Step 1 complete - files staged and ready for transcription")
+            return True, staged_files  # Phase 1: Return staging paths, not USB paths
             
         except Exception as e:
             logger.error(f"❌ Step 1 failed: {e}")
@@ -406,7 +441,233 @@ class RecordingOrchestrator:
                 "path": str(file_path),
                 "error": str(e)
             }
-    
+
+    def _should_skip_short_file(self, file_path: Path) -> Tuple[bool, str]:
+        """
+        Phase 1: Check if file should be skipped due to being too short
+        Uses file size estimate: 1MB ≈ 1 minute, so 33KB ≈ 2 seconds
+        """
+        try:
+            skip_threshold_seconds = self.config.get("processing.skip_short_audio_seconds", 2)
+            skip_threshold_bytes = skip_threshold_seconds * 33 * 1024  # 33KB per 2 seconds
+
+            file_size = file_path.stat().st_size
+
+            if file_size < skip_threshold_bytes:
+                estimated_seconds = file_size / (33 * 1024) * 2
+                reason = f"File too short (~{estimated_seconds:.1f}s, minimum {skip_threshold_seconds}s)"
+                return True, reason
+
+            return False, ""
+        except Exception as e:
+            logger.error(f"❌ Error checking file size for {file_path.name}: {e}")
+            return False, ""
+
+    def _copy_files_to_staging(self, files: List[Path]) -> Tuple[List[Path], List[Tuple[Path, str]]]:
+        """
+        Phase 1: Copy files from USB to local staging folder
+        Returns: (successful_copies, failed_copies)
+        """
+        successful = []
+        failed = []
+
+        staging_enabled = self.config.get("processing.staging_enabled", True)
+        if not staging_enabled:
+            logger.info("ℹ️ Staging disabled - will transcribe directly from USB")
+            return files, []
+
+        logger.info(f"📦 Copying {len(files)} files from USB to staging...")
+
+        for file_path in files:
+            try:
+                # Check if should skip short files
+                should_skip, skip_reason = self._should_skip_short_file(file_path)
+                if should_skip:
+                    logger.info(f"⏭️ Skipping {file_path.name}: {skip_reason}")
+                    failed.append((file_path, skip_reason))
+                    continue
+
+                # Copy to staging
+                staging_path = self.staging_folder / file_path.name
+
+                if staging_path.exists():
+                    logger.info(f"ℹ️ {file_path.name} already in staging")
+                    successful.append(staging_path)
+                else:
+                    shutil.copy2(str(file_path), str(staging_path))
+                    logger.info(f"✅ Copied {file_path.name} to staging ({file_path.stat().st_size / (1024*1024):.1f}MB)")
+                    successful.append(staging_path)
+
+            except Exception as e:
+                error_msg = f"Copy failed: {e}"
+                logger.error(f"❌ {file_path.name}: {error_msg}")
+                failed.append((file_path, error_msg))
+
+        logger.info(f"📦 Staging complete: {len(successful)} copied, {len(failed)} skipped/failed")
+        return successful, failed
+
+    def _safe_delete_usb_file(self, usb_file: Path) -> bool:
+        """
+        Phase 1: Safely delete file from USB with permission handling
+        Strips extended attributes and ensures proper permissions before deletion
+        """
+        try:
+            # Step 1: Strip extended attributes (macOS metadata that blocks deletion)
+            try:
+                subprocess.run(['xattr', '-c', str(usb_file)],
+                             capture_output=True, check=False, timeout=5)
+                logger.debug(f"   Stripped extended attributes from {usb_file.name}")
+            except Exception as e:
+                logger.debug(f"   Could not strip xattr (may not exist): {e}")
+
+            # Step 2: Ensure write permissions
+            try:
+                usb_file.chmod(0o644)  # rw-r--r--
+                logger.debug(f"   Set permissions for {usb_file.name}")
+            except Exception as e:
+                logger.debug(f"   Could not set permissions: {e}")
+
+            # Step 3: Try multiple deletion methods
+
+            # Method 1: Path.unlink()
+            try:
+                usb_file.unlink()
+                logger.info(f"✅ Deleted from USB: {usb_file.name}")
+                return True
+            except PermissionError:
+                logger.debug(f"   Path.unlink() failed with PermissionError")
+            except Exception as e:
+                logger.debug(f"   Path.unlink() failed: {e}")
+
+            # Method 2: os.remove()
+            try:
+                os.remove(str(usb_file))
+                logger.info(f"✅ Deleted from USB: {usb_file.name}")
+                return True
+            except PermissionError:
+                logger.debug(f"   os.remove() failed with PermissionError")
+            except Exception as e:
+                logger.debug(f"   os.remove() failed: {e}")
+
+            # Method 3: subprocess rm -f
+            try:
+                result = subprocess.run(['rm', '-f', str(usb_file)],
+                                       capture_output=True, text=True, timeout=10)
+                if result.returncode == 0 and not usb_file.exists():
+                    logger.info(f"✅ Deleted from USB: {usb_file.name}")
+                    return True
+                else:
+                    logger.debug(f"   subprocess rm failed: {result.stderr}")
+            except Exception as e:
+                logger.debug(f"   subprocess rm failed: {e}")
+
+            # All methods failed
+            logger.warning(f"⚠️ Could not delete {usb_file.name} from USB (Operation not permitted)")
+            logger.warning(f"   File remains on USB - safe to manually delete after verification")
+            return False
+
+        except Exception as e:
+            logger.error(f"❌ Error during USB deletion for {usb_file.name}: {e}")
+            return False
+
+    def _cleanup_staging_files(self) -> int:
+        """
+        Phase 1: Clean up staging folder after successful processing
+        Returns count of files cleaned
+        """
+        try:
+            if not self.staging_folder.exists():
+                return 0
+
+            cleaned_count = 0
+            staging_files = list(self.staging_folder.glob("*.mp3"))
+
+            if not staging_files:
+                logger.debug("   No staging files to clean")
+                return 0
+
+            logger.info(f"🧹 Cleaning staging folder ({len(staging_files)} files)...")
+
+            for staging_file in staging_files:
+                try:
+                    staging_file.unlink()
+                    cleaned_count += 1
+                    logger.debug(f"   Cleaned staging: {staging_file.name}")
+                except Exception as e:
+                    logger.warning(f"⚠️ Could not clean staging file {staging_file.name}: {e}")
+
+            if cleaned_count > 0:
+                logger.info(f"✅ Staging cleanup complete: {cleaned_count} files removed")
+
+            return cleaned_count
+
+        except Exception as e:
+            logger.error(f"❌ Error during staging cleanup: {e}")
+            return 0
+
+    def _create_balanced_batches(self, files: List[Path]) -> List[List[Path]]:
+        """
+        Phase 1: Create duration-aware batches with work budget balancing
+        Distributes files to prevent one long file from dominating a batch
+        """
+        if not files:
+            return []
+
+        work_budget_minutes = self.config.get("processing.batch_work_budget_minutes", 7)
+        min_files = self.config.get("processing.batch_min_files", 1)
+        max_files = self.config.get("processing.batch_max_files", 4)
+
+        # Extract file durations
+        file_info = []
+        for file_path in files:
+            metadata = self._extract_file_metadata(file_path)
+            file_info.append({
+                'path': file_path,
+                'duration_minutes': metadata.get('estimated_minutes', 1),
+                'name': file_path.name
+            })
+
+        # Sort by duration (longest first) for better distribution
+        file_info.sort(key=lambda x: x['duration_minutes'], reverse=True)
+
+        batches = []
+        current_batch = []
+        current_batch_minutes = 0
+
+        for info in file_info:
+            file_path = info['path']
+            duration = info['duration_minutes']
+
+            # Check if adding this file would exceed work budget
+            would_exceed = (current_batch_minutes + duration) > work_budget_minutes
+            batch_full = len(current_batch) >= max_files
+
+            if current_batch and (would_exceed or batch_full):
+                # Start new batch
+                batches.append(current_batch)
+                current_batch = [file_path]
+                current_batch_minutes = duration
+            else:
+                # Add to current batch
+                current_batch.append(file_path)
+                current_batch_minutes += duration
+
+            # Ensure we don't create batches that are too small (unless it's the last file)
+            if len(current_batch) < min_files and len(batches) == 0:
+                continue
+
+        # Add final batch
+        if current_batch:
+            batches.append(current_batch)
+
+        # Log batch distribution
+        logger.info(f"📊 Created {len(batches)} balanced batches (target: {work_budget_minutes}min per batch)")
+        for i, batch in enumerate(batches, 1):
+            batch_minutes = sum(self._extract_file_metadata(f).get('estimated_minutes', 1) for f in batch)
+            logger.info(f"   Batch {i}: {len(batch)} files, ~{batch_minutes}min audio")
+
+        return batches
+
     def _check_system_resources(self) -> Tuple[bool, Dict]:
         """Check if system has sufficient resources for processing"""
         try:
@@ -800,9 +1061,9 @@ class RecordingOrchestrator:
             
             if existing_transcripts:
                 logger.info(f"ℹ️ Found {len(existing_transcripts)} existing transcripts, {len(files_needing_transcription)} files need transcription")
-            
-            # Create batches
-            batches = self._create_processing_batches(valid_files, batch_size)
+
+            # Phase 1: Create balanced batches with work budget
+            batches = self._create_balanced_batches(valid_files)
             
             successful_transcripts = []
             failed_files = []
@@ -823,8 +1084,9 @@ class RecordingOrchestrator:
                 batch_successes = []
                 batch_failures = []
                 
-                # Process files in parallel within batch
-                with ThreadPoolExecutor(max_workers=4) as executor:
+                # Phase 1: Process files in parallel within batch (use config workers)
+                max_workers = self.config.get("processing.parallel_transcription_workers", 3)
+                with ThreadPoolExecutor(max_workers=max_workers) as executor:
                     # Filter out files that already have transcripts
                     files_to_transcribe = []
                     for file_path in batch:
@@ -871,36 +1133,62 @@ class RecordingOrchestrator:
                                     failed_files.append(file_path)
                                     batch_failures.append(file_path)
                             else:
-                                # Retry once
-                                logger.info(f"🔄 Retrying transcription: {file_path.name}")
-                                retry_success, retry_error, retry_content = self._transcribe_single_file(
-                                    file_path, batch_num, 0
-                                )
-                                
-                                if retry_success:
-                                    transcript_name = file_path.stem + ".txt"
-                                    transcript_path = self.transcripts_folder / transcript_name
-                                    if transcript_path.exists():
-                                        successful_transcripts.append(transcript_path)
-                                        batch_successes.append(file_path)
-                                        self.state["current_session"]["transcripts_created"].append(transcript_name)
+                                # Phase 1: Smart retry policy - check if should retry
+                                should_retry = True
+
+                                # Don't retry on permission errors (use staging instead)
+                                if self.config.get("processing.retry_on_permission_errors", False) == False:
+                                    if "permission" in error_reason.lower() or "not permitted" in error_reason.lower():
+                                        should_retry = False
+                                        logger.info(f"⏭️ Skipping retry for {file_path.name}: permission error (use staging)")
+
+                                # Don't retry on "too short" errors
+                                if self.config.get("processing.retry_on_short_transcript_errors", False) == False:
+                                    if "too short" in error_reason.lower() or "transcript too short" in error_reason.lower():
+                                        should_retry = False
+                                        logger.info(f"⏭️ Skipping retry for {file_path.name}: transcript too short")
+
+                                if should_retry:
+                                    logger.info(f"🔄 Retrying transcription: {file_path.name}")
+                                    retry_success, retry_error, retry_content = self._transcribe_single_file(
+                                        file_path, batch_num, 0
+                                    )
+
+                                    if retry_success:
+                                        transcript_name = file_path.stem + ".txt"
+                                        transcript_path = self.transcripts_folder / transcript_name
+                                        if transcript_path.exists():
+                                            successful_transcripts.append(transcript_path)
+                                            batch_successes.append(file_path)
+                                            self.state["current_session"]["transcripts_created"].append(transcript_name)
+                                        else:
+                                            failed_files.append(file_path)
+                                            batch_failures.append(file_path)
                                     else:
                                         failed_files.append(file_path)
                                         batch_failures.append(file_path)
+
+                                        # Move failed file to failed folder
+                                        self._move_failed_file(file_path, retry_error, "recording")
+
+                                        # Update state
+                                        self.state["current_session"]["failed_transcriptions"].append(file_path.name)
                                 else:
+                                    # Don't retry - mark as failed immediately
                                     failed_files.append(file_path)
                                     batch_failures.append(file_path)
-                                    
+
                                     # Move failed file to failed folder
-                                    self._move_failed_file(file_path, retry_error, "recording")
-                                    
+                                    self._move_failed_file(file_path, error_reason, "recording")
+
                                     # Update state
                                     self.state["current_session"]["failed_transcriptions"].append(file_path.name)
                             
-                            # Monitor CPU usage
+                            # Phase 1: Monitor CPU usage with configurable threshold
                             cpu_usage = self._monitor_cpu_usage()
-                            if cpu_usage > 75:
-                                logger.warning(f"⚠️ High CPU usage: {cpu_usage:.1f}% - waiting 2 seconds")
+                            cpu_limit = self.config.get("processing.cpu_usage_limit_percent", 70)
+                            if cpu_usage > cpu_limit:
+                                logger.warning(f"⚠️ High CPU usage: {cpu_usage:.1f}% (limit: {cpu_limit}%) - waiting 2 seconds")
                                 time.sleep(2)
                                 
                         except Exception as e:
@@ -1412,23 +1700,25 @@ class RecordingOrchestrator:
             return False, Path(), error_msg
     
     def _cleanup_recorder_file(self, mp3_file: Path, archive_path: Path) -> bool:
-        """Safely delete .mp3 file from recorder after successful archiving"""
+        """
+        Phase 1: Safely delete .mp3 file from recorder after successful archiving
+        Uses permission-aware deletion with extended attribute handling
+        """
         try:
             # Double-check: archive must exist and have correct size
             if not archive_path.exists():
                 logger.error(f"❌ Cannot delete {mp3_file.name}: Archive file missing")
                 return False
-            
+
             # Verify archive integrity
             if mp3_file.stat().st_size != archive_path.stat().st_size:
                 logger.error(f"❌ Cannot delete {mp3_file.name}: Archive size mismatch")
                 return False
-            
-            # Safe to delete from recorder
-            mp3_file.unlink()
-            logger.info(f"🗑️ Cleaned up recorder: {mp3_file.name}")
-            return True
-            
+
+            # Phase 1: Use safe deletion with permission handling
+            success = self._safe_delete_usb_file(mp3_file)
+            return success
+
         except Exception as e:
             logger.error(f"❌ Error cleaning up {mp3_file.name}: {e}")
             return False
@@ -1789,10 +2079,9 @@ class RecordingOrchestrator:
                 if mp3_path.exists():
                     # Handle duplicates (no archive path to verify)
                     if file_info.get("skip_reason") == "duplicate":
-                        # For duplicates, just delete the MP3 (archive already exists)
-                        mp3_path.unlink()
-                        mp3_cleanup_count += 1
-                        logger.info(f"🗑️ Cleaned up duplicate recorder: {file_info['original_name']}")
+                        # Phase 1: For duplicates, use safe deletion
+                        if self._safe_delete_usb_file(mp3_path):
+                            mp3_cleanup_count += 1
                     else:
                         # For successful analyses, verify archive before cleanup
                         if self._cleanup_recorder_file(mp3_path, Path(file_info["archive_path"])):
@@ -1840,6 +2129,12 @@ class RecordingOrchestrator:
                 logger.error(f"❌ Error during cleanup: {e}")
         
         logger.info(f"📊 Cleanup Summary: {mp3_cleanup_count} MP3s, {transcript_cleanup_count} transcripts")
+
+        # Phase 1: Clean up staging folder
+        staging_cleaned = self._cleanup_staging_files()
+        if staging_cleaned > 0:
+            logger.info(f"🧹 Staging cleanup: {staging_cleaned} files removed")
+
         return mp3_cleanup_count, transcript_cleanup_count, cleanup_failures
     
     def step5_verify_and_archive(self, successful_transcripts: List[Path], successful_analyses: List[Dict]) -> bool:
@@ -1939,7 +2234,7 @@ class RecordingOrchestrator:
         """Main orchestrator run method"""
         logger.info("🚀 Starting Voice Recording Orchestrator")
         logger.info("=" * 60)
-        
+
         try:
             # Step 1: Monitor & Detect
             if 'detect' in self.skip_steps:
@@ -1948,7 +2243,9 @@ class RecordingOrchestrator:
                 # For testing: assume files exist
                 unprocessed_files = []
             else:
+                self.performance_tracker.start_phase('detect')
                 success, unprocessed_files = self.step1_monitor_and_detect()
+                self.performance_tracker.end_phase('detect', files_processed=len(unprocessed_files) if unprocessed_files else 0)
                 
                 if not success:
                     logger.error("❌ Orchestrator failed at Step 1")
@@ -1966,7 +2263,9 @@ class RecordingOrchestrator:
                 valid_files = unprocessed_files
                 time_estimate = 0
             else:
+                self.performance_tracker.start_phase('validate')
                 success, valid_files, time_estimate = self.step2_validate_and_prepare(unprocessed_files)
+                self.performance_tracker.end_phase('validate', files_processed=len(valid_files) if valid_files else 0)
                 
                 if not success:
                     logger.error("❌ Orchestrator failed at Step 2")
@@ -1986,7 +2285,11 @@ class RecordingOrchestrator:
                 successful_transcripts = list(self.transcripts_folder.glob("*.txt"))
                 failed_files = []
             else:
+                self.performance_tracker.start_phase('transcribe')
                 success, successful_transcripts, failed_files = self.step3_transcribe(valid_files, time_estimate)
+                self.performance_tracker.end_phase('transcribe',
+                    files_processed=len(successful_transcripts) if successful_transcripts else 0,
+                    files_failed=len(failed_files) if failed_files else 0)
             
             if not success:
                 logger.error("❌ Orchestrator failed at Step 3")
@@ -2014,7 +2317,11 @@ class RecordingOrchestrator:
                 successful_analyses = []
                 failed_transcripts = []
             else:
+                self.performance_tracker.start_phase('process')
                 success, successful_analyses, failed_transcripts = self.step4_stage_and_process(successful_transcripts)
+                self.performance_tracker.end_phase('process',
+                    files_processed=len(successful_analyses) if successful_analyses else 0,
+                    files_failed=len(failed_transcripts) if failed_transcripts else 0)
                 
                 if not success:
                     logger.error("❌ Orchestrator failed at Step 4")
@@ -2046,14 +2353,35 @@ class RecordingOrchestrator:
                 logger.info("⏭️ SKIPPED: Step 5 (Verify & Archive & Cleanup)")
                 success = True
             else:
+                self.performance_tracker.start_phase('archive')
                 success = self.step5_verify_and_archive(successful_transcripts, successful_analyses)
-            
+                self.performance_tracker.end_phase('archive',
+                    files_processed=len(successful_analyses) if successful_analyses else 0)
+
             if not success:
                 logger.warning("⚠️ Step 5 failed - keeping files for manual review")
+                # Generate performance report even on partial failure
+                logger.info("")
+                logger.info("=" * 60)
+                report = self.performance_tracker.generate_report()
+                print(report)
                 return True  # Still consider orchestrator successful
-            
+
             logger.info("🎉 Orchestrator completed successfully!")
             logger.info("🔄 Ready for next recording session")
+
+            # Phase 1: Generate performance report
+            logger.info("")
+            logger.info("=" * 60)
+            report = self.performance_tracker.generate_report()
+            print(report)
+
+            # Save detailed report to file
+            report_path = self.project_root / "logs" / f"performance_report_{datetime.now().strftime('%Y%m%d_%H%M%S')}.txt"
+            report_path.parent.mkdir(exist_ok=True)
+            self.performance_tracker.save_report(str(report_path))
+            logger.info(f"📊 Detailed performance report saved to: {report_path.name}")
+
             return True
             
         except Exception as e:
@@ -2126,7 +2454,14 @@ Available steps to skip:
         action='store_true',
         help='Auto-continue through all steps without manual approval prompts'
     )
-    
+
+    parser.add_argument(
+        '--max-files',
+        type=int,
+        metavar='N',
+        help='Limit processing to first N files (useful for testing, Phase 1 optimization)'
+    )
+
     return parser.parse_args()
 
 def main():
@@ -2163,9 +2498,10 @@ def main():
     
     # Create orchestrator with options
     orchestrator = RecordingOrchestrator(
-        dry_run=args.dry_run, 
+        dry_run=args.dry_run,
         skip_steps=skip_steps,
-        auto_continue=args.auto_continue
+        auto_continue=args.auto_continue,
+        max_files=args.max_files  # Phase 1: File limit for testing
     )
     success = orchestrator.run()
     

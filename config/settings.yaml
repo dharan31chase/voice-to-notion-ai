@@ -22,6 +22,7 @@ paths:
   failed: "Failed/"
   cache: ".cache/"
   config: "config/"
+  staging: "staging/"  # Phase 1: Local staging for USB files before transcription
   usb_recorder: "/Volumes/IC RECORDER/REC_FILE/FOLDER01"
 
 # Notion Integration
@@ -42,8 +43,17 @@ features:
 processing:
   min_transcript_length: 10  # Characters
   min_file_size: 10  # Bytes
-  parallel_transcription_workers: 4
-  cpu_usage_limit_percent: 50
+  parallel_transcription_workers: 3  # Reduced from 4 for better CPU utilization (Phase 1 optimization)
+  cpu_usage_limit_percent: 70  # Increased from 50 to reduce throttling cycles (Phase 1 optimization)
+
+  # Phase 1 Performance Optimizations
+  staging_enabled: true  # Copy files to local SSD before transcription (eliminates USB I/O bottleneck)
+  batch_work_budget_minutes: 7  # Target audio duration per batch for balanced processing
+  batch_min_files: 1  # Allow single long file in a batch
+  batch_max_files: 4  # Maximum files per batch to prevent oversized batches
+  skip_short_audio_seconds: 2  # Auto-skip audio files shorter than this (likely recording errors)
+  retry_on_permission_errors: false  # Don't retry USB permission errors (Phase 1: use staging instead)
+  retry_on_short_transcript_errors: false  # Don't retry "transcript too short" errors
 
 # Whisper Transcription Settings
 whisper:
