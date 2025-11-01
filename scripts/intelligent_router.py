@@ -14,6 +14,7 @@ if str(parent_dir) not in sys.path:
 
 # Import project modules (after path setup)
 from scripts.icon_manager import IconManager
+from scripts.routers.duration_estimator import DurationEstimator
 
 # Import shared utilities
 from core.openai_client import get_openai_client
@@ -26,14 +27,14 @@ client = get_openai_client()
 class IntelligentRouter:
     def __init__(self):
         self.icon_manager = IconManager()
-        
+
         # Try to load configuration system
         try:
             # Add parent directory to path to import core module
             parent_dir = Path(__file__).parent.parent
             if str(parent_dir) not in sys.path:
                 sys.path.insert(0, str(parent_dir))
-            
+
             from core.config_loader import ConfigLoader
             self.config = ConfigLoader()
             self.use_config = True
@@ -42,6 +43,9 @@ class IntelligentRouter:
             self.config = None
             self.use_config = False
             logger.warning(f"⚠️ Config unavailable, using hardcoded values: {e}")
+
+        # Initialize specialized routers
+        self.duration_estimator = DurationEstimator(self.config)
     
     def detect_project(self, content):
         """Use AI to intelligently detect which project this content belongs to"""
@@ -226,67 +230,19 @@ Return ONLY the exact project name.
             return "Manual Review Required"
     
     def estimate_duration_and_due_date(self, content):
-        """Use AI to estimate task duration and suggest due date"""
-    
-        from datetime import datetime, timedelta
-    
-        # Get current date dynamically
-        today = datetime.now()
-        today_str = today.strftime("%Y-%m-%d")
-        day_name = today.strftime("%A")
-    
-        # Calculate end of week and end of month
-        days_until_friday = (4 - today.weekday()) % 7  # Friday is weekday 4
-        if days_until_friday == 0:  # If today is Friday
-            days_until_friday = 7   # Next Friday
-        end_of_week = (today + timedelta(days=days_until_friday)).strftime("%Y-%m-%d")
-    
-        # End of month
-        next_month = today.replace(day=28) + timedelta(days=4)
-        end_of_month = (next_month - timedelta(days=next_month.day)).strftime("%Y-%m-%d")
-    
-        prompt = f"""
-Analyze this task and estimate duration: "{content}"
+        """
+        Estimate task duration and suggest due date.
 
-Duration Guidelines:
-- QUICK (2 minutes or less): Calls, payments, quick Google searches, simple emails
-- MEDIUM (15-30 minutes): Research tasks, planning, coordination, writing
-- LONG (hours/days): Setup, installation, complex research, multi-step projects
+        Delegates to DurationEstimator router for clean separation of concerns.
+        Kept for backward compatibility with existing code.
 
-Due Date Logic:
-- QUICK tasks: Due today ({today_str})
-- MEDIUM tasks: Due end of week ({end_of_week})
-- LONG tasks: Due end of month ({end_of_month})
+        Args:
+            content: Task description to analyze
 
-Today is {day_name}, {today_str}.
-
-Return JSON format:
-{{
-    "duration_category": "QUICK|MEDIUM|LONG",
-    "estimated_minutes": number,
-    "due_date": "{today_str}",
-    "reasoning": "Brief explanation"
-}}
-"""
-    
-        try:
-            response = client.chat.completions.create(
-            model="gpt-3.5-turbo",
-            messages=[{"role": "user", "content": prompt}],
-            max_tokens=200
-        )
-        
-            result = json.loads(response.choices[0].message.content)
-            return result
-        
-        except Exception as e:
-            logger.error(f"Error estimating duration: {e}")
-            return {
-            "duration_category": "MEDIUM", 
-            "estimated_minutes": 20,
-            "due_date": end_of_week,
-            "reasoning": "Default fallback"
-        }
+        Returns:
+            Dictionary with duration_category, estimated_minutes, due_date, reasoning
+        """
+        return self.duration_estimator.estimate(content)
     
     def detect_special_tags(self, content):
         """Detect if task needs special tags like Communications or Needs Jessica Input"""
