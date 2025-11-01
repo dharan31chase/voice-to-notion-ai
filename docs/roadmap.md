@@ -1,6 +1,6 @@
 # AI Assistant - Product Roadmap
-**Last Updated**: October 9, 2025  
-**Status**: Active Development - Phase 2 In Progress
+**Last Updated**: October 31, 2025
+**Status**: Active Development - Phase A (Router Extraction) In Progress
 
 ---
 
@@ -55,26 +55,46 @@ This document consolidates all planned work across the AI Assistant project, org
 - [x] **Milestone 1.2**: Shared Utilities - OpenAI client, file utils, logging (87% code reduction)
 - [x] **Milestone 1.3**: CLI Foundation - argparse with dry-run, verbose, skip-steps
 
-### 🚀 In Progress (Phase 2)
+### ✅ Completed (Phase 2)
 - [x] **Milestone 2.1**: Extract Parsing Logic - Smart heuristics, 95%+ category detection
 - [x] **Milestone 2.2**: Extract AI Analysis Logic - TaskAnalyzer, NoteAnalyzer with content preservation
-- [ ] **Milestone 2.3**: Refactor Main Script - Pure coordinator pattern
+- [x] **Milestone 2.3**: Refactor Main Script - Pure coordinator pattern (574 → 425 lines)
+
+### 🚀 In Progress (Phase A - Router Extraction)
+**Goal**: Extract routing logic from intelligent_router.py into specialized router modules
+**Status**: 1/4 routers extracted (25% complete)
+**Timeline**: ~4-5 hours remaining
+
+- [x] **Step 1**: Router Infrastructure + DurationEstimator ✅ COMPLETE (Oct 31, 2025)
+  - Created `scripts/routers/` package with BaseRouter pattern
+  - Extracted DurationEstimator (200 lines, duration/due date logic)
+  - intelligent_router.py reduced from 430 → 388 lines (-10%)
+  - 100% backward compatible, zero breaking changes
+  - Ready for future enhancements (IDEAS_BUCKET, QUICK_ACTION categories)
+
+- [ ] **Step 2**: TagDetector Extraction ⏭️ NEXT
+  - Extract tag detection logic (~80 lines)
+  - Create `routers/tag_detector.py`
+  - Extensible architecture for future tags (priority, categories, people, AI-suggested)
+  - Estimated time: 1-2 hours
+
+- [ ] **Step 3**: IconSelector Extraction
+  - Thin wrapper around existing IconManager
+  - Create `routers/icon_selector.py`
+  - Estimated time: 1 hour
+
+- [ ] **Step 4**: ProjectDetector Extraction
+  - Most complex router (AI + fuzzy matching logic)
+  - Create `routers/project_detector.py`
+  - Estimated time: 2 hours
+
+- [ ] **Step 5**: Main Router Facade Refactoring
+  - intelligent_router.py becomes clean delegation layer (~150 lines final)
+  - Estimated time: 1 hour
 
 ### 📋 Planned
 
-#### Phase 3: Refactor `intelligent_router.py` (Week 3)
-- [ ] **Milestone 3.1**: Extract Project Detection
-  - Create `routers/project_detector.py`
-  - Move few-shot learning logic
-  - Fuzzy matching improvements
-- [ ] **Milestone 3.2**: Extract Duration Estimation
-  - Create `routers/duration_estimator.py`
-  - Configuration-driven duration rules
-- [ ] **Milestone 3.3**: Extract Icon Selection
-  - Already has `icon_manager.py`, integrate better
-  - Move remaining logic from router
-
-#### Phase 4: Refactor `recording_orchestrator.py` (Week 4) ⚠️ PRODUCTION-CRITICAL
+#### Phase B: Refactor `recording_orchestrator.py` ⚠️ PRODUCTION-CRITICAL
 - [ ] **Milestone 4.1**: Extract Step Modules
   - Create `orchestrator/steps/` directory
   - Separate: detect, validate, transcribe, process, archive

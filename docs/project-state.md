@@ -1,6 +1,6 @@
 # Voice-to-Notion AI Assistant - Project State & Decisions
 
-## Current Status (Phase 2 Complete - October 31, 2025)
+## Current Status (Phase A in Progress - October 31, 2025)
 - ✅ **Complete automation pipeline:** Voice → AI Analysis → Organized Notion PARA content
 - ✅ **Configuration System:** YAML-based config with environment variable overrides (Milestone 1.1)
 - ✅ **Shared Utilities:** Centralized OpenAI client, file utils, unified logging (Milestone 1.2)
@@ -28,8 +28,29 @@
 - ✅ **Unified Logging:** All scripts log to `logs/ai-assistant.log` with auto-rotation
 - ✅ **Retry Logic:** Automatic retry with exponential backoff for API calls
 - ✅ **Code Quality:** Reduced codebase by 7,160 lines (87% reduction in duplication)
+- ✅ **Router Infrastructure:** BaseRouter pattern for consistent interfaces (Phase A)
+- ✅ **DurationEstimator Router:** Extracted duration logic into specialized 200-line module (Phase A Step 1)
+- 🔄 **Router Refactoring:** Phase A in progress - 1/4 routers extracted, 25% complete
 
 ## Major Architecture Decisions Made
+
+### 17. Router Extraction Pattern (Phase A - October 31, 2025)
+**Decision:** Extract routing logic from intelligent_router.py into specialized router modules with BaseRouter pattern
+**Rationale:**
+- Single responsibility: Each router handles one concern (duration, tags, icons, projects)
+- Easy to test: Standalone testing without loading entire router
+- Easy to enhance: Add new categories/features by modifying specific router
+- Consistent interface: All routers follow same pattern (BaseRouter.route())
+**Implementation:**
+- Created `scripts/routers/` package with infrastructure
+- BaseRouter abstract class enforces consistent interface
+- DurationEstimator: 200 lines, handles duration/due date logic only
+- intelligent_router.py delegates to specialized routers (430 → 388 lines, -10%)
+**Result:**
+- 100% backward compatible, zero breaking changes
+- Ready for future enhancements (IDEAS_BUCKET, QUICK_ACTION categories)
+- Clean delegation pattern simplifies future router additions
+**Principle:** Composition over inheritance - router delegates work rather than doing it all
 
 ### 1. Content Preservation vs Summarization (Day 2)
 **Decision:** Hybrid approach - AI analysis for short content (<800 words), full preservation for long content

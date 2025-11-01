@@ -1,9 +1,9 @@
 # AI Assistant Refactoring Plan
 ## Comprehensive Architecture Analysis & Phased Roadmap
 
-**Date**: October 8, 2025  
-**Last Updated**: October 22, 2025  
-**Status**: 🚀 Phase 2 IN PROGRESS - Phase 1 ✅ (1.1, 1.2, 1.3) | Milestone 2.1 ✅ | Milestone 2.2 ✅ | **P0 Hotfix ✅**  
+**Date**: October 8, 2025
+**Last Updated**: October 31, 2025
+**Status**: 🚀 **Phase A IN PROGRESS** - Phase 1 ✅ (1.1, 1.2, 1.3) | Phase 2 ✅ (2.1, 2.2, 2.3) | **P0 Hotfix ✅** | Phase A: 1/4 Routers ✅
 **Goal**: Improve maintainability through Single Responsibility Principle, separation of concerns, and configuration management
 
 ---
@@ -14,11 +14,11 @@
 
 | Script | Lines | Responsibilities | Dependencies | Pain Points |
 |--------|-------|------------------|--------------|-------------|
-| `recording_orchestrator.py` | 1,995 | **9+** (Detection, Transcription, Processing, Archiving, State, Validation, Cleanup, Logging, CLI) | Minimal (by design) | 🔴 God Object, Too many responsibilities |
-| `project_matcher.py` | 650 | **4** (Caching, Notion API, Fuzzy Matching, Normalization) | `notion_client`, `difflib` | 🟡 Cache + matching logic mixed |
-| `process_transcripts.py` | 574 | **6+** (Parsing, AI Analysis, Project Extraction, Task Processing, Note Processing, File I/O) | `intelligent_router`, `project_matcher`, `openai` | 🔴 Multiple concerns, hard to extend |
+| `recording_orchestrator.py` | 2,518 | **9+** (Detection, Transcription, Processing, Archiving, State, Validation, Cleanup, Logging, CLI) | Minimal (by design) | 🔴 God Object, Too many responsibilities |
+| `process_transcripts.py` | 425 | **3** (Coordination, File I/O, CLI) | `parsers`, `analyzers`, `notion_manager` | 🟢 Clean coordinator (refactored) |
+| `intelligent_router.py` | 388 | **4** (Project Detection, Tag Detection, Icon Selection, Routing) | `openai`, `icon_manager`, `routers` | 🟡 Partially refactored (1/4 routers extracted) |
 | `notion_manager.py` | 513 | **5** (Task Creation, Note Creation, Project Relations, Content Chunking, API Calls) | `notion_client`, `intelligent_router`, `project_matcher` | 🟡 Mixed concerns, coupling |
-| `intelligent_router.py` | 301 | **5** (Project Detection, Duration Estimation, Tag Detection, Icon Selection, AI Prompts) | `openai`, `icon_manager` | 🟡 AI logic + business logic mixed |
+| `project_matcher.py` | 650 | **4** (Caching, Notion API, Fuzzy Matching, Normalization) | `notion_client`, `difflib` | 🟡 Cache + matching logic mixed |
 | `icon_manager.py` | 183 | **2** (Config Loading, Pattern Matching) | None | 🟢 Well-designed |
 
 ### 🔴 **Critical Issues Identified**
@@ -133,11 +133,12 @@ scripts/
 │   └── note_analyzer.py          # ✅ IMPLEMENTED (Milestone 2.2) - Note-specific analysis
 │
 ├── routers/
-│   ├── __init__.py
-│   ├── project_detector.py       # From intelligent_router.py
-│   ├── duration_estimator.py     # From intelligent_router.py
-│   ├── tag_detector.py           # From intelligent_router.py
-│   └── icon_selector.py          # Thin wrapper around icon_manager
+│   ├── __init__.py               # ✅ Created (Phase A)
+│   ├── base_router.py            # ✅ IMPLEMENTED (Phase A) - Abstract base class
+│   ├── duration_estimator.py     # ✅ IMPLEMENTED (Phase A) - Duration & due date logic
+│   ├── project_detector.py       # TODO: From intelligent_router.py
+│   ├── tag_detector.py           # TODO: From intelligent_router.py
+│   └── icon_selector.py          # TODO: Thin wrapper around icon_manager
 │
 ├── notion/
 │   ├── __init__.py
@@ -644,35 +645,123 @@ All 3 milestones delivered:
 
 **Key Achievement**: Zero breaking changes, all production-tested
 
-### **Phase 2: Refactor process_transcripts.py** 🚀 **IN PROGRESS**
+### **Phase 2: Refactor process_transcripts.py** ✅ **COMPLETE** (Oct 7-22, 2025)
+All 3 milestones delivered:
 - ✅ Milestone 2.1: Extract Parsing Logic (95%+ category detection)
 - ✅ Milestone 2.2: Extract AI Analysis Logic + Validation (content preservation)
-- 🔄 Milestone 2.3: Refactor Main Script (next)
+- ✅ Milestone 2.3: Refactor Main Script (425 lines, clean coordinator)
 
-**Current Focus**: Coordinator refactoring (Milestone 2.3)
+**Key Achievement**: 574 → 425 lines (-26%), single responsibility, testable components
+
+### **Phase A: Refactor intelligent_router.py (Router Extraction)** 🚀 **IN PROGRESS** (Oct 31, 2025)
+Router extraction for clean separation of concerns:
+- ✅ **Step 1**: Router Infrastructure + DurationEstimator (COMPLETE)
+  - Created `scripts/routers/` package with BaseRouter pattern
+  - Extracted DurationEstimator (200 lines, single responsibility)
+  - Reduced intelligent_router.py from 430 → 388 lines (-10%)
+  - 100% backward compatible, zero breaking changes
+  - Ready for future enhancements (IDEAS_BUCKET, QUICK_ACTION categories)
+
+- 🔄 **Step 2**: TagDetector extraction (NEXT)
+  - Extract tag detection logic (~80 lines)
+  - Configurable extensibility for future tags (priority, categories, people, AI-suggested)
+  - Estimated time: 1-2 hours
+
+- 🔄 **Step 3**: IconSelector extraction
+  - Thin wrapper around IconManager
+  - Estimated time: 1 hour
+
+- 🔄 **Step 4**: ProjectDetector extraction
+  - Most complex router (AI + fuzzy matching)
+  - Estimated time: 2 hours
+
+- 🔄 **Step 5**: Main router facade refactoring
+  - intelligent_router.py becomes clean delegation layer (~150 lines final)
+  - Estimated time: 1 hour
+
+**Phase A Progress**: 1/4 routers extracted (25% complete)
+**Estimated Completion**: 4-5 hours remaining
+**Current Focus**: TagDetector extraction (extensible design for future tags)
 
 ### **Upcoming Phases**
-- Phase 3: Refactor intelligent_router.py
-- Phase 4: Refactor recording_orchestrator.py (production-critical)
+- Phase B: Refactor recording_orchestrator.py (production-critical, 2,518 lines)
 - Phase 5-6: Complete system refactoring
-
-## 📋 Next Action Items
-
-### **Immediate (This Session)**
-1. ✅ Completed Milestone 2.2 - Analyzers + Validator
-2. 🔄 Continue to Milestone 2.3 - Main script coordinator
-
-### **Short-term (Next Session)**
-3. Complete Milestone 2.3 - Refactor main script
-4. Begin Phase 3 - intelligent_router modularization
-
-### **Long-term**
-5. Phase 4: recording_orchestrator refactoring (careful!)
-6. Phase 5-6: Complete system modularization
 
 ---
 
-*Last Updated: October 22, 2025 - **Phase 2 COMPLETE** (All Milestones 2.1, 2.2, 2.3 + P0 Hotfix) ✅*  
-*Next Update: After Phase 3 starts*
+## 💡 Future Enhancements Enabled by Refactoring
+
+### Duration Category Enhancements (DurationEstimator)
+**Current Categories**: QUICK (≤2 min), MEDIUM (15-30 min), LONG (hours/days)
+
+**Planned Enhancements** (After Phase A Complete):
+1. **QUICK_ACTION** - True 2-minute tasks
+   - Keywords: "call", "email", "quick"
+   - Due: Today
+   - Examples: "Call dentist", "Send email to team"
+
+2. **IDEAS_BUCKET** - Future evaluation tasks
+   - No time estimate (null)
+   - Due: End of month
+   - Keywords: "idea", "future", "evaluate", "brainstorm"
+   - Special handling: Route to "Ideas Inbox" in Notion
+   - Voice trigger: "This is something for the future"
+
+3. **EXTENDED** - Multi-day projects
+   - Duration: Days/weeks
+   - Due: Custom date logic (project-based)
+   - Examples: "Set up CI/CD pipeline", "Research and implement auth system"
+
+4. **Context-Aware Detection**
+   - Detect voice cues: "quick task", "long-term idea", "evaluate later"
+   - Adaptive due dates based on current workload
+   - Integration with Notion project timelines
+
+**Implementation Approach**:
+- Update `config/duration_rules.yaml` with new categories
+- Add keyword detection logic to DurationEstimator
+- No changes to intelligent_router.py needed (clean delegation!)
+
+### Tag System Enhancements (TagDetector - After Step 2)
+**Current Tags**: Communications, Needs Jessica Input
+
+**Planned Enhancements**:
+1. **Priority Levels**: Urgent, High, Medium, Low
+2. **Categories**: Health, Work, Personal, Finance, Learning
+3. **People Tags**: Jessica, Team Members, Family
+4. **AI-Suggested Tags**: GPT analyzes content and suggests relevant tags
+5. **Learning System**: Track manual tag corrections, improve detection
+
+**Configuration**: All via `config/tag_patterns.yaml` - no code changes!
+
+---
+
+## 📋 Next Action Items
+
+### **Immediate (Next Session)**
+1. ✅ Completed Phase A Step 1 - DurationEstimator extraction
+2. 🔄 **NEXT**: Phase A Step 2 - TagDetector extraction
+   - Extract tag detection logic (~80 lines)
+   - Design extensible architecture for future tags
+   - Estimated time: 1-2 hours
+3. Phase A Step 3 - IconSelector extraction (1 hour)
+4. Phase A Step 4 - ProjectDetector extraction (2 hours)
+5. Phase A Step 5 - Main router facade refactoring (1 hour)
+
+### **Short-term (After Phase A)**
+6. Begin Phase B - recording_orchestrator refactoring
+   - Extract file detector, transcriber, archiver modules
+   - Production-critical: requires careful testing
+   - Estimated time: 2-3 days
+
+### **Long-term**
+7. Complete Phase B - Orchestrator refactoring (2,518 → ~300 lines coordinator)
+8. Grok integration (trivial after refactoring - 2 hours)
+9. Phase 5-6: Complete system modularization
+
+---
+
+*Last Updated: October 31, 2025 - **Phase A Step 1 COMPLETE** (DurationEstimator) ✅*
+*Next Update: After Phase A Step 2 (TagDetector extraction)*
 
 
