@@ -1,0 +1,63 @@
+# Note Types Configuration
+# CRITICAL: Type values must match EXACTLY (case-sensitive, including emojis) with Notion database
+# Property name in Notion: "Note Type" (multi-select)
+#
+# Current Implementation: No note type detection yet (all commented out)
+# Future: Uncomment and add detection patterns when ready
+
+note_types:
+  # FUTURE NOTE TYPES (infrastructure ready, not yet implemented)
+  # Uncomment and add detection patterns when ready to use
+  # IMPORTANT: Values below match exact emoji + text from Notion screenshots
+
+  # MeetingNotes:
+  #   notion_value: "🤝 Meeting Notes"
+  #   description: "Notes from meetings"
+  #   detection:
+  #     type: "keyword"
+  #     patterns:
+  #       - "meeting"
+  #       - "discussion"
+  #       - "call with"
+  #       - "sync with"
+
+  # Ideas:
+  #   notion_value: "💡 Ideas"
+  #   description: "Idea notes and brainstorming"
+  #   detection:
+  #     type: "keyword"
+  #     patterns:
+  #       - "idea"
+  #       - "brainstorm"
+  #       - "concept"
+
+  # BookNotes:
+  #   notion_value: "📚 Book Notes"
+  #   description: "Notes from books and reading"
+  #   detection:
+  #     type: "keyword"
+  #     patterns:
+  #       - "book"
+  #       - "reading"
+  #       - "chapter"
+  #       - "author"
+
+  # Document:
+  #   notion_value: "📄 Document"  # TODO: Verify exact emoji from Notion
+  #   description: "Document-style notes"
+
+  # Framework:
+  #   notion_value: "⚙️ Framework"  # TODO: Verify exact emoji from Notion
+  #   description: "Framework and methodology notes"
+
+  # Quote:
+  #   notion_value: "💬 Quote"  # TODO: Verify exact emoji from Notion
+  #   description: "Quote collections"
+
+  # Reflection:
+  #   notion_value: "💭 Reflection"  # TODO: Verify exact emoji from Notion
+  #   description: "Personal reflections"
+
+# NOTE: All note types currently commented out
+# No note type detection is active in Phase A Step 2
+# Infrastructure is ready for future implementation

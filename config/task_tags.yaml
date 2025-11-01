@@ -1,0 +1,101 @@
+# Task Tags Configuration
+# CRITICAL: Tag values must match EXACTLY (case-sensitive, including emojis) with Notion database
+# Property name in Notion: "Tags" (multi-select)
+#
+# Current Implementation: Only 2 tags active (🤙 Communications, ❤️ Needs Jessica Input)
+# Future: 4 more tags ready to uncomment when needed
+
+tags:
+  Communications:
+    # EXACT value in Notion (case-sensitive, emoji included)
+    notion_value: "🤙 Communications"
+    description: "Tasks involving actual communication with people"
+    detection:
+      type: "keyword"  # keyword, ai, hybrid
+      patterns:
+        - "call"
+        - "email"
+        - "text"
+        - "message"
+        - "phone"
+        - "update parents"
+        - "contact"
+        - "coordinate with"
+        - "reach out"
+        - "follow up with"
+        - "send to"
+        - "notify"
+        - "inform"
+        - "tell"
+      # Additional validation: ensure people are involved
+      requires_context:
+        people_indicators:
+          - "parents"
+          - "team"
+          - "client"
+          - "customer"
+          - "person"
+          - "people"
+          - "someone"
+          - "them"
+          - "him"
+          - "her"
+
+  NeedsJessicaInput:
+    # EXACT value in Notion (case-sensitive, emoji included)
+    notion_value: "❤️ Needs Jessica Input"
+    description: "Tasks requiring Jessica's input or decision"
+    detection:
+      type: "keyword"
+      keywords:
+        - "home remodel"
+        - "baby"
+        - "green card"
+        - "major decision"
+        - "couple decision"
+        - "jessica"
+
+  # FUTURE TAGS (infrastructure ready, not yet implemented)
+  # Uncomment and add detection patterns when ready to use
+  # IMPORTANT: Get exact emoji + text from Notion screenshots before uncommenting
+
+  # Ideation:
+  #   notion_value: "💡 Ideation"  # TODO: Verify exact emoji + text from Notion
+  #   description: "Ideas and brainstorming"
+  #   detection:
+  #     type: "keyword"
+  #     patterns:
+  #       - "idea"
+  #       - "brainstorm"
+  #       - "ideation"
+
+  # Decision:
+  #   notion_value: "🅾️ Decision"  # TODO: Verify exact emoji + text from Notion
+  #   description: "Decisions to be made"
+  #   detection:
+  #     type: "keyword"
+  #     patterns:
+  #       - "decide"
+  #       - "decision"
+  #       - "choice"
+
+  # Reminder:
+  #   notion_value: "🔔 Reminder"  # TODO: Verify exact emoji + text from Notion
+  #   description: "Reminders for future actions"
+  #   detection:
+  #     type: "keyword"
+  #     patterns:
+  #       - "remind"
+  #       - "reminder"
+  #       - "don't forget"
+
+  # Tinker:
+  #   notion_value: "🛠️ Tinker"  # TODO: Verify exact emoji + text from Notion
+  #   description: "Exploratory and tinkering tasks"
+  #   detection:
+  #     type: "keyword"
+  #     patterns:
+  #       - "tinker"
+  #       - "explore"
+  #       - "experiment"
+  #       - "play with"
