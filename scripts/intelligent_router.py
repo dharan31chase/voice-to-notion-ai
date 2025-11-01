@@ -3,7 +3,6 @@ import json
 import sys
 from pathlib import Path
 from dotenv import load_dotenv
-from icon_manager import IconManager
 
 # Load environment variables first
 load_dotenv()
@@ -12,6 +11,9 @@ load_dotenv()
 parent_dir = Path(__file__).parent.parent
 if str(parent_dir) not in sys.path:
     sys.path.insert(0, str(parent_dir))
+
+# Import project modules (after path setup)
+from scripts.icon_manager import IconManager
 
 # Import shared utilities
 from core.openai_client import get_openai_client

@@ -5,8 +5,6 @@ from dotenv import load_dotenv
 from notion_client import Client
 import json
 from datetime import datetime
-from intelligent_router import IntelligentRouter
-from project_matcher import ProjectMatcher
 
 # Load environment variables first
 load_dotenv()
@@ -15,6 +13,10 @@ load_dotenv()
 parent_dir = Path(__file__).parent.parent
 if str(parent_dir) not in sys.path:
     sys.path.insert(0, str(parent_dir))
+
+# Import project modules (after path setup)
+from scripts.intelligent_router import IntelligentRouter
+from scripts.project_matcher import ProjectMatcher
 
 # Import shared utilities
 from core.logging_utils import get_logger
