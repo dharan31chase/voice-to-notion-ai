@@ -19,9 +19,11 @@ __version__ = "2.0.0"  # Phase B refactoring
 # Expose main classes for easy importing
 from .state import StateManager
 from .detection import USBDetector, FileValidator
+from .staging import StagingManager
 
 __all__ = [
     "StateManager",
     "USBDetector",
     "FileValidator",
+    "StagingManager",
 ]

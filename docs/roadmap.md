@@ -262,6 +262,14 @@ Recording → Whisper → Raw Transcript → [GPT Formatter] → Structured Noti
   - Track skipped files in state
   - `--only-skipped` flag to process previously filtered files
   - Useful for "quick pass now, long files later" workflow
+- [ ] **Staging File Age Limits** (NEW - Nov 2, 2025)
+  - Auto-cleanup staging files older than configurable threshold (default 7 days)
+  - Prevents staging folder accumulation when sessions fail before archiving
+  - Configuration via `processing.staging_max_age_days` in settings.yaml
+  - Runs during startup cleanup phase
+  - **Context**: Currently staging files only clean up after successful archiving
+  - **Problem**: Files accumulate indefinitely if session fails before Step 5 archiving
+  - **Effort**: ~1 hour (add age check to StagingManager.cleanup_staging())
 - [ ] **Speaker Diarization** (who said what)
   - Identify different speakers
   - Useful for meeting/interview recordings

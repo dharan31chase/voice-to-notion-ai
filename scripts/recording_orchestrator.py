@@ -88,6 +88,10 @@ class RecordingOrchestrator:
         self.usb_detector = USBDetector(self.recorder_path)
         self.file_validator = FileValidator(self.config)
 
+        # Initialize staging manager (Phase B Step 4)
+        from orchestration.staging import StagingManager
+        self.staging_manager = StagingManager(self.staging_folder)
+
         # Current session info
         self.current_session_id = None
         self.session_start_time = None
@@ -436,145 +440,50 @@ class RecordingOrchestrator:
 
     def _copy_files_to_staging(self, files: List[Path]) -> Tuple[List[Path], List[Tuple[Path, str]]]:
         """
-        Phase 1: Copy files from USB to local staging folder
+        Phase B Step 4: Copy files from USB to local staging folder
+        Delegates to StagingManager after filtering short files
         Returns: (successful_copies, failed_copies)
         """
-        successful = []
-        failed = []
-
+        # Check if staging is enabled
         staging_enabled = self.config.get("processing.staging_enabled", True)
         if not staging_enabled:
             logger.info("ℹ️ Staging disabled - will transcribe directly from USB")
             return files, []
 
-        logger.info(f"📦 Copying {len(files)} files from USB to staging...")
+        # Filter out short files BEFORE staging (Option B: Orchestrator responsibility)
+        files_to_stage = []
+        failed = []
 
         for file_path in files:
-            try:
-                # Check if should skip short files
-                should_skip, skip_reason = self._should_skip_short_file(file_path)
-                if should_skip:
-                    logger.info(f"⏭️ Skipping {file_path.name}: {skip_reason}")
-                    failed.append((file_path, skip_reason))
-                    continue
+            should_skip, skip_reason = self._should_skip_short_file(file_path)
+            if should_skip:
+                logger.info(f"⏭️ Skipping {file_path.name}: {skip_reason}")
+                failed.append((file_path, skip_reason))
+            else:
+                files_to_stage.append(file_path)
 
-                # Copy to staging
-                staging_path = self.staging_folder / file_path.name
+        # Delegate to StagingManager
+        successful, staging_failures = self.staging_manager.copy_to_staging(files_to_stage)
 
-                if staging_path.exists():
-                    logger.info(f"ℹ️ {file_path.name} already in staging")
-                    successful.append(staging_path)
-                else:
-                    shutil.copy2(str(file_path), str(staging_path))
-                    logger.info(f"✅ Copied {file_path.name} to staging ({file_path.stat().st_size / (1024*1024):.1f}MB)")
-                    successful.append(staging_path)
+        # Combine failures from filtering and staging
+        failed.extend(staging_failures)
 
-            except Exception as e:
-                error_msg = f"Copy failed: {e}"
-                logger.error(f"❌ {file_path.name}: {error_msg}")
-                failed.append((file_path, error_msg))
-
-        logger.info(f"📦 Staging complete: {len(successful)} copied, {len(failed)} skipped/failed")
         return successful, failed
 
     def _safe_delete_usb_file(self, usb_file: Path) -> bool:
         """
-        Phase 1: Safely delete file from USB with permission handling
-        Strips extended attributes and ensures proper permissions before deletion
+        Phase B Step 4: Safely delete file from USB
+        Delegates to StagingManager for platform-specific deletion handling
         """
-        try:
-            # Step 1: Strip extended attributes (macOS metadata that blocks deletion)
-            try:
-                subprocess.run(['xattr', '-c', str(usb_file)],
-                             capture_output=True, check=False, timeout=5)
-                logger.debug(f"   Stripped extended attributes from {usb_file.name}")
-            except Exception as e:
-                logger.debug(f"   Could not strip xattr (may not exist): {e}")
-
-            # Step 2: Ensure write permissions
-            try:
-                usb_file.chmod(0o644)  # rw-r--r--
-                logger.debug(f"   Set permissions for {usb_file.name}")
-            except Exception as e:
-                logger.debug(f"   Could not set permissions: {e}")
-
-            # Step 3: Try multiple deletion methods
-
-            # Method 1: Path.unlink()
-            try:
-                usb_file.unlink()
-                logger.info(f"✅ Deleted from USB: {usb_file.name}")
-                return True
-            except PermissionError:
-                logger.debug(f"   Path.unlink() failed with PermissionError")
-            except Exception as e:
-                logger.debug(f"   Path.unlink() failed: {e}")
-
-            # Method 2: os.remove()
-            try:
-                os.remove(str(usb_file))
-                logger.info(f"✅ Deleted from USB: {usb_file.name}")
-                return True
-            except PermissionError:
-                logger.debug(f"   os.remove() failed with PermissionError")
-            except Exception as e:
-                logger.debug(f"   os.remove() failed: {e}")
-
-            # Method 3: subprocess rm -f
-            try:
-                result = subprocess.run(['rm', '-f', str(usb_file)],
-                                       capture_output=True, text=True, timeout=10)
-                if result.returncode == 0 and not usb_file.exists():
-                    logger.info(f"✅ Deleted from USB: {usb_file.name}")
-                    return True
-                else:
-                    logger.debug(f"   subprocess rm failed: {result.stderr}")
-            except Exception as e:
-                logger.debug(f"   subprocess rm failed: {e}")
-
-            # All methods failed
-            logger.warning(f"⚠️ Could not delete {usb_file.name} from USB (Operation not permitted)")
-            logger.warning(f"   File remains on USB - safe to manually delete after verification")
-            return False
-
-        except Exception as e:
-            logger.error(f"❌ Error during USB deletion for {usb_file.name}: {e}")
-            return False
+        return self.staging_manager.safe_delete_usb(usb_file)
 
     def _cleanup_staging_files(self) -> int:
         """
-        Phase 1: Clean up staging folder after successful processing
+        Phase B Step 4: Clean up staging folder after successful processing
+        Delegates to StagingManager
         Returns count of files cleaned
         """
-        try:
-            if not self.staging_folder.exists():
-                return 0
-
-            cleaned_count = 0
-            staging_files = list(self.staging_folder.glob("*.mp3"))
-
-            if not staging_files:
-                logger.debug("   No staging files to clean")
-                return 0
-
-            logger.info(f"🧹 Cleaning staging folder ({len(staging_files)} files)...")
-
-            for staging_file in staging_files:
-                try:
-                    staging_file.unlink()
-                    cleaned_count += 1
-                    logger.debug(f"   Cleaned staging: {staging_file.name}")
-                except Exception as e:
-                    logger.warning(f"⚠️ Could not clean staging file {staging_file.name}: {e}")
-
-            if cleaned_count > 0:
-                logger.info(f"✅ Staging cleanup complete: {cleaned_count} files removed")
-
-            return cleaned_count
-
-        except Exception as e:
-            logger.error(f"❌ Error during staging cleanup: {e}")
-            return 0
+        return self.staging_manager.cleanup_staging()
 
     def _create_balanced_batches(self, files: List[Path]) -> List[List[Path]]:
         """
