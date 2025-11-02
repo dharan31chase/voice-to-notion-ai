@@ -36,6 +36,7 @@ from core.config_loader import ConfigLoader
 
 # Import orchestration modules
 from orchestration.state import StateManager
+from orchestration.detection import USBDetector, FileValidator
 
 # Try to import Notion client, but don't fail if it's not available
 try:
@@ -82,6 +83,10 @@ class RecordingOrchestrator:
         # Initialize state manager (Phase B Step 2)
         self.state_manager = StateManager(self.state_file, self.cache_folder)
         self.state = self.state_manager.load_state()
+
+        # Initialize detection modules (Phase B Step 3)
+        self.usb_detector = USBDetector(self.recorder_path)
+        self.file_validator = FileValidator(self.config)
 
         # Current session info
         self.current_session_id = None
@@ -175,65 +180,28 @@ class RecordingOrchestrator:
         self.state_manager.save_state(state)
     
     def _check_usb_connection(self) -> bool:
-        """Check if USB recorder is connected and accessible"""
-        try:
-            if not self.recorder_path.exists():
-                logger.error(f"❌ USB recorder not found at: {self.recorder_path}")
-                return False
-            
-            # Test if we can read the directory
-            os.listdir(self.recorder_path)
-            logger.info(f"✅ USB recorder connected: {self.recorder_path}")
-            return True
-            
-        except Exception as e:
-            logger.error(f"❌ Cannot access USB recorder: {e}")
-            return False
+        """
+        Check if USB recorder is connected and accessible.
+
+        Now delegates to USBDetector.
+        """
+        return self.usb_detector.check_connection()
     
     def _scan_mp3_files(self) -> List[Path]:
-        """Scan recorder folder for .mp3 files, excluding macOS hidden files"""
-        try:
-            all_mp3_files = list(self.recorder_path.glob("*.mp3"))
-            
-            # Filter out macOS hidden files (._* prefix)
-            mp3_files = [f for f in all_mp3_files if not f.name.startswith('._')]
-            
-            hidden_count = len(all_mp3_files) - len(mp3_files)
-            if hidden_count > 0:
-                logger.debug(f"⏭️ Filtered out {hidden_count} macOS hidden files (._* prefix)")
-            
-            logger.info(f"📁 Found {len(mp3_files)} .mp3 files in {self.recorder_path}")
-            return mp3_files
-        except Exception as e:
-            logger.error(f"❌ Error scanning for .mp3 files: {e}")
-            return []
+        """
+        Scan recorder folder for .mp3 files, excluding macOS hidden files.
+
+        Now delegates to USBDetector.
+        """
+        return self.usb_detector.scan_files()
     
     def _validate_file_integrity(self, file_path: Path) -> Tuple[bool, str]:
-        """Validate .mp3 file integrity"""
-        try:
-            # Check if file exists and is readable
-            if not file_path.exists():
-                return False, "File does not exist"
-            
-            # Check file size (should be > 0 bytes)
-            file_size = file_path.stat().st_size
-            if file_size == 0:
-                return False, "File is empty (0 bytes)"
-            
-            # Check if file is readable
-            with open(file_path, 'rb') as f:
-                f.read(1024)  # Read first 1KB to test access
-                
-            # Basic .mp3 validation (check file extension and size)
-            if file_path.suffix.lower() != '.mp3':
-                return False, "File is not .mp3 format"
-            
-            # Log file info
-            logger.debug(f"✅ File validated: {file_path.name} ({file_size} bytes)")
-            return True, "OK"
-            
-        except Exception as e:
-            return False, f"Validation error: {e}"
+        """
+        Validate .mp3 file integrity.
+
+        Now delegates to FileValidator.
+        """
+        return self.file_validator.validate_integrity(file_path)
     
     def _generate_session_id(self) -> str:
         """
@@ -244,25 +212,16 @@ class RecordingOrchestrator:
         return self.state_manager.generate_session_id()
     
     def _get_unprocessed_files(self, mp3_files: List[Path]) -> List[Path]:
-        """Identify files that haven't been processed yet"""
-        processed_files = set()
-        
-        # Get list of already processed files from state
-        if self.state.get("current_session") and self.state["current_session"].get("recordings_processed"):
-            processed_files.update(self.state["current_session"]["recordings_processed"])
-        
-        # Add files from previous sessions
-        for session in self.state.get("previous_sessions", []):
-            if session.get("recordings_processed"):
-                processed_files.update(session["recordings_processed"])
-        
-        # Filter out already processed files
-        unprocessed = [f for f in mp3_files if f.name not in processed_files]
-        
-        logger.info(f"🔍 Already processed: {len(processed_files)}")
-        logger.info(f"📋 New files to process: {len(unprocessed)}")
-        
-        return unprocessed
+        """
+        Identify files that haven't been processed yet.
+
+        Now delegates to USBDetector (gets processed files from StateManager).
+        """
+        # Get processed files from state manager
+        processed_files = self.state_manager.get_processed_files()
+
+        # Delegate filtering to USBDetector
+        return self.usb_detector.get_unprocessed_files(mp3_files, processed_files)
     
     def _run_automatic_cleanup(self):
         """Run automatic 7-day cleanup of old archives"""
@@ -880,39 +839,20 @@ class RecordingOrchestrator:
             return False, [], {}
     
     def _check_whisper_installation(self) -> bool:
-        """Check if Whisper is installed and accessible"""
-        try:
-            result = subprocess.run(['whisper', '--help'], 
-                                  capture_output=True, text=True, timeout=10)
-            if result.returncode == 0:
-                logger.info("✅ Whisper CLI found and accessible")
-                return True
-            else:
-                logger.error("❌ Whisper CLI not working properly")
-                return False
-        except FileNotFoundError:
-            logger.error("❌ Whisper CLI not found. Please install: pip install openai-whisper")
-            return False
-        except Exception as e:
-            logger.error(f"❌ Error checking Whisper: {e}")
-            return False
+        """
+        Check if Whisper is installed and accessible.
+
+        Now delegates to FileValidator.
+        """
+        return self.file_validator.check_dependencies()
     
     def _check_disk_space(self, required_mb: float) -> bool:
-        """Check if sufficient disk space is available"""
-        try:
-            total, used, free = shutil.disk_usage(self.project_root)
-            free_mb = free / (1024 * 1024)
-            
-            if free_mb < required_mb:
-                logger.error(f"❌ Insufficient disk space: {free_mb:.1f}MB available, {required_mb:.1f}MB required")
-                return False
-            
-            logger.info(f"✅ Disk space OK: {free_mb:.1f}MB available, {required_mb:.1f}MB required")
-            return True
-            
-        except Exception as e:
-            logger.error(f"❌ Error checking disk space: {e}")
-            return False
+        """
+        Check if sufficient disk space is available.
+
+        Now delegates to FileValidator.
+        """
+        return self.file_validator.check_disk_space(self.project_root, required_mb)
     
     def _should_transcribe_audio(self, audio_file: Path) -> bool:
         """Check if we should transcribe this audio file (prevents duplicates)"""
@@ -1599,31 +1539,12 @@ class RecordingOrchestrator:
             raise
     
     def _check_usb_file_permissions(self, mp3_file: Path) -> bool:
-        """Check if USB recorder file has proper permissions for reading"""
-        try:
-            if not mp3_file.exists():
-                logger.error(f"❌ USB file not found: {mp3_file}")
-                return False
-            
-            # Check if file is readable
-            if not os.access(mp3_file, os.R_OK):
-                logger.warning(f"⚠️ USB file not readable: {mp3_file}")
-                logger.info(f"💡 File permissions: {oct(mp3_file.stat().st_mode)[-3:]}")
-                logger.info(f"💡 Try: chmod 644 '{mp3_file}'")
-                return False
-            
-            # Check file size
-            file_size = mp3_file.stat().st_size
-            if file_size == 0:
-                logger.error(f"❌ USB file is empty: {mp3_file}")
-                return False
-            
-            logger.info(f"✅ USB file permissions OK: {mp3_file.name} ({file_size} bytes)")
-            return True
-            
-        except Exception as e:
-            logger.error(f"❌ Error checking USB file permissions: {e}")
-            return False
+        """
+        Check if USB recorder file has proper permissions for reading.
+
+        Now delegates to USBDetector.
+        """
+        return self.usb_detector.check_permissions(mp3_file)
     
     def _ensure_archive_permissions(self, archive_folder: Path) -> bool:
         """Ensure archive folder has proper permissions for writing"""

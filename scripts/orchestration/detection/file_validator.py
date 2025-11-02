@@ -14,6 +14,9 @@ Does NOT handle:
 - USB operations (USBDetector)
 """
 
+import os
+import subprocess
+import shutil
 import logging
 from pathlib import Path
 from typing import Dict, List, Tuple
@@ -36,7 +39,7 @@ class FileValidator:
 
     def validate_integrity(self, file_path: Path) -> Tuple[bool, str]:
         """
-        Validate file integrity (check for corruption).
+        Validate .mp3 file integrity.
 
         Args:
             file_path: Path to audio file
@@ -44,94 +47,152 @@ class FileValidator:
         Returns:
             Tuple[bool, str]: (is_valid, message)
         """
-        # TODO: Extract from _validate_file_integrity()
-        # Should check:
-        # - File exists
-        # - File size > 0
-        # - File is readable
-        # - Basic MP3 header validation
-        pass
+        try:
+            # Check if file exists and is readable
+            if not file_path.exists():
+                return False, "File does not exist"
+
+            # Check file size (should be > 0 bytes)
+            file_size = file_path.stat().st_size
+            if file_size == 0:
+                return False, "File is empty (0 bytes)"
+
+            # Check if file is readable
+            with open(file_path, 'rb') as f:
+                f.read(1024)  # Read first 1KB to test access
+
+            # Basic .mp3 validation (check file extension and size)
+            if file_path.suffix.lower() != '.mp3':
+                return False, "File is not .mp3 format"
+
+            # Log file info
+            logger.debug(f"✅ File validated: {file_path.name} ({file_size} bytes)")
+            return True, "OK"
+
+        except Exception as e:
+            return False, f"Validation error: {e}"
 
     def validate_duration(self, file_path: Path) -> Tuple[bool, str]:
         """
         Check if file meets minimum duration requirements.
 
+        Uses file size estimate: 1MB ≈ 1 minute, so 33KB ≈ 2 seconds
+
         Args:
             file_path: Path to audio file
 
         Returns:
-            Tuple[bool, str]: (should_process, reason)
-                - (True, "") if should process
-                - (False, reason) if should skip
+            Tuple[bool, str]: (is_valid, reason)
+                - (True, "") if duration is acceptable
+                - (False, reason) if file is too short
         """
-        # TODO: Extract from _should_skip_short_file()
-        # Should:
-        # - Check file size (estimate duration)
-        # - Compare against minimum threshold
-        # - Return skip reason if too short
-        pass
+        try:
+            skip_threshold_seconds = self.config.get("processing.skip_short_audio_seconds", 2) if self.config else 2
+            skip_threshold_bytes = skip_threshold_seconds * 33 * 1024  # 33KB per 2 seconds
 
-    def validate_transcript(self, transcript_path: Path) -> bool:
+            file_size = file_path.stat().st_size
+
+            if file_size < skip_threshold_bytes:
+                estimated_seconds = file_size / (33 * 1024) * 2
+                reason = f"File too short (~{estimated_seconds:.1f}s, minimum {skip_threshold_seconds}s)"
+                return False, reason  # INVERTED: False = invalid/skip
+
+            return True, ""  # INVERTED: True = valid/process
+
+        except Exception as e:
+            logger.error(f"❌ Error checking file size for {file_path.name}: {e}")
+            return True, ""  # On error, allow processing (fail-open)
+
+    def validate_transcript(self, transcript_path: Path, project_root: Path) -> bool:
         """
-        Validate transcript file for AI processing.
+        Validate that a transcript is ready for AI processing.
 
         Args:
             transcript_path: Path to transcript text file
+            project_root: Project root directory
 
         Returns:
             bool: True if valid for processing
         """
-        # TODO: Extract from _validate_transcript_for_processing()
-        # Should check:
-        # - File exists
-        # - Not empty
-        # - UTF-8 readable
-        # - Minimum word count
-        pass
+        try:
+            if not transcript_path.exists():
+                logger.warning(f"⚠️ Transcript file not found: {transcript_path}")
+                return False
 
-    def check_dependencies(self) -> Tuple[bool, List[str]]:
+            # Check file size
+            file_size = transcript_path.stat().st_size
+            if file_size < 10:  # Less than 10 bytes
+                logger.warning(f"⚠️ Transcript too small: {transcript_path} ({file_size} bytes)")
+                return False
+
+            # Check if already processed
+            processed_file = project_root / "processed" / f"{transcript_path.stem}_processed.json"
+            if processed_file.exists():
+                logger.info(f"ℹ️ Transcript already processed: {transcript_path.stem}")
+                return False
+
+            # Read and validate content
+            with open(transcript_path, 'r', encoding='utf-8') as f:
+                content = f.read().strip()
+
+            if len(content) < 10:
+                logger.warning(f"⚠️ Transcript content too short: {transcript_path}")
+                return False
+
+            logger.info(f"✅ Transcript validated: {transcript_path.name} ({file_size} bytes, {len(content)} chars)")
+            return True
+
+        except Exception as e:
+            logger.error(f"❌ Error validating transcript {transcript_path}: {e}")
+            return False
+
+    def check_dependencies(self) -> bool:
         """
-        Check if required dependencies are installed.
+        Check if Whisper is installed and accessible.
 
         Returns:
-            Tuple[bool, List[str]]: (all_available, missing_dependencies)
+            bool: True if Whisper is available
         """
-        # TODO: Extract from _check_whisper_installation()
-        # Should check:
-        # - whisper CLI available
-        # - ffmpeg available
-        # - Other required tools
-        pass
+        try:
+            result = subprocess.run(['whisper', '--help'],
+                                  capture_output=True, text=True, timeout=10)
+            if result.returncode == 0:
+                logger.info("✅ Whisper CLI found and accessible")
+                return True
+            else:
+                logger.error("❌ Whisper CLI not working properly")
+                return False
 
-    def check_disk_space(self, required_mb: float) -> Tuple[bool, float]:
+        except FileNotFoundError:
+            logger.error("❌ Whisper CLI not found. Please install: pip install openai-whisper")
+            return False
+
+        except Exception as e:
+            logger.error(f"❌ Error checking Whisper: {e}")
+            return False
+
+    def check_disk_space(self, project_root: Path, required_mb: float) -> bool:
         """
         Check if sufficient disk space is available.
 
         Args:
+            project_root: Project root directory to check space for
             required_mb: Required space in megabytes
 
         Returns:
-            Tuple[bool, float]: (has_space, available_mb)
+            bool: True if sufficient space available
         """
-        # TODO: Extract from _check_disk_space()
-        # Should:
-        # - Check available space on target drive
-        # - Compare against required
-        # - Return available space
-        pass
+        try:
+            total, used, free = shutil.disk_usage(project_root)
+            free_mb = free / (1024 * 1024)
 
-    def get_processing_status(self, transcript_path: Path) -> str:
-        """
-        Get processing status of a transcript.
+            if free_mb < required_mb:
+                logger.error(f"❌ Insufficient disk space: {free_mb:.1f}MB available, {required_mb:.1f}MB required")
+                return False
 
-        Args:
-            transcript_path: Path to transcript
+            logger.info(f"✅ Disk space OK: {free_mb:.1f}MB available, {required_mb:.1f}MB required")
+            return True
 
-        Returns:
-            str: Status ("unprocessed", "processed", "failed", etc.)
-        """
-        # TODO: Extract from _get_transcript_processing_status()
-        # Should check:
-        # - Corresponding .json file exists
-        # - State file for this transcript
-        pass
+        except Exception as e:
+            logger.error(f"❌ Error checking disk space: {e}")
+            return False
