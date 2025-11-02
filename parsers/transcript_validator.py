@@ -163,3 +163,5 @@ class TranscriptValidator:
         return len(text.split())
 
 
+
+

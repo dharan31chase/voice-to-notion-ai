@@ -1,20 +1,183 @@
 {
   "projects": {
-    "India Trip - Ashwin's Wedding": {
-      "name": "India Trip - Ashwin's Wedding",
-      "id": "2858369c-7305-8059-b42f-ed064769b672",
+    "Home Remodel": {
+      "name": "Home Remodel",
+      "id": "1f48369c-7305-807f-9f6b-fe533eb79702",
       "status": "In progress",
       "aliases": [
-        "Ashwin",
-        "India Trip"
+        "remodel",
+        "renovation",
+        "kitchen",
+        "adu",
+        "home improvement"
       ],
       "archived": false
     },
-    "Project Franklin": {
-      "name": "Project Franklin",
-      "id": "27d8369c-7305-8072-86fc-d8ebbdb4c8e9",
+    "The Good Life": {
+      "name": "The Good Life",
+      "id": "1f48369c-7305-80ff-af02-f94ebbe9d653",
+      "status": "In progress",
+      "aliases": [],
+      "archived": false
+    },
+    "Project Eudaimonia: Focus. Flow. Fulfillment.": {
+      "name": "Project Eudaimonia: Focus. Flow. Fulfillment.",
+      "id": "1f88369c-7305-800c-86b8-f04cb1030533",
+      "status": "Ongoing",
+      "aliases": [
+        "eudaimonia",
+        "philosophy",
+        "mindfulness",
+        "flow",
+        "fulfillment"
+      ],
+      "archived": false
+    },
+    "Life Admin HQ": {
+      "name": "Life Admin HQ",
+      "id": "1fb8369c-7305-802c-9edf-e94e8bfe4b1b",
+      "status": "Ongoing",
+      "aliases": [
+        "life admin",
+        "admin",
+        "bills",
+        "logistics",
+        "daily admin"
+      ],
+      "archived": false
+    },
+    "Legacy AI": {
+      "name": "Legacy AI",
+      "id": "1fb8369c-7305-8067-a153-ff0adbc5a291",
       "status": "Ongoing",
       "aliases": [],
+      "archived": false
+    },
+    "Welcoming our baby": {
+      "name": "Welcoming our baby",
+      "id": "1fb8369c-7305-80d1-bac1-ec2b9d65bb97",
+      "status": "In progress",
+      "aliases": [],
+      "archived": false
+    },
+    "India Wedding Planning": {
+      "name": "India Wedding Planning",
+      "id": "1fd8369c-7305-8052-ab03-f48e8f9d5508",
+      "status": "Backlog",
+      "aliases": [
+        "wedding",
+        "india wedding",
+        "october 2026"
+      ],
+      "archived": false
+    },
+    "Product Craftsman": {
+      "name": "Product Craftsman",
+      "id": "2018369c-7305-8054-bf58-f1a8619b3ab5",
+      "status": "Ongoing",
+      "aliases": [
+        "product sense",
+        "pm skills",
+        "product taste",
+        "product skills",
+        "shreyas doshi"
+      ],
+      "archived": false
+    },
+    "Become a Master Chef ": {
+      "name": "Become a Master Chef ",
+      "id": "2148369c-7305-8006-9503-fd112b8b1ec7",
+      "status": "Backlog",
+      "aliases": [],
+      "archived": false
+    },
+    "Lume Coaching Notes & Meetings": {
+      "name": "Lume Coaching Notes & Meetings",
+      "id": "2158369c-7305-8082-b071-e746a7f57f1f",
+      "status": "In progress",
+      "aliases": [
+        "coaching",
+        "meredith",
+        "kevin",
+        "lume",
+        "loom"
+      ],
+      "archived": false
+    },
+    "Nutrition & Wellness": {
+      "name": "Nutrition & Wellness",
+      "id": "2258369c-7305-807d-9d52-efeef1f09c88",
+      "status": "Backlog",
+      "aliases": [
+        "nutrition",
+        "morning routine",
+        "wellness"
+      ],
+      "archived": false
+    },
+    "Convert Front Yard Japanese Maple into Cousin It": {
+      "name": "Convert Front Yard Japanese Maple into Cousin It",
+      "id": "2268369c-7305-8076-bc0b-e84f0bb1ade2",
+      "status": "Backlog",
+      "aliases": [
+        "cousin it",
+        "japanese maple"
+      ],
+      "archived": false
+    },
+    "AI Ethics / Sci-Fi Author": {
+      "name": "AI Ethics / Sci-Fi Author",
+      "id": "2418369c-7305-8036-b0a2-e3bb8f818933",
+      "status": "Backlog",
+      "aliases": [
+        "tech writing",
+        "ai writing",
+        "article",
+        "author",
+        "sci-fi",
+        "ethics",
+        "writer"
+      ],
+      "archived": false
+    },
+    "Legendary Seed-stage Investor": {
+      "name": "Legendary Seed-stage Investor",
+      "id": "2428369c-7305-805d-9151-c0abf7f1cfbf",
+      "status": "Backlog",
+      "aliases": [
+        "venture capital",
+        "investing",
+        "seed-stage",
+        "startup"
+      ],
+      "archived": false
+    },
+    "Epic 2nd Brain Workflow": {
+      "name": "Epic 2nd Brain Workflow",
+      "id": "2468369c-7305-80ca-a9bc-dd66fa7fc66c",
+      "status": "In progress",
+      "aliases": [],
+      "archived": false
+    },
+    "Woodworking Projects": {
+      "name": "Woodworking Projects",
+      "id": "25a8369c-7305-80b8-83ae-c456161bc589",
+      "status": "Backlog",
+      "aliases": [
+        "woodworking",
+        "wood",
+        "furniture"
+      ],
+      "archived": false
+    },
+    "Apply to YCombinator": {
+      "name": "Apply to YCombinator",
+      "id": "25b8369c-7305-801b-bffa-c5c94e04202f",
+      "status": "Backlog",
+      "aliases": [
+        "YC",
+        "Y Combinator"
+      ],
       "archived": false
     },
     "AMS Analytics Product Strategy": {
@@ -36,215 +199,48 @@
       "aliases": [],
       "archived": false
     },
-    "Apply to YCombinator": {
-      "name": "Apply to YCombinator",
-      "id": "25b8369c-7305-801b-bffa-c5c94e04202f",
-      "status": "Backlog",
-      "aliases": [
-        "YC",
-        "Y Combinator"
-      ],
-      "archived": false
-    },
-    "Woodworking Projects": {
-      "name": "Woodworking Projects",
-      "id": "25a8369c-7305-80b8-83ae-c456161bc589",
-      "status": "Backlog",
-      "aliases": [
-        "woodworking",
-        "wood",
-        "furniture"
-      ],
-      "archived": false
-    },
-    "Epic 2nd Brain Workflow": {
-      "name": "Epic 2nd Brain Workflow",
-      "id": "2468369c-7305-80ca-a9bc-dd66fa7fc66c",
-      "status": "In progress",
-      "aliases": [],
-      "archived": false
-    },
-    "Vermont Valaigappu \ud83c\udf42": {
-      "name": "Vermont Valaigappu \ud83c\udf42",
-      "id": "2438369c-7305-8060-8138-e035e68a1d1a",
-      "status": "In progress",
-      "aliases": [
-        "baby shower",
-        "valaigappu"
-      ],
-      "archived": false
-    },
-    "Legendary Seed-stage Investor": {
-      "name": "Legendary Seed-stage Investor",
-      "id": "2428369c-7305-805d-9151-c0abf7f1cfbf",
-      "status": "Backlog",
-      "aliases": [
-        "venture capital",
-        "investing",
-        "seed-stage",
-        "startup"
-      ],
-      "archived": false
-    },
-    "AI Ethics / Sci-Fi Author": {
-      "name": "AI Ethics / Sci-Fi Author",
-      "id": "2418369c-7305-8036-b0a2-e3bb8f818933",
-      "status": "Backlog",
-      "aliases": [
-        "tech writing",
-        "ai writing",
-        "article",
-        "author",
-        "sci-fi",
-        "ethics",
-        "writer"
-      ],
-      "archived": false
-    },
-    "Convert Front Yard Japanese Maple into Cousin It": {
-      "name": "Convert Front Yard Japanese Maple into Cousin It",
-      "id": "2268369c-7305-8076-bc0b-e84f0bb1ade2",
-      "status": "Backlog",
-      "aliases": [
-        "cousin it",
-        "japanese maple"
-      ],
-      "archived": false
-    },
-    "Nutrition & Wellness": {
-      "name": "Nutrition & Wellness",
-      "id": "2258369c-7305-807d-9d52-efeef1f09c88",
-      "status": "Backlog",
-      "aliases": [
-        "nutrition",
-        "morning routine",
-        "wellness"
-      ],
-      "archived": false
-    },
-    "Lume Coaching Notes & Meetings": {
-      "name": "Lume Coaching Notes & Meetings",
-      "id": "2158369c-7305-8082-b071-e746a7f57f1f",
-      "status": "In progress",
-      "aliases": [
-        "coaching",
-        "meredith",
-        "kevin",
-        "lume",
-        "loom"
-      ],
-      "archived": false
-    },
-    "Become a Master Chef ": {
-      "name": "Become a Master Chef ",
-      "id": "2148369c-7305-8006-9503-fd112b8b1ec7",
-      "status": "Backlog",
-      "aliases": [],
-      "archived": false
-    },
-    "Product Craftsman": {
-      "name": "Product Craftsman",
-      "id": "2018369c-7305-8054-bf58-f1a8619b3ab5",
+    "Project Franklin": {
+      "name": "Project Franklin",
+      "id": "27d8369c-7305-8072-86fc-d8ebbdb4c8e9",
       "status": "Ongoing",
-      "aliases": [
-        "product sense",
-        "pm skills",
-        "product taste",
-        "product skills",
-        "shreyas doshi"
-      ],
-      "archived": false
-    },
-    "India Wedding Planning": {
-      "name": "India Wedding Planning",
-      "id": "1fd8369c-7305-8052-ab03-f48e8f9d5508",
-      "status": "Backlog",
-      "aliases": [
-        "wedding",
-        "india wedding",
-        "october 2026"
-      ],
-      "archived": false
-    },
-    "Legacy AI": {
-      "name": "Legacy AI",
-      "id": "1fb8369c-7305-8067-a153-ff0adbc5a291",
-      "status": "Ongoing",
-      "aliases": [],
-      "archived": false
-    },
-    "Welcoming our baby": {
-      "name": "Welcoming our baby",
-      "id": "1fb8369c-7305-80d1-bac1-ec2b9d65bb97",
-      "status": "In progress",
-      "aliases": [],
-      "archived": false
-    },
-    "Life Admin HQ": {
-      "name": "Life Admin HQ",
-      "id": "1fb8369c-7305-802c-9edf-e94e8bfe4b1b",
-      "status": "Ongoing",
-      "aliases": [
-        "life admin",
-        "admin",
-        "bills",
-        "logistics",
-        "daily admin"
-      ],
-      "archived": false
-    },
-    "Project Eudaimonia: Focus. Flow. Fulfillment.": {
-      "name": "Project Eudaimonia: Focus. Flow. Fulfillment.",
-      "id": "1f88369c-7305-800c-86b8-f04cb1030533",
-      "status": "Ongoing",
-      "aliases": [
-        "eudaimonia",
-        "philosophy",
-        "mindfulness",
-        "flow",
-        "fulfillment"
-      ],
-      "archived": false
-    },
-    "Home Remodel": {
-      "name": "Home Remodel",
-      "id": "1f48369c-7305-807f-9f6b-fe533eb79702",
-      "status": "In progress",
-      "aliases": [
-        "remodel",
-        "renovation",
-        "kitchen",
-        "adu",
-        "home improvement"
-      ],
-      "archived": false
-    },
-    "The Good Life": {
-      "name": "The Good Life",
-      "id": "1f48369c-7305-80ff-af02-f94ebbe9d653",
-      "status": "In progress",
       "aliases": [],
       "archived": false
     }
   },
   "aliases": {
-    "ashwin": "India Trip - Ashwin's Wedding",
-    "india trip": "India Trip - Ashwin's Wedding",
-    "ams": "AMS Analytics Product Strategy",
-    "analytics": "AMS Analytics Product Strategy",
-    "product strategy": "AMS Analytics Product Strategy",
-    "steven wolff": "AMS Analytics Product Strategy",
-    "yc": "Apply to YCombinator",
-    "y combinator": "Apply to YCombinator",
-    "woodworking": "Woodworking Projects",
-    "wood": "Woodworking Projects",
-    "furniture": "Woodworking Projects",
-    "baby shower": "Vermont Valaigappu \ud83c\udf42",
-    "valaigappu": "Vermont Valaigappu \ud83c\udf42",
-    "venture capital": "Legendary Seed-stage Investor",
-    "investing": "Legendary Seed-stage Investor",
-    "seed-stage": "Legendary Seed-stage Investor",
-    "startup": "Legendary Seed-stage Investor",
+    "remodel": "Home Remodel",
+    "renovation": "Home Remodel",
+    "kitchen": "Home Remodel",
+    "adu": "Home Remodel",
+    "home improvement": "Home Remodel",
+    "eudaimonia": "Project Eudaimonia: Focus. Flow. Fulfillment.",
+    "philosophy": "Project Eudaimonia: Focus. Flow. Fulfillment.",
+    "mindfulness": "Project Eudaimonia: Focus. Flow. Fulfillment.",
+    "flow": "Project Eudaimonia: Focus. Flow. Fulfillment.",
+    "fulfillment": "Project Eudaimonia: Focus. Flow. Fulfillment.",
+    "life admin": "Life Admin HQ",
+    "admin": "Life Admin HQ",
+    "bills": "Life Admin HQ",
+    "logistics": "Life Admin HQ",
+    "daily admin": "Life Admin HQ",
+    "wedding": "India Wedding Planning",
+    "india wedding": "India Wedding Planning",
+    "october 2026": "India Wedding Planning",
+    "product sense": "Product Craftsman",
+    "pm skills": "Product Craftsman",
+    "product taste": "Product Craftsman",
+    "product skills": "Product Craftsman",
+    "shreyas doshi": "Product Craftsman",
+    "coaching": "Lume Coaching Notes & Meetings",
+    "meredith": "Lume Coaching Notes & Meetings",
+    "kevin": "Lume Coaching Notes & Meetings",
+    "lume": "Lume Coaching Notes & Meetings",
+    "loom": "Lume Coaching Notes & Meetings",
+    "nutrition": "Nutrition & Wellness",
+    "morning routine": "Nutrition & Wellness",
+    "wellness": "Nutrition & Wellness",
+    "cousin it": "Convert Front Yard Japanese Maple into Cousin It",
+    "japanese maple": "Convert Front Yard Japanese Maple into Cousin It",
     "tech writing": "AI Ethics / Sci-Fi Author",
     "ai writing": "AI Ethics / Sci-Fi Author",
     "article": "AI Ethics / Sci-Fi Author",
@@ -252,47 +248,27 @@
     "sci-fi": "AI Ethics / Sci-Fi Author",
     "ethics": "AI Ethics / Sci-Fi Author",
     "writer": "AI Ethics / Sci-Fi Author",
-    "cousin it": "Convert Front Yard Japanese Maple into Cousin It",
-    "japanese maple": "Convert Front Yard Japanese Maple into Cousin It",
-    "nutrition": "Nutrition & Wellness",
-    "morning routine": "Nutrition & Wellness",
-    "wellness": "Nutrition & Wellness",
-    "coaching": "Lume Coaching Notes & Meetings",
-    "meredith": "Lume Coaching Notes & Meetings",
-    "kevin": "Lume Coaching Notes & Meetings",
-    "lume": "Lume Coaching Notes & Meetings",
-    "loom": "Lume Coaching Notes & Meetings",
-    "product sense": "Product Craftsman",
-    "pm skills": "Product Craftsman",
-    "product taste": "Product Craftsman",
-    "product skills": "Product Craftsman",
-    "shreyas doshi": "Product Craftsman",
-    "wedding": "India Wedding Planning",
-    "india wedding": "India Wedding Planning",
-    "october 2026": "India Wedding Planning",
-    "life admin": "Life Admin HQ",
-    "admin": "Life Admin HQ",
-    "bills": "Life Admin HQ",
-    "logistics": "Life Admin HQ",
-    "daily admin": "Life Admin HQ",
-    "eudaimonia": "Project Eudaimonia: Focus. Flow. Fulfillment.",
-    "philosophy": "Project Eudaimonia: Focus. Flow. Fulfillment.",
-    "mindfulness": "Project Eudaimonia: Focus. Flow. Fulfillment.",
-    "flow": "Project Eudaimonia: Focus. Flow. Fulfillment.",
-    "fulfillment": "Project Eudaimonia: Focus. Flow. Fulfillment.",
-    "remodel": "Home Remodel",
-    "renovation": "Home Remodel",
-    "kitchen": "Home Remodel",
-    "adu": "Home Remodel",
-    "home improvement": "Home Remodel"
+    "venture capital": "Legendary Seed-stage Investor",
+    "investing": "Legendary Seed-stage Investor",
+    "seed-stage": "Legendary Seed-stage Investor",
+    "startup": "Legendary Seed-stage Investor",
+    "woodworking": "Woodworking Projects",
+    "wood": "Woodworking Projects",
+    "furniture": "Woodworking Projects",
+    "yc": "Apply to YCombinator",
+    "y combinator": "Apply to YCombinator",
+    "ams": "AMS Analytics Product Strategy",
+    "analytics": "AMS Analytics Product Strategy",
+    "product strategy": "AMS Analytics Product Strategy",
+    "steven wolff": "AMS Analytics Product Strategy"
   },
   "metadata": {
-    "last_fetch": "2025-10-07T09:56:31.240527",
-    "cache_age_minutes": 1528,
+    "last_fetch": "2025-10-31T22:01:16.331318",
+    "cache_age_minutes": 0,
     "source": "notion",
-    "total_projects": 22,
-    "fetch_duration_ms": 1819,
-    "last_successful_fetch": "2025-10-07T09:56:31.240527",
-    "failed_fetch_attempts": 5
+    "total_projects": 20,
+    "fetch_duration_ms": 1297,
+    "last_successful_fetch": "2025-10-31T22:01:16.331318",
+    "failed_fetch_attempts": 0
   }
 }
