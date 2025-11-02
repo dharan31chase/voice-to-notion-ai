@@ -92,6 +92,10 @@ class RecordingOrchestrator:
         from orchestration.staging import StagingManager
         self.staging_manager = StagingManager(self.staging_folder)
 
+        # Initialize transcription engine (Phase B Step 5)
+        from orchestration.transcription import TranscriptionEngine
+        self.transcription_engine = TranscriptionEngine(self.config, self.file_validator)
+
         # Current session info
         self.current_session_id = None
         self.session_start_time = None
@@ -388,34 +392,11 @@ class RecordingOrchestrator:
             return False, []
     
     def _extract_file_metadata(self, file_path: Path) -> Dict:
-        """Extract metadata from .mp3 file"""
-        try:
-            stat = file_path.stat()
-            file_size_mb = stat.st_size / (1024 * 1024)  # Convert to MB
-            
-            # Estimate duration based on file size (rough approximation)
-            # Assuming ~1MB per minute for typical voice recording
-            estimated_minutes = int(file_size_mb)
-            
-            return {
-                "name": file_path.name,
-                "size_mb": round(file_size_mb, 1),
-                "created_time": datetime.fromtimestamp(stat.st_ctime),
-                "modified_time": datetime.fromtimestamp(stat.st_mtime),
-                "estimated_minutes": estimated_minutes,
-                "path": str(file_path)
-            }
-        except Exception as e:
-            logger.error(f"❌ Error extracting metadata for {file_path.name}: {e}")
-            return {
-                "name": file_path.name,
-                "size_mb": 0,
-                "created_time": None,
-                "modified_time": None,
-                "estimated_minutes": 0,
-                "path": str(file_path),
-                "error": str(e)
-            }
+        """
+        Phase B Step 5: Extract metadata from audio file
+        Delegates to TranscriptionEngine
+        """
+        return self.transcription_engine.extract_file_metadata(file_path)
 
     def _should_skip_short_file(self, file_path: Path) -> Tuple[bool, str]:
         """
@@ -487,126 +468,17 @@ class RecordingOrchestrator:
 
     def _create_balanced_batches(self, files: List[Path]) -> List[List[Path]]:
         """
-        Phase 1: Create duration-aware batches with work budget balancing
-        Distributes files to prevent one long file from dominating a batch
+        Phase B Step 5: Create duration-aware batches with work budget balancing
+        Delegates to TranscriptionEngine
         """
-        if not files:
-            return []
-
-        work_budget_minutes = self.config.get("processing.batch_work_budget_minutes", 7)
-        min_files = self.config.get("processing.batch_min_files", 1)
-        max_files = self.config.get("processing.batch_max_files", 4)
-
-        # Extract file durations
-        file_info = []
-        for file_path in files:
-            metadata = self._extract_file_metadata(file_path)
-            file_info.append({
-                'path': file_path,
-                'duration_minutes': metadata.get('estimated_minutes', 1),
-                'name': file_path.name
-            })
-
-        # Sort by duration (longest first) for better distribution
-        file_info.sort(key=lambda x: x['duration_minutes'], reverse=True)
-
-        batches = []
-        current_batch = []
-        current_batch_minutes = 0
-
-        for info in file_info:
-            file_path = info['path']
-            duration = info['duration_minutes']
-
-            # Check if adding this file would exceed work budget
-            would_exceed = (current_batch_minutes + duration) > work_budget_minutes
-            batch_full = len(current_batch) >= max_files
-
-            if current_batch and (would_exceed or batch_full):
-                # Start new batch
-                batches.append(current_batch)
-                current_batch = [file_path]
-                current_batch_minutes = duration
-            else:
-                # Add to current batch
-                current_batch.append(file_path)
-                current_batch_minutes += duration
-
-            # Ensure we don't create batches that are too small (unless it's the last file)
-            if len(current_batch) < min_files and len(batches) == 0:
-                continue
-
-        # Add final batch
-        if current_batch:
-            batches.append(current_batch)
-
-        # Log batch distribution
-        logger.info(f"📊 Created {len(batches)} balanced batches (target: {work_budget_minutes}min per batch)")
-        for i, batch in enumerate(batches, 1):
-            batch_minutes = sum(self._extract_file_metadata(f).get('estimated_minutes', 1) for f in batch)
-            logger.info(f"   Batch {i}: {len(batch)} files, ~{batch_minutes}min audio")
-
-        return batches
+        return self.transcription_engine.create_balanced_batches(files)
 
     def _check_system_resources(self) -> Tuple[bool, Dict]:
-        """Check if system has sufficient resources for processing"""
-        try:
-            import shutil
-            
-            # Check disk space
-            total, used, free = shutil.disk_usage(self.project_root)
-            free_gb = free / (1024**3)
-            
-            # Check available memory (rough estimate)
-            import psutil
-            memory = psutil.virtual_memory()
-            available_gb = memory.available / (1024**3)
-            
-            # Requirements: 500MB free disk, 1GB available memory
-            disk_ok = free_gb > 0.5
-            memory_ok = available_gb > 1.0
-            
-            resource_status = {
-                "disk_free_gb": round(free_gb, 2),
-                "disk_ok": disk_ok,
-                "memory_available_gb": round(available_gb, 2),
-                "memory_ok": memory_ok,
-                "all_ok": disk_ok and memory_ok
-            }
-            
-            if not resource_status["all_ok"]:
-                logger.warning(f"⚠️ Resource check failed:")
-                if not disk_ok:
-                    logger.warning(f"   - Disk space: {free_gb:.2f}GB (need >0.5GB)")
-                if not memory_ok:
-                    logger.warning(f"   - Memory: {available_gb:.2f}GB (need >1GB)")
-            
-            return resource_status["all_ok"], resource_status
-            
-        except ImportError:
-            # If psutil not available, just check disk space
-            try:
-                import shutil
-                total, used, free = shutil.disk_usage(self.project_root)
-                free_gb = free / (1024**3)
-                disk_ok = free_gb > 0.5
-                
-                resource_status = {
-                    "disk_free_gb": round(free_gb, 2),
-                    "disk_ok": disk_ok,
-                    "memory_available_gb": "Unknown",
-                    "memory_ok": True,  # Assume OK if we can't check
-                    "all_ok": disk_ok
-                }
-                
-                if not disk_ok:
-                    logger.warning(f"⚠️ Disk space low: {free_gb:.2f}GB (need >0.5GB)")
-                
-                return disk_ok, resource_status
-                
-            except Exception as e:
-                logger.error(f"❌ Error checking system resources: {e}")
-                return False, {"error": str(e)}
+        """
+        Phase B Step 5: Check if system has sufficient resources for processing
+        Delegates to TranscriptionEngine
+        """
+        return self.transcription_engine.check_system_resources(self.project_root)
     
     def _create_processing_batches(self, files: List[Path], batch_size: int = 4) -> List[List[Path]]:
         """Create optimal processing batches"""
@@ -764,92 +636,18 @@ class RecordingOrchestrator:
         return self.file_validator.check_disk_space(self.project_root, required_mb)
     
     def _should_transcribe_audio(self, audio_file: Path) -> bool:
-        """Check if we should transcribe this audio file (prevents duplicates)"""
-        try:
-            # Ensure we have a Path object
-            if isinstance(audio_file, str):
-                audio_file = Path(audio_file)
-            
-            # Check if transcript already exists
-            transcript_file = self.transcripts_folder / f"{audio_file.stem}.txt"
-            
-            if transcript_file.exists():
-                # Check if transcript is recent (within last hour) and has content
-                transcript_age = time.time() - transcript_file.stat().st_mtime
-                if transcript_age < 3600:  # 1 hour
-                    with open(transcript_file, 'r', encoding='utf-8') as f:
-                        content = f.read().strip()
-                    if len(content) > 10:  # Has meaningful content
-                        logger.info(f"ℹ️ Transcript already exists: {transcript_file.name} (age: {transcript_age/60:.1f} min)")
-                        return False
-            
-            return True
-            
-        except Exception as e:
-            logger.warning(f"⚠️ Error checking transcript existence for {audio_file}: {e}")
-            return True  # Default to transcribing if check fails
+        """
+        Phase B Step 5: Check if we should transcribe this audio file (prevents duplicates)
+        Delegates to TranscriptionEngine
+        """
+        return self.transcription_engine.should_transcribe(audio_file, self.transcripts_folder)
     
     def _monitor_cpu_usage(self) -> float:
-        """Monitor current CPU usage percentage"""
-        try:
-            import psutil
-            return psutil.cpu_percent(interval=1)
-        except ImportError:
-            logger.warning("⚠️ psutil not available, skipping CPU monitoring")
-            return 0.0
-        except Exception as e:
-            logger.warning(f"⚠️ CPU monitoring error: {e}")
-            return 0.0
-    
-    def _transcribe_single_file(self, file_path: Path, batch_num: int, file_num: int) -> Tuple[bool, str, str]:
-        """Transcribe a single .mp3 file using Whisper"""
-        try:
-            # Generate output filename
-            output_name = file_path.stem + ".txt"
-            output_path = self.transcripts_folder / output_name
-            
-            # Whisper command
-            # Get Whisper settings from config
-            whisper_model = self.config.get("whisper.model", "small")
-            whisper_language = self.config.get("whisper.language", "en")
-            whisper_output_format = self.config.get("whisper.output_format", "txt")
-            
-            cmd = [
-                'whisper',
-                str(file_path),
-                '--model', whisper_model,
-                '--language', whisper_language,
-                '--output_dir', str(self.transcripts_folder),
-                '--output_format', whisper_output_format
-            ]
-            
-            logger.info(f"🎙️ Transcribing {file_path.name} (Batch {batch_num}, File {file_num})")
-            
-            # Run Whisper
-            result = subprocess.run(cmd, capture_output=True, text=True, timeout=300)
-            
-            if result.returncode == 0 and output_path.exists():
-                # Validate transcript
-                with open(output_path, 'r', encoding='utf-8') as f:
-                    transcript_content = f.read().strip()
-                
-                if len(transcript_content) > 10:  # Basic validation
-                    logger.info(f"✅ Transcribed {file_path.name} → {output_name}")
-                    return True, str(output_path), transcript_content
-                else:
-                    logger.warning(f"⚠️ Transcript too short: {file_path.name}")
-                    return False, "Transcript too short", transcript_content
-            else:
-                error_msg = result.stderr if result.stderr else "Unknown error"
-                logger.error(f"❌ Transcription failed: {file_path.name} - {error_msg}")
-                return False, error_msg, ""
-                
-        except subprocess.TimeoutExpired:
-            logger.error(f"❌ Transcription timeout: {file_path.name}")
-            return False, "Transcription timeout", ""
-        except Exception as e:
-            logger.error(f"❌ Transcription error: {file_path.name} - {e}")
-            return False, str(e), ""
+        """
+        Phase B Step 5: Monitor current CPU usage percentage
+        Delegates to TranscriptionEngine
+        """
+        return self.transcription_engine.monitor_cpu_usage()
     
     def _move_failed_file(self, file_path: Path, error_reason: str, file_type: str = "recording"):
         """Move failed file to appropriate failed folder with error logging"""
@@ -885,215 +683,27 @@ class RecordingOrchestrator:
     
     def step3_transcribe(self, valid_files: List[Path], time_estimate: Dict) -> Tuple[bool, List[Path], List[Path]]:
         """
-        Step 3: Transcribe
-        Converts .mp3 files to text using Whisper with batch processing
+        Phase B Step 5: Transcribe audio files to text
+        Delegates to TranscriptionEngine for parallel batch transcription
         """
         logger.info("🎙️ Step 3: Transcribe")
         logger.info("=" * 50)
-        
-        try:
-            if not valid_files:
-                logger.warning("⚠️ No files to transcribe")
-                return True, [], []
-            
-            # Check Whisper installation
-            if not self._check_whisper_installation():
-                return False, [], []
-            
-            # Check disk space (100MB requirement)
-            required_space = time_estimate.get("total_size_mb", 0) + 100  # Add 100MB buffer
-            if not self._check_disk_space(required_space):
-                return False, [], []
-            
-            # Get processing plan from state
-            processing_plan = self.state["current_session"].get("processing_plan", {})
-            batch_size = processing_plan.get("batch_size", 4)
-            
-            # Check for existing transcripts before starting
-            existing_transcripts = []
-            files_needing_transcription = []
-            for file_path in valid_files:
-                if self._should_transcribe_audio(file_path):
-                    files_needing_transcription.append(file_path)
-                else:
-                    transcript_path = self.transcripts_folder / f"{file_path.stem}.txt"
-                    if transcript_path.exists():
-                        existing_transcripts.append(transcript_path)
-            
-            if existing_transcripts:
-                logger.info(f"ℹ️ Found {len(existing_transcripts)} existing transcripts, {len(files_needing_transcription)} files need transcription")
 
-            # Phase 1: Create balanced batches with work budget
-            batches = self._create_balanced_batches(valid_files)
-            
-            successful_transcripts = []
-            failed_files = []
-            
-            # Get Whisper model from config for logging
-            whisper_model = self.config.get("whisper.model", "small")
-            whisper_language = self.config.get("whisper.language", "en")
-            
-            logger.info(f"🤖 Initializing Whisper ({whisper_model} model, {whisper_language.upper()})")
-            logger.info(f"📊 Processing {len(valid_files)} files in {len(batches)} batches")
-            
-            # Process each batch
-            for batch_num, batch in enumerate(batches, 1):
-                logger.info(f"")
-                logger.info(f" Batch {batch_num}/{len(batches)} ({len(batch)} files) - Processing...")
-                
-                batch_start_time = time.time()
-                batch_successes = []
-                batch_failures = []
-                
-                # Phase 1: Process files in parallel within batch (use config workers)
-                max_workers = self.config.get("processing.parallel_transcription_workers", 3)
-                with ThreadPoolExecutor(max_workers=max_workers) as executor:
-                    # Filter out files that already have transcripts
-                    files_to_transcribe = []
-                    for file_path in batch:
-                        if self._should_transcribe_audio(file_path):
-                            files_to_transcribe.append(file_path)
-                        else:
-                            # Add existing transcript to successful list
-                            transcript_path = self.transcripts_folder / f"{file_path.stem}.txt"
-                            if transcript_path.exists():
-                                successful_transcripts.append(transcript_path)
-                                batch_successes.append(file_path)
-                                # Update state
-                                self.state["current_session"]["transcripts_created"].append(transcript_path.name)
-                    
-                    if not files_to_transcribe:
-                        logger.info(f"   ℹ️ All files in batch {batch_num} already have transcripts")
-                        continue
-                    
-                    # Submit transcription tasks only for files that need transcription
-                    future_to_file = {
-                        executor.submit(self._transcribe_single_file, file_path, batch_num, i+1): file_path
-                        for i, file_path in enumerate(files_to_transcribe)
-                    }
-                    
-                    # Process completed transcriptions
-                    for future in as_completed(future_to_file):
-                        file_path = future_to_file[future]
-                        try:
-                            success, error_reason, transcript_content = future.result()
-                            
-                            if success:
-                                # Find the created transcript file
-                                transcript_name = file_path.stem + ".txt"
-                                transcript_path = self.transcripts_folder / transcript_name
-                                
-                                if transcript_path.exists():
-                                    successful_transcripts.append(transcript_path)
-                                    batch_successes.append(file_path)
-                                    
-                                    # Update state
-                                    self.state["current_session"]["transcripts_created"].append(transcript_name)
-                                else:
-                                    logger.error(f"❌ Transcript file not found: {transcript_name}")
-                                    failed_files.append(file_path)
-                                    batch_failures.append(file_path)
-                            else:
-                                # Phase 1: Smart retry policy - check if should retry
-                                should_retry = True
+        # Delegate to TranscriptionEngine with _move_failed_file callback
+        success, transcripts, failed = self.transcription_engine.transcribe_batch(
+            files=valid_files,
+            transcripts_folder=self.transcripts_folder,
+            failed_folder=self.failed_folder,
+            state=self.state["current_session"],
+            move_failed_callback=self._move_failed_file
+        )
 
-                                # Don't retry on permission errors (use staging instead)
-                                if self.config.get("processing.retry_on_permission_errors", False) == False:
-                                    if "permission" in error_reason.lower() or "not permitted" in error_reason.lower():
-                                        should_retry = False
-                                        logger.info(f"⏭️ Skipping retry for {file_path.name}: permission error (use staging)")
-
-                                # Don't retry on "too short" errors
-                                if self.config.get("processing.retry_on_short_transcript_errors", False) == False:
-                                    if "too short" in error_reason.lower() or "transcript too short" in error_reason.lower():
-                                        should_retry = False
-                                        logger.info(f"⏭️ Skipping retry for {file_path.name}: transcript too short")
-
-                                if should_retry:
-                                    logger.info(f"🔄 Retrying transcription: {file_path.name}")
-                                    retry_success, retry_error, retry_content = self._transcribe_single_file(
-                                        file_path, batch_num, 0
-                                    )
-
-                                    if retry_success:
-                                        transcript_name = file_path.stem + ".txt"
-                                        transcript_path = self.transcripts_folder / transcript_name
-                                        if transcript_path.exists():
-                                            successful_transcripts.append(transcript_path)
-                                            batch_successes.append(file_path)
-                                            self.state["current_session"]["transcripts_created"].append(transcript_name)
-                                        else:
-                                            failed_files.append(file_path)
-                                            batch_failures.append(file_path)
-                                    else:
-                                        failed_files.append(file_path)
-                                        batch_failures.append(file_path)
-
-                                        # Move failed file to failed folder
-                                        self._move_failed_file(file_path, retry_error, "recording")
-
-                                        # Update state
-                                        self.state["current_session"]["failed_transcriptions"].append(file_path.name)
-                                else:
-                                    # Don't retry - mark as failed immediately
-                                    failed_files.append(file_path)
-                                    batch_failures.append(file_path)
-
-                                    # Move failed file to failed folder
-                                    self._move_failed_file(file_path, error_reason, "recording")
-
-                                    # Update state
-                                    self.state["current_session"]["failed_transcriptions"].append(file_path.name)
-                            
-                            # Phase 1: Monitor CPU usage with configurable threshold
-                            cpu_usage = self._monitor_cpu_usage()
-                            cpu_limit = self.config.get("processing.cpu_usage_limit_percent", 70)
-                            if cpu_usage > cpu_limit:
-                                logger.warning(f"⚠️ High CPU usage: {cpu_usage:.1f}% (limit: {cpu_limit}%) - waiting 2 seconds")
-                                time.sleep(2)
-                                
-                        except Exception as e:
-                            logger.error(f"❌ Error processing {file_path.name}: {e}")
-                            failed_files.append(file_path)
-                            batch_failures.append(file_path)
-                            self._move_failed_file(file_path, str(e), "recording")
-                            self.state["current_session"]["failed_transcriptions"].append(file_path.name)
-                
-                # Report batch completion
-                batch_time = time.time() - batch_start_time
-                logger.info(f"   ✅ Successful: {len(batch_successes)} files")
-                if batch_failures:
-                    logger.info(f"   ❌ Failed: {len(batch_failures)} files")
-                logger.info(f"   ⏱️ Batch {batch_num} complete in {batch_time:.0f}s")
-            
-            # Final summary
-            logger.info(f"")
-            logger.info(f"📊 Transcription Summary:")
-            logger.info(f"   ✅ Successful: {len(successful_transcripts)}/{len(valid_files)} files")
-            logger.info(f"   ❌ Failed: {len(failed_files)} files")
-            if existing_transcripts:
-                logger.info(f"   ℹ️ Reused existing: {len(existing_transcripts)} transcripts")
-            logger.info(f"   📝 Transcripts Created: {len(successful_transcripts)}")
-            logger.info(f"   📁 Failed Files: {len(failed_files)}")
-            
-            # Update state
-            self.state["current_session"]["transcription_complete"] = True
-            self.state["current_session"]["transcription_summary"] = {
-                "total_files": len(valid_files),
-                "successful": len(successful_transcripts),
-                "failed": len(failed_files),
-                "success_rate": len(successful_transcripts) / len(valid_files)
-            }
-            
-            # Save state
+        # Save state after transcription
+        if success:
             self._save_state(self.state)
-            
-            logger.info("✅ Step 3 complete - ready for staging")
-            return True, successful_transcripts, failed_files
-            
-        except Exception as e:
-            logger.error(f"❌ Step 3 failed: {e}")
-            return False, [], []
+            logger.info("✅ Step 3 complete - ready for AI processing")
+
+        return success, transcripts, failed
     
     def _import_process_transcripts(self):
         """Import the process_transcripts module dynamically"""
