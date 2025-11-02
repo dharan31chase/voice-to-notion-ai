@@ -1,6 +1,6 @@
 # Voice-to-Notion AI Assistant - Project State & Decisions
 
-## Current Status (Phase A in Progress - October 31, 2025)
+## Current Status (Phase B in Progress - November 2, 2025)
 - ✅ **Complete automation pipeline:** Voice → AI Analysis → Organized Notion PARA content
 - ✅ **Configuration System:** YAML-based config with environment variable overrides (Milestone 1.1)
 - ✅ **Shared Utilities:** Centralized OpenAI client, file utils, unified logging (Milestone 1.2)
@@ -28,11 +28,38 @@
 - ✅ **Unified Logging:** All scripts log to `logs/ai-assistant.log` with auto-rotation
 - ✅ **Retry Logic:** Automatic retry with exponential backoff for API calls
 - ✅ **Code Quality:** Reduced codebase by 7,160 lines (87% reduction in duplication)
-- ✅ **Router Infrastructure:** BaseRouter pattern for consistent interfaces (Phase A)
-- ✅ **DurationEstimator Router:** Extracted duration logic into specialized 200-line module (Phase A Step 1)
-- 🔄 **Router Refactoring:** Phase A in progress - 1/4 routers extracted, 25% complete
+- ✅ **Router Refactoring:** Phase A COMPLETE - All 4 routers extracted (DurationEstimator, TagDetector, IconSelector, ProjectDetector)
+- ✅ **Orchestrator Modularization:** Phase B in progress - 6/7 steps complete
+- ✅ **StateManager:** Extracted state management with atomic writes (Phase B Step 2)
+- ✅ **Detection Modules:** USBDetector & FileValidator extracted (Phase B Step 3)
+- ✅ **StagingManager:** Local staging with platform-specific deletion (Phase B Step 4)
+- ✅ **TranscriptionEngine:** Parallel batch transcription with 4.2x speedup (Phase B Step 5)
+- ✅ **ProcessingEngine:** AI processing & Notion verification extracted (Phase B Step 6)
+- 🔄 **Orchestrator Cleanup:** Phase B Step 7 in progress - ArchiveManager & final cleanup remaining
 
 ## Major Architecture Decisions Made
+
+### 18. ProcessingEngine Extraction (Phase B Step 6 - November 2, 2025)
+**Decision:** Extract AI processing and Notion verification from RecordingOrchestrator into ProcessingEngine module
+**Rationale:**
+- Single responsibility: Processing engine handles ONLY AI analysis and verification
+- Reduced complexity: RecordingOrchestrator reduced by ~350 lines
+- Testability: ProcessingEngine can be tested independently with mocks
+- Flexibility: Notion client passed as parameter (dependency injection)
+**Implementation:**
+- Created `scripts/orchestration/processing/processing_engine.py` (412 lines)
+- Extracted 6 methods: import_processor, validate_transcript, process_single_transcript, verify_notion_entry, process_and_verify
+- Callback pattern: _move_failed_transcript stays in orchestrator, passed as callback
+- Replaced step4_stage_and_process() with 20-line delegation wrapper
+**Architecture Decisions:**
+- **Sequential AI processing** (PARITY): Safe, prevents OpenAI rate limits. Future: Parallel with 3-5 workers (2.5x faster, ~30 min effort)
+- **Notion client as parameter**: Flexible, testable, no resource duplication (like "lending your phone vs buying new")
+- **signal.alarm() timeout**: Unix/Mac only (10 seconds). Future: threading.Timer for cross-platform (~15-20 min effort)
+**Result:**
+- 100% backward compatible, zero breaking changes
+- ProcessingEngine initializes correctly (dry-run tested)
+- Future enhancements documented in roadmap
+**Principle:** PARITY approach - extract as-is, enhance later. Prevents scope creep, delivers fast.
 
 ### 17. Router Extraction Pattern (Phase A - October 31, 2025)
 **Decision:** Extract routing logic from intelligent_router.py into specialized router modules with BaseRouter pattern
