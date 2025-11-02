@@ -21,6 +21,7 @@ from .state import StateManager
 from .detection import USBDetector, FileValidator
 from .staging import StagingManager
 from .transcription import TranscriptionEngine
+from .processing import ProcessingEngine
 
 __all__ = [
     "StateManager",
@@ -28,4 +29,5 @@ __all__ = [
     "FileValidator",
     "StagingManager",
     "TranscriptionEngine",
+    "ProcessingEngine",
 ]

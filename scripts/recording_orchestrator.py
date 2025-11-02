@@ -96,6 +96,10 @@ class RecordingOrchestrator:
         from orchestration.transcription import TranscriptionEngine
         self.transcription_engine = TranscriptionEngine(self.config, self.file_validator)
 
+        # Initialize processing engine (Phase B Step 6)
+        from orchestration.processing import ProcessingEngine
+        self.processing_engine = ProcessingEngine(self.config, self.project_root)
+
         # Current session info
         self.current_session_id = None
         self.session_start_time = None
@@ -705,128 +709,6 @@ class RecordingOrchestrator:
 
         return success, transcripts, failed
     
-    def _import_process_transcripts(self):
-        """Import the process_transcripts module dynamically"""
-        try:
-            # Add the scripts directory to Python path
-            scripts_dir = self.project_root / "scripts"
-            if str(scripts_dir) not in sys.path:
-                sys.path.insert(0, str(scripts_dir))
-            
-            # Import the process_transcript_file function
-            from process_transcripts import process_transcript_file
-            return process_transcript_file
-            
-        except ImportError as e:
-            logger.error(f"❌ Failed to import process_transcripts: {e}")
-            return None
-        except Exception as e:
-            logger.error(f"❌ Error importing process_transcripts: {e}")
-            return None
-    
-    def _validate_transcript_for_processing(self, transcript_path: Path) -> bool:
-        """Validate that a transcript is ready for AI processing"""
-        try:
-            if not transcript_path.exists():
-                logger.warning(f"⚠️ Transcript file not found: {transcript_path}")
-                return False
-            
-            # Check file size
-            file_size = transcript_path.stat().st_size
-            if file_size < 10:  # Less than 10 bytes
-                logger.warning(f"⚠️ Transcript too small: {transcript_path} ({file_size} bytes)")
-                return False
-            
-            # Check if already processed
-            processed_file = self.project_root / "processed" / f"{transcript_path.stem}_processed.json"
-            if processed_file.exists():
-                logger.info(f"ℹ️ Transcript already processed: {transcript_path.stem}")
-                return False
-            
-            # Read and validate content
-            with open(transcript_path, 'r', encoding='utf-8') as f:
-                content = f.read().strip()
-            
-            if len(content) < 10:
-                logger.warning(f"⚠️ Transcript content too short: {transcript_path}")
-                return False
-            
-            logger.info(f"✅ Transcript validated: {transcript_path.name} ({file_size} bytes, {len(content)} chars)")
-            return True
-            
-        except Exception as e:
-            logger.error(f"❌ Error validating transcript {transcript_path}: {e}")
-            return False
-    
-    def _get_transcript_processing_status(self, transcript_path: Path) -> str:
-        """Get detailed processing status for a transcript
-        
-        Returns:
-            "valid" - Ready for AI processing
-            "duplicate" - Already processed, skip AI but cleanup MP3
-            "invalid" - File problems, move to failed folder
-            "error" - Unexpected error during validation
-        """
-        try:
-            if not transcript_path.exists():
-                logger.warning(f"⚠️ Transcript file not found: {transcript_path}")
-                return "invalid"
-            
-            # Check file size
-            file_size = transcript_path.stat().st_size
-            if file_size < 10:  # Less than 10 bytes
-                logger.warning(f"⚠️ Transcript too small: {transcript_path} ({file_size} bytes)")
-                return "invalid"
-            
-            # Check if already processed
-            processed_file = self.project_root / "processed" / f"{transcript_path.stem}_processed.json"
-            if processed_file.exists():
-                logger.info(f"ℹ️ Transcript already processed: {transcript_path.stem}")
-                return "duplicate"
-            
-            # Read and validate content
-            with open(transcript_path, 'r', encoding='utf-8') as f:
-                content = f.read().strip()
-            
-            if len(content) < 10:
-                logger.warning(f"⚠️ Transcript content too short: {transcript_path}")
-                return "invalid"
-            
-            logger.info(f"✅ Transcript validated: {transcript_path.name} ({file_size} bytes, {len(content)} chars)")
-            return "valid"
-            
-        except Exception as e:
-            logger.error(f"❌ Error validating transcript {transcript_path}: {e}")
-            return "error"
-    
-    def _process_single_transcript(self, transcript_path: Path, process_function) -> Tuple[bool, Dict, str]:
-        """Process a single transcript using the existing AI system"""
-        try:
-            logger.info(f"🤖 Processing transcript: {transcript_path.name}")
-            
-            # Call the existing process function
-            result = process_function(transcript_path)
-            
-            if result is None:
-                return False, {}, "AI analysis returned None"
-            
-            # Check if processed file was created
-            processed_file = self.project_root / "processed" / f"{transcript_path.stem}_processed.json"
-            if not processed_file.exists():
-                return False, {}, "No processed file created"
-            
-            # Read the processed result
-            with open(processed_file, 'r', encoding='utf-8') as f:
-                processed_data = json.load(f)
-            
-            logger.info(f"✅ Successfully processed: {transcript_path.name}")
-            return True, processed_data, ""
-            
-        except Exception as e:
-            error_msg = f"Processing error: {str(e)}"
-            logger.error(f"❌ {error_msg}")
-            return False, {}, error_msg
-    
     def _move_failed_transcript(self, transcript_path: Path, error_reason: str):
         """Move failed transcript to failed folder"""
         try:
@@ -856,153 +738,28 @@ class RecordingOrchestrator:
     
     def step4_stage_and_process(self, successful_transcripts: List[Path]) -> Tuple[bool, List[Dict], List[Path]]:
         """
-        Step 4: Stage & Process
-        Integrates transcripts with existing AI transcription system
+        Phase B Step 6: Stage & Process
+        Delegates to ProcessingEngine for AI processing and Notion verification
         """
         logger.info("🚀 Step 4: Stage & Process")
         logger.info("=" * 50)
-        
-        try:
-            if not successful_transcripts:
-                logger.warning("⚠️ No transcripts to process")
-                return True, [], []
-            
-            # Import the processing function
-            process_function = self._import_process_transcripts()
-            if not process_function:
-                logger.error("❌ Failed to import process_transcripts module")
-                return False, [], []
-            
-            logger.info(f"✅ Successfully imported AI processing system")
-            logger.info(f"📊 Processing {len(successful_transcripts)} transcripts")
-            
-            # Validate transcripts before processing
-            valid_transcripts = []
-            duplicate_transcripts = []
-            invalid_transcripts = []
-            
-            for transcript in successful_transcripts:
-                status = self._get_transcript_processing_status(transcript)
-                
-                if status == "valid":
-                    valid_transcripts.append(transcript)
-                elif status == "duplicate":
-                    duplicate_transcripts.append(transcript)
-                else:  # status == "invalid" or "error"
-                    invalid_transcripts.append(transcript)
-            
-            if invalid_transcripts:
-                logger.warning(f"⚠️ {len(invalid_transcripts)} transcripts failed validation")
-                for transcript in invalid_transcripts:
-                    self._move_failed_transcript(transcript, "Failed validation")
-            
-            if duplicate_transcripts:
-                logger.info(f"ℹ️ {len(duplicate_transcripts)} transcripts are duplicates (already processed)")
-                # Store duplicates in state for Step 5 cleanup
-                for transcript in duplicate_transcripts:
-                    self.state["current_session"]["duplicate_skipped"] = self.state["current_session"].get("duplicate_skipped", [])
-                    self.state["current_session"]["duplicate_skipped"].append(transcript.name)
-                    
-                    # Add to cleanup candidates for archiving and MP3 cleanup
-                    duplicate_cleanup_candidate = {
-                        "transcript_name": transcript.name,
-                        "original_name": transcript.stem + ".mp3",
-                        "skip_reason": "duplicate",
-                        "notion_entry_id": None  # No new Notion entry for duplicates
-                    }
-                    self.state["current_session"]["duplicate_cleanup_candidates"] = self.state["current_session"].get("duplicate_cleanup_candidates", [])
-                    self.state["current_session"]["duplicate_cleanup_candidates"].append(duplicate_cleanup_candidate)
-                    logger.info(f"📋 Added duplicate to cleanup candidates: {transcript.name}")
-            
-            if not valid_transcripts:
-                if duplicate_transcripts:
-                    logger.warning("⚠️ No valid transcripts to process, but duplicates will be cleaned up in Step 5")
-                else:
-                    logger.warning("⚠️ No valid transcripts to process")
-                    return True, [], []
-            
-            logger.info(f"🎯 Processing {len(valid_transcripts)} valid transcripts")
-            
-            # Process transcripts sequentially (your system handles batching internally)
-            successful_analyses = []
-            failed_transcripts = []
-            
-            for i, transcript in enumerate(valid_transcripts, 1):
-                logger.info(f"")
-                logger.info(f" Processing {i}/{len(valid_transcripts)}: {transcript.name}")
-                
-                success, result_data, error_reason = self._process_single_transcript(transcript, process_function)
-                
-                if success:
-                    # Extract notion_entry_id from the result data
-                    notion_entry_id = None
-                    if result_data.get("analysis") and result_data["analysis"].get("notion_entry_id"):
-                        # Single analysis case
-                        notion_entry_id = result_data["analysis"]["notion_entry_id"]
-                    elif result_data.get("analyses"):
-                        # Multiple analyses case - get the first one's ID
-                        if result_data["analyses"] and result_data["analyses"][0].get("notion_entry_id"):
-                            notion_entry_id = result_data["analyses"][0]["notion_entry_id"]
-                    
-                    successful_analyses.append({
-                        "transcript_name": transcript.name,
-                        "transcript": transcript.name,  # Keep both for compatibility
-                        "result": result_data,
-                        "processed_file": f"{transcript.stem}_processed.json",
-                        "notion_entry_id": notion_entry_id,
-                        "title": result_data.get("analysis", {}).get("title") or 
-                                (result_data.get("analyses", [{}])[0].get("title") if result_data.get("analyses") else None),
-                        "content": result_data.get("analysis", {}).get("content") or 
-                                  (result_data.get("analyses", [{}])[0].get("content") if result_data.get("analyses") else None)
-                    })
-                    
-                    # Update state
-                    self.state["current_session"]["ai_processing_success"].append(transcript.name)
-                    
-                    # Check if Notion entry was created (based on processed file content)
-                    if notion_entry_id:
-                        self.state["current_session"]["notion_success"].append(transcript.name)
-                        logger.info(f"   ✅ AI Analysis: Success")
-                        logger.info(f"   ✅ Notion Entry: Created (ID: {notion_entry_id[:8]}...)")
-                    else:
-                        logger.warning(f"   ⚠️ AI Analysis: Success but no Notion entry ID found")
-                        
-                else:
-                    failed_transcripts.append(transcript)
-                    self._move_failed_transcript(transcript, error_reason)
-                    self.state["current_session"]["ai_processing_failed"].append(transcript.name)
-                    logger.error(f"   ❌ Failed: {error_reason}")
-            
-            # Final summary
-            logger.info(f"")
-            logger.info(f"📊 Processing Summary:")
-            logger.info(f"   ✅ Successful: {len(successful_analyses)}/{len(valid_transcripts)} transcripts")
-            logger.info(f"   ⏭️ Duplicates: {len(duplicate_transcripts)} transcripts")
-            logger.info(f"   ❌ Failed: {len(failed_transcripts)} transcripts")
-            logger.info(f"   🤖 AI Analysis: {len(successful_analyses)} successful")
-            logger.info(f"   📝 Notion Entries: {len([a for a in successful_analyses if a['result'].get('analysis') or a['result'].get('analyses')])} created")
-            logger.info(f"   🧹 Cleanup Candidates: {len(self.state['current_session'].get('duplicate_cleanup_candidates', []))} duplicates")
-            
-            # Update state
-            self.state["current_session"]["processing_complete"] = True
-            self.state["current_session"]["processing_summary"] = {
-                "total_transcripts": len(valid_transcripts),
-                "successful_analyses": len(successful_analyses),
-                "duplicate_transcripts": len(duplicate_transcripts),
-                "failed_transcripts": len(failed_transcripts),
-                "notion_entries_created": len([a for a in successful_analyses if a['result'].get('analysis') or a['result'].get('analyses')]),
-                "success_rate": len(successful_analyses) / len(valid_transcripts) if valid_transcripts else 0
-            }
-            
-            # Save state
+
+        # Delegate to ProcessingEngine
+        success, successful_analyses, failed_transcripts = self.processing_engine.process_and_verify(
+            transcripts=successful_transcripts,
+            project_root=self.project_root,
+            failed_folder=self.failed_folder,
+            state=self.state["current_session"],
+            move_failed_callback=self._move_failed_transcript,
+            notion_client=self.notion_client
+        )
+
+        # Save state after processing
+        if success:
             self._save_state(self.state)
-            
             logger.info("✅ Step 4 complete - ready for verification")
-            return True, successful_analyses, failed_transcripts
-            
-        except Exception as e:
-            logger.error(f"❌ Step 4 failed: {e}")
-            return False, [], []
+
+        return success, successful_analyses, failed_transcripts
     
     def _verify_session_success(self, successful_transcripts: List[Path], successful_analyses: List[Dict]) -> Tuple[bool, Dict]:
         """Verify that the session completed successfully enough to proceed with archiving"""
@@ -1216,146 +973,6 @@ class RecordingOrchestrator:
         self.state_manager._finalize_session_legacy(session_id)
         # Keep state in sync
         self.state = self.state_manager.state
-    
-    def _verify_notion_entry_exists(self, notion_entry_id: str) -> Tuple[bool, str]:
-        """
-        Verify that a Notion entry exists via API call
-        Returns: (success, error_message)
-        """
-        if not self.notion_client:
-            return False, "Notion client not available"
-        
-        max_retries = 3
-        base_delay = 1  # seconds
-        
-        for attempt in range(max_retries):
-            try:
-                # Add delay between retries (rate limiting)
-                if attempt > 0:
-                    time.sleep(base_delay * (2 ** (attempt - 1)))
-                
-                # Query the specific page with timeout
-                import signal
-                
-                def timeout_handler(signum, frame):
-                    raise TimeoutError("API call timed out")
-                
-                # Set 10 second timeout
-                signal.signal(signal.SIGALRM, timeout_handler)
-                signal.alarm(10)
-                
-                try:
-                    page = self.notion_client.pages.retrieve(notion_entry_id)
-                    signal.alarm(0)  # Cancel timeout
-                    
-                    if page and page.get("id"):
-                        return True, ""
-                    else:
-                        return False, "Page not found or invalid response"
-                        
-                except TimeoutError:
-                    signal.alarm(0)
-                    return False, "API call timed out after 10 seconds"
-                    
-            except Exception as e:
-                error_msg = str(e)
-                if "rate_limited" in error_msg.lower() or "429" in error_msg:
-                    # Rate limited - wait longer
-                    wait_time = base_delay * (2 ** attempt)
-                    logger.warning(f"⚠️ Rate limited, waiting {wait_time}s before retry {attempt + 1}")
-                    time.sleep(wait_time)
-                    continue
-                elif "not_found" in error_msg.lower() or "404" in error_msg:
-                    return False, "Page not found"
-                elif attempt == max_retries - 1:
-                    return False, f"API error after {max_retries} attempts: {error_msg}"
-                else:
-                    logger.warning(f"⚠️ API error on attempt {attempt + 1}: {error_msg}")
-                    continue
-        
-        return False, f"Failed after {max_retries} attempts"
-    
-    def _verify_notion_entries(self, successful_analyses: List[Dict]) -> Tuple[Dict, List[Dict], List[Dict]]:
-        """
-        Step 5a: Verify Notion entries exist and are valid
-        Returns: verification_summary, verified_entries, failed_entries
-        """
-        logger.info("🔍 Step 5a: Verifying Notion entries...")
-        
-        verified_entries = []
-        failed_entries = []
-        
-        for analysis in successful_analyses:
-            try:
-                # Check if analysis has Notion entry ID
-                if "notion_entry_id" not in analysis:
-                    failed_entries.append({
-                        "transcript": analysis.get("transcript_name", "unknown"),
-                        "error": "Missing Notion entry ID from analysis",
-                        "analysis": analysis
-                    })
-                    continue
-                
-                # Basic validation: check if we have required fields
-                if not analysis.get("title") or not analysis.get("content"):
-                    failed_entries.append({
-                        "transcript": analysis.get("transcript_name", "unknown"),
-                        "error": "Missing required fields (title or content)",
-                        "analysis": analysis
-                    })
-                    continue
-                
-                # Verify Notion entry exists via API
-                notion_entry_id = analysis.get("notion_entry_id")
-                if notion_entry_id:
-                    success, error = self._verify_notion_entry_exists(notion_entry_id)
-                    if not success:
-                        failed_entries.append({
-                            "transcript": analysis.get("transcript_name", "unknown"),
-                            "error": f"Notion verification failed: {error}",
-                            "analysis": analysis,
-                            "notion_entry_id": notion_entry_id
-                        })
-                        continue
-                else:
-                    failed_entries.append({
-                        "transcript": analysis.get("transcript_name", "unknown"),
-                        "error": "Missing Notion entry ID from analysis",
-                        "analysis": analysis
-                    })
-                    continue
-                
-                verified_entries.append(analysis)
-                logger.info(f"✅ Verified Notion entry for: {analysis.get('transcript_name', 'unknown')}")
-                
-            except Exception as e:
-                failed_entries.append({
-                    "transcript": analysis.get("transcript_name", "unknown"),
-                    "error": f"Verification error: {str(e)}",
-                    "analysis": analysis
-                })
-                logger.error(f"❌ Failed to verify entry: {e}")
-        
-        # Calculate verification summary
-        total_entries = len(successful_analyses)
-        successful_verifications = len(verified_entries)
-        failed_verifications = len(failed_entries)
-        success_rate = successful_verifications / total_entries if total_entries > 0 else 0
-        
-        verification_summary = {
-            "total_entries": total_entries,
-            "successful_verifications": successful_verifications,
-            "failed_verifications": failed_verifications,
-            "success_rate": success_rate,
-            "verification_passed": success_rate > 0  # Allow partial success
-        }
-        
-        logger.info(f"📊 Notion Verification Summary:")
-        logger.info(f"   ✅ Successful: {successful_verifications}/{total_entries}")
-        logger.info(f"   ❌ Failed: {failed_verifications}/{total_entries}")
-        logger.info(f"   📈 Success Rate: {success_rate:.1%}")
-        
-        return verification_summary, verified_entries, failed_entries
     
     def _archive_successful_recordings(self, all_cleanup_candidates: List[Dict], session_id: str) -> Tuple[List[Dict], List[Dict]]:
         """
@@ -1657,13 +1274,14 @@ class RecordingOrchestrator:
                 # Assume transcripts already exist
                 successful_transcripts = list(self.transcripts_folder.glob("*.txt"))
                 failed_files = []
+                success = True
             else:
                 self.performance_tracker.start_phase('transcribe')
                 success, successful_transcripts, failed_files = self.step3_transcribe(valid_files, time_estimate)
                 self.performance_tracker.end_phase('transcribe',
                     files_processed=len(successful_transcripts) if successful_transcripts else 0,
                     files_failed=len(failed_files) if failed_files else 0)
-            
+
             if not success:
                 logger.error("❌ Orchestrator failed at Step 3")
                 return False

@@ -793,7 +793,147 @@ Router extraction for clean separation of concerns:
 
 ---
 
-*Last Updated: November 1, 2025 - **PHASE A COMPLETE!** 🎉*
-*Next Session: Phase B - recording_orchestrator.py refactoring (production-critical)*
+## 🚀 Phase B: Refactor recording_orchestrator.py (In Progress)
+
+**Goal**: Break down god object (2,518 lines) into modular orchestration system following Single Responsibility Principle
+
+**Status**: 6/7 Steps Complete ✅ (Steps 2-6 complete, Step 7 in progress)
+
+### ✅ Step 2: StateManager Extraction (COMPLETE)
+- Created `scripts/orchestration/state/` package
+- Extracted state management from RecordingOrchestrator
+- Features: atomic writes, session management, validation
+
+### ✅ Step 3: USBDetector & FileValidator Extraction (COMPLETE)
+- Created `scripts/orchestration/detection/` package
+- Extracted USB detection and file validation
+- Clean separation of detection concerns
+
+### ✅ Step 4: StagingManager Extraction (COMPLETE)
+- Created `scripts/orchestration/staging/` package
+- Local staging for USB files with platform-specific deletion
+- Prevents slow USB I/O during transcription
+
+### ✅ Step 5: TranscriptionEngine Extraction (COMPLETE - Nov 1, 2025)
+- Created `scripts/orchestration/transcription/transcription_engine.py` (685 lines)
+- Reduced recording_orchestrator.py by ~500 lines
+- Features:
+  - Parallel batch transcription with ThreadPoolExecutor
+  - Duration-aware batch balancing (work budget algorithm)
+  - Resource monitoring (CPU, disk space, memory)
+  - Duplicate detection (skip if transcript exists)
+  - Platform-independent implementation
+- Performance: 4.2x speed improvement (32 min → 7.6 min)
+- 100% backward compatible, zero breaking changes ✅
+
+### ✅ Step 6: ProcessingEngine Extraction (COMPLETE - Nov 2, 2025)
+- Created `scripts/orchestration/processing/processing_engine.py` (412 lines)
+- Reduced recording_orchestrator.py by ~350 lines
+- Features:
+  - AI processing of transcripts via process_transcripts module
+  - Transcript validation (file size, content, duplicate detection)
+  - Notion entry verification with retry and rate limiting
+  - Handles duplicate transcripts for archiving
+  - Failed transcript management
+- Architecture decisions:
+  - Sequential AI processing (safe, prevents OpenAI rate limits)
+  - Notion client passed as parameter (flexible, testable)
+  - Unix/Mac timeout using signal.alarm() (documented limitation)
+  - Callback pattern for _move_failed_transcript (stays in orchestrator)
+- 100% backward compatible, zero breaking changes ✅
+
+### 🔄 Step 7: ArchiveManager & Final Cleanup (IN PROGRESS)
+- Extract archiving logic (~400 lines remaining)
+- Final orchestrator wrapper (~200 lines)
+- Complete modularization
+
+---
+
+## 💡 Future Enhancements - Processing & Verification (After Phase B)
+
+### 1. Parallel AI Processing (2.5x Speed Improvement)
+**Current**: Sequential processing (safe but slow, one transcript at a time)
+
+**Enhancement**: Parallel processing with controlled concurrency
+- **Architecture**: ThreadPoolExecutor with 3-5 workers
+- **Benefits**:
+  - 2.5x faster transcript processing
+  - Better resource utilization
+  - Stays within OpenAI rate limits
+- **Effort**: ~30 minutes implementation
+- **Safety**: Rate limiting prevents API throttling
+- **Use Case**: Batch processing 10+ transcripts
+
+**Implementation**:
+```python
+with ThreadPoolExecutor(max_workers=5) as executor:
+    futures = {executor.submit(process_fn, t): t for t in transcripts}
+    for future in as_completed(futures):
+        # Collect results with rate limit delay
+```
+
+### 2. Parallel Notion Verification with Proactive Throttling
+**Current**: Sequential verification with reactive exponential backoff (1s → 2s → 4s)
+
+**Enhancement**: Parallel batch verification with proactive rate limiting
+- **Architecture**: Batch requests with controlled pacing
+- **Rate Limits**: 3 requests/sec average, burst 10-20 req/sec
+- **Benefits**:
+  - 2-3x faster Notion verification
+  - Proactive throttling prevents rate limit errors
+  - Better API usage efficiency
+- **Effort**: ~30 minutes implementation
+- **Current**: Reactive backoff after 429 errors
+- **Future**: Proactive pacing to prevent 429s entirely
+
+**Implementation**:
+```python
+# Proactive throttling: 3 req/sec with burst allowance
+batch_size = 10
+delay_between_requests = 0.35  # ~3/sec
+for batch in chunks(entries, batch_size):
+    verify_batch_parallel(batch)
+    time.sleep(delay_between_requests)
+```
+
+### 3. Platform-Independent Timeout Mechanism
+**Current**: Unix/Mac only using signal.alarm() (doesn't work on Windows)
+
+**Enhancement**: Cross-platform timeout using threading.Timer
+- **Architecture**: threading.Timer or ThreadPoolExecutor.result(timeout=10)
+- **Benefits**:
+  - Works on Windows, Unix/Mac, all platforms
+  - More Pythonic approach
+  - Better error handling
+- **Effort**: 15-20 minutes implementation
+- **Why Not Now**: PARITY approach - preserves existing behavior, user on Mac
+
+**Implementation**:
+```python
+from concurrent.futures import ThreadPoolExecutor, TimeoutError
+
+with ThreadPoolExecutor() as executor:
+    future = executor.submit(notion_client.pages.retrieve, entry_id)
+    try:
+        page = future.result(timeout=10)
+    except TimeoutError:
+        return False, "API call timed out"
+```
+
+**Priority**: Low (current works on Mac/Unix, Windows support not needed yet)
+
+---
+
+### **Long-term (After Phase B)**
+- Phase 5-6: Complete system modularization
+- Grok integration (trivial after refactoring - 2 hours)
+- Email intelligence system
+- Auto cleanup scheduling
+
+---
+
+*Last Updated: November 2, 2025 - **PHASE B: 6/7 STEPS COMPLETE!** ✅*
+*Current Session: Phase B Step 6 - ProcessingEngine extraction complete*
+*Next Step: Phase B Step 7 - ArchiveManager & final cleanup*
 
 

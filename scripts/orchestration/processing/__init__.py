@@ -1,6 +1,5 @@
 """AI processing modules for transcript analysis."""
 
-# Will expose once class is created:
-# from .ai_processor import AIProcessor
+from .processing_engine import ProcessingEngine
 
-__all__ = []  # Will be populated when class is implemented
+__all__ = ["ProcessingEngine"]
