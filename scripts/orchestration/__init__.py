@@ -17,8 +17,8 @@ Architecture:
 __version__ = "2.0.0"  # Phase B refactoring
 
 # Expose main classes for easy importing
-# These will be available once modules are implemented
+from .state import StateManager
 
 __all__ = [
-    # Will be populated as modules are created
+    "StateManager",
 ]

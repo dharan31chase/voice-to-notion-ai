@@ -25,9 +25,17 @@ parent_dir = Path(__file__).parent.parent
 if str(parent_dir) not in sys.path:
     sys.path.insert(0, str(parent_dir))
 
+# Add scripts directory to path for orchestration imports
+scripts_dir = Path(__file__).parent
+if str(scripts_dir) not in sys.path:
+    sys.path.insert(0, str(scripts_dir))
+
 # Import shared utilities
 from core.logging_utils import configure_root_logger, get_logger
 from core.config_loader import ConfigLoader
+
+# Import orchestration modules
+from orchestration.state import StateManager
 
 # Try to import Notion client, but don't fail if it's not available
 try:
@@ -71,8 +79,9 @@ class RecordingOrchestrator:
         # Ensure required folders exist
         self._setup_folders()
 
-        # Load or create state
-        self.state = self._load_state()
+        # Initialize state manager (Phase B Step 2)
+        self.state_manager = StateManager(self.state_file, self.cache_folder)
+        self.state = self.state_manager.load_state()
 
         # Current session info
         self.current_session_id = None
@@ -158,12 +167,12 @@ class RecordingOrchestrator:
             }
     
     def _save_state(self, state: Dict):
-        """Save state to file"""
-        try:
-            with open(self.state_file, 'w') as f:
-                json.dump(state, f, indent=2)
-        except Exception as e:
-            logger.error(f"❌ Error saving state: {e}")
+        """
+        Save state to file.
+
+        Now delegates to StateManager with atomic writes.
+        """
+        self.state_manager.save_state(state)
     
     def _check_usb_connection(self) -> bool:
         """Check if USB recorder is connected and accessible"""
@@ -227,9 +236,12 @@ class RecordingOrchestrator:
             return False, f"Validation error: {e}"
     
     def _generate_session_id(self) -> str:
-        """Generate unique session ID based on current timestamp"""
-        timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
-        return f"session_{timestamp}"
+        """
+        Generate unique session ID based on current timestamp.
+
+        Now delegates to StateManager.
+        """
+        return self.state_manager.generate_session_id()
     
     def _get_unprocessed_files(self, mp3_files: List[Path]) -> List[Path]:
         """Identify files that haven't been processed yet"""
@@ -1724,125 +1736,46 @@ class RecordingOrchestrator:
             return False
     
     def _update_archive_state_with_verification(self, session_id: str, archived_files: List[Dict], verification_summary: Dict, failed_entries: List[Dict], failed_archives: List[Dict], cleanup_failures: List[Dict]):
-        """Update state with archive information and verification status"""
-        try:
-            # Add archive info to current session
-            self.state["current_session"]["archive_complete"] = True
-            self.state["current_session"]["archive_folder"] = str(self.archives_folder)
-            self.state["current_session"]["archived_recordings"] = [
-                {
-                    "transcript_name": file_info["transcript_name"],
-                    "original_name": file_info["original_name"],
-                    "archive_name": file_info["archive_name"],
-                    "archive_path": str(file_info["archive_path"]),
-                    "size_mb": file_info["size_mb"],
-                    "notion_entry_id": file_info.get("notion_entry_id")
-                }
-                for file_info in archived_files
-            ]
-            
-            # Add verification status
-            self.state["current_session"]["verification_summary"] = verification_summary
-            self.state["current_session"]["failed_entries"] = failed_entries
-            self.state["current_session"]["failed_archives"] = failed_archives
-            self.state["current_session"]["cleanup_failures"] = cleanup_failures
-            
-            # Mark session for future cleanup (7 days from now)
-            cleanup_date = datetime.now() + timedelta(days=7)
-            self.state["current_session"]["cleanup_ready"] = True
-            self.state["current_session"]["cleanup_date"] = cleanup_date.isoformat()
-            
-            logger.info(f"📊 Updated state with {len(archived_files)} archived files and verification status")
-            
-        except Exception as e:
-            logger.error(f"❌ Error updating archive state: {e}")
+        """
+        Update state with archive information and verification status.
+
+        Now delegates to StateManager.
+        """
+        self.state_manager.update_archive_state(
+            session_id,
+            archived_files,
+            verification_summary,
+            failed_entries,
+            failed_archives,
+            cleanup_failures
+        )
+        # Keep state in sync
+        self.state = self.state_manager.state
     
     def _finalize_session_with_verification(self, session_id: str, verification_summary: Dict, archived_files: List[Dict], failed_entries: List[Dict]):
-        """Move current session to previous sessions with verification details"""
-        try:
-            # Create previous session entry with verification info
-            previous_session = {
-                "session_id": session_id,
-                "start_time": self.state["current_session"]["start_time"],
-                "end_time": datetime.now().isoformat(),
-                "cleanup_ready": True,
-                "cleanup_date": self.state["current_session"].get("cleanup_date"),
-                "verification_summary": verification_summary,
-                "files_to_delete": {
-                    "recordings": [f["archive_path"] for f in archived_files],
-                    "transcripts": [f["transcript_name"] for f in archived_files]
-                },
-                "failed_entries": failed_entries,
-                "summary": {
-                    "total_recordings": len(archived_files),
-                    "total_transcripts": len(archived_files),
-                    "success_rate": verification_summary.get("success_rate", 0),
-                    "verification_passed": verification_summary.get("verification_passed", False)
-                }
-            }
-            
-            # Add to previous sessions
-            if "previous_sessions" not in self.state:
-                self.state["previous_sessions"] = []
-            
-            self.state["previous_sessions"].append(previous_session)
-            
-            # Keep only last 7 days of sessions
-            cutoff_date = datetime.now() - timedelta(days=7)
-            self.state["previous_sessions"] = [
-                session for session in self.state["previous_sessions"]
-                if datetime.fromisoformat(session["start_time"]) > cutoff_date
-            ]
-            
-            # Clear current session (will be recreated on next USB connection)
-            self.state["current_session"] = {}
-            
-            logger.info(f"✅ Session {session_id} finalized with verification details")
-            
-        except Exception as e:
-            logger.error(f"❌ Error finalizing session: {e}")
+        """
+        Move current session to previous sessions with verification details.
+
+        Now delegates to StateManager.
+        """
+        self.state_manager.finalize_session(
+            session_id,
+            verification_summary,
+            archived_files,
+            failed_entries
+        )
+        # Keep state in sync
+        self.state = self.state_manager.state
     
     def _finalize_session(self, session_id: str):
-        """Move current session to previous sessions and prepare for cleanup"""
-        try:
-            # Create previous session entry
-            previous_session = {
-                "session_id": session_id,
-                "start_time": self.state["current_session"]["start_time"],
-                "end_time": datetime.now().isoformat(),
-                "cleanup_ready": True,
-                "cleanup_date": self.state["current_session"].get("cleanup_date"),
-                "files_to_delete": {
-                    "recordings": [f["archive_path"] for f in self.state["current_session"].get("archived_recordings", [])],
-                    "transcripts": [f for f in self.state["current_session"].get("transcripts_created", [])]
-                },
-                "summary": {
-                    "total_recordings": len(self.state["current_session"].get("recordings_processed", [])),
-                    "total_transcripts": len(self.state["current_session"].get("transcripts_created", [])),
-                    "success_rate": self.state["current_session"].get("transcription_summary", {}).get("success_rate", 0)
-                }
-            }
-            
-            # Add to previous sessions
-            if "previous_sessions" not in self.state:
-                self.state["previous_sessions"] = []
-            
-            self.state["previous_sessions"].append(previous_session)
-            
-            # Keep only last 7 days of sessions
-            cutoff_date = datetime.now() - timedelta(days=7)
-            self.state["previous_sessions"] = [
-                session for session in self.state["previous_sessions"]
-                if datetime.fromisoformat(session["start_time"]) > cutoff_date
-            ]
-            
-            # Clear current session (will be recreated on next USB connection)
-            self.state["current_session"] = {}
-            
-            logger.info(f"✅ Session {session_id} finalized and moved to previous sessions")
-            
-        except Exception as e:
-            logger.error(f"❌ Error finalizing session: {e}")
+        """
+        Move current session to previous sessions and prepare for cleanup (legacy).
+
+        Now delegates to StateManager._finalize_session_legacy().
+        """
+        self.state_manager._finalize_session_legacy(session_id)
+        # Keep state in sync
+        self.state = self.state_manager.state
     
     def _verify_notion_entry_exists(self, notion_entry_id: str) -> Tuple[bool, str]:
         """
