@@ -1,6 +1,6 @@
 # Voice-to-Notion AI Assistant - Project State & Decisions
 
-## Current Status (Phase B in Progress - November 2, 2025)
+## Current Status (Phase 5 COMPLETE - November 5, 2025)
 - ✅ **Complete automation pipeline:** Voice → AI Analysis → Organized Notion PARA content
 - ✅ **Configuration System:** YAML-based config with environment variable overrides (Milestone 1.1)
 - ✅ **Shared Utilities:** Centralized OpenAI client, file utils, unified logging (Milestone 1.2)
@@ -29,15 +29,63 @@
 - ✅ **Retry Logic:** Automatic retry with exponential backoff for API calls
 - ✅ **Code Quality:** Reduced codebase by 7,160 lines (87% reduction in duplication)
 - ✅ **Router Refactoring:** Phase A COMPLETE - All 4 routers extracted (DurationEstimator, TagDetector, IconSelector, ProjectDetector)
-- ✅ **Orchestrator Modularization:** Phase B in progress - 6/7 steps complete
+- ✅ **Orchestrator Modularization:** Phase B COMPLETE - All 7 steps finished
 - ✅ **StateManager:** Extracted state management with atomic writes (Phase B Step 2)
 - ✅ **Detection Modules:** USBDetector & FileValidator extracted (Phase B Step 3)
 - ✅ **StagingManager:** Local staging with platform-specific deletion (Phase B Step 4)
 - ✅ **TranscriptionEngine:** Parallel batch transcription with 4.2x speedup (Phase B Step 5)
 - ✅ **ProcessingEngine:** AI processing & Notion verification extracted (Phase B Step 6)
-- 🔄 **Orchestrator Cleanup:** Phase B Step 7 in progress - ArchiveManager & final cleanup remaining
+- ✅ **Orchestrator Cleanup:** Phase B Step 7 COMPLETE - Dead code removed (5 methods, 135 lines)
+- ✅ **Notion Manager Refactoring:** Phase 5.1 COMPLETE - 5 modules with confidence scoring
+- ✅ **Project Matcher Refactoring:** Phase 5.2 COMPLETE - 4 modules with clean separation
 
 ## Major Architecture Decisions Made
+
+### 20. Project Matcher Refactoring (Phase 5.2 - November 5, 2025)
+**Decision:** Extract project_matcher.py (663 lines) into 4 focused modules
+**Rationale:**
+- Single responsibility: Cache, fetch, match logic separated
+- Testability: Each module can be tested independently
+- Configurability: Fuzzy threshold now in settings.yaml (0.6 default)
+- Maintainability: Easier to enhance matching algorithms
+**Implementation:**
+- Created `scripts/matchers/project_cache.py` (251 lines) - Cache with file persistence
+- Created `scripts/matchers/notion_project_fetcher.py` (217 lines) - Notion API fetching with aliases
+- Created `scripts/matchers/fuzzy_matcher.py` (319 lines) - Multi-level matching strategy
+- Refactored project_matcher.py: 663 → 287 lines (thin facade)
+**Architecture Decisions:**
+- **Fuzzy threshold configurable**: 0.6 default (was hardcoded 0.8), more flexible matching
+- **Cache duration configurable**: 60 min default via settings.yaml
+- **Multi-level matching**: Exact name (1.0) → Exact alias (0.95) → Partial word (0.75-0.9) → Fuzzy (0.0-0.7)
+**Result:**
+- 100% backward compatible
+- All 4 dependent modules work correctly (NotionManager, Analyzers)
+- Full integration verified: RecordingOrchestrator → Analyzers → ProjectMatcher → matchers/*
+**Principle:** Clean separation of concerns - cache/fetch/match isolated for easy enhancement
+
+### 19. Notion Manager Refactoring (Phase 5.1 - November 5, 2025)
+**Decision:** Extract notion_manager.py (530 lines) into 5 focused modules with confidence scoring
+**Rationale:**
+- Single responsibility: Formatting, API, task logic, note logic separated
+- Future-proofing: Confidence scoring prepares for Epic 2nd Brain Workflow (clarification UI)
+- Testability: Each module can be tested independently
+- Maintainability: Easier to enhance task/note creation separately
+**Implementation:**
+- Created `scripts/notion/content_formatter.py` (319 lines) - Formatting with confidence scoring
+- Created `scripts/notion/notion_client_wrapper.py` (176 lines) - API wrapper with retry logic
+- Created `scripts/notion/task_creator.py` (198 lines) - Task-specific creation logic
+- Created `scripts/notion/note_creator.py` (214 lines) - Note-specific creation with voice preservation
+- Refactored notion_manager.py: 530 → 44 lines (backward compatibility wrapper)
+**Architecture Decisions:**
+- **Confidence scoring**: Returns {formatted_text, confidence_score, needs_review, review_reasons}
+- **Content formatting threshold**: 0.7 confidence threshold (configurable in settings.yaml)
+- **Voice preservation**: Notes get minimal AI formatting to preserve original voice
+- **enable_review_queue**: False by default (turn on when clarification UI ready)
+**Result:**
+- 100% backward compatible
+- All imports still work (scripts.notion_manager → scripts.notion)
+- Ready for Epic 2nd Brain Workflow (Nov 25 deadline)
+**Principle:** Future-proofing with PARITY - add infrastructure now, enable features later
 
 ### 18. ProcessingEngine Extraction (Phase B Step 6 - November 2, 2025)
 **Decision:** Extract AI processing and Notion verification from RecordingOrchestrator into ProcessingEngine module
