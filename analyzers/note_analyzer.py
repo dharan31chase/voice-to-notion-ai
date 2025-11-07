@@ -29,12 +29,12 @@ logger = logging.getLogger(__name__)
 class NoteAnalyzer:
     """
     Analyzes note content with preservation-first approach.
-    
+
     Philosophy: Notes capture insights, reflections, and learnings.
     These are MORE valuable in original form than tasks.
     AI is used ONLY for title generation, never for summarization.
     """
-    
+
     def __init__(
         self,
         parser: Optional[ContentParser] = None,
@@ -43,7 +43,7 @@ class NoteAnalyzer:
     ):
         """
         Initialize note analyzer with dependencies.
-        
+
         Args:
             parser: ContentParser for shared helpers
             project_matcher: ProjectMatcher for project extraction
@@ -53,34 +53,34 @@ class NoteAnalyzer:
         self.project_matcher = project_matcher or ProjectMatcher()
         self.project_extractor = ProjectExtractor(self.project_matcher)
         self.router = router
-        
+
         # Get preservation threshold from config
         self.config = self.parser.config
         length_rules = self.config.get("content_length", {})
         self.preservation_threshold = length_rules.get("long_threshold", 800)
-        
+
         logger.debug(f"NoteAnalyzer initialized with preservation threshold: {self.preservation_threshold} words")
     
     def analyze(self, content: str, project: str = "") -> Dict[str, Any]:
         """
         Analyze note content with preservation logic.
-        
+
         Args:
             content: Note content to analyze
             project: Pre-extracted project name (optional)
-        
+
         Returns:
             Dict with note analysis results
         """
         word_count = len(content.split())
         logger.debug(f"Analyzing note ({word_count} words)")
-        
+
         # Extract project if not provided
         if not project:
             project, proj_confidence = self.project_extractor.extract_project(content)
             if project == "Manual Review Required":
                 project = ""
-        
+
         # Clean up content
         note_content = content.strip()
         if note_content.endswith('.'):
@@ -136,6 +136,9 @@ class NoteAnalyzer:
                 "summarized": False,
                 "ai_enhanced": True  # Title + light formatting
             }
+
+
+
 
 
 

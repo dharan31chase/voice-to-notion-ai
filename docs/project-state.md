@@ -1,6 +1,6 @@
 # Voice-to-Notion AI Assistant - Project State & Decisions
 
-## Current Status (Phase 5 COMPLETE - November 5, 2025)
+## Current Status (Phase 5 COMPLETE - November 6, 2025)
 - ✅ **Complete automation pipeline:** Voice → AI Analysis → Organized Notion PARA content
 - ✅ **Configuration System:** YAML-based config with environment variable overrides (Milestone 1.1)
 - ✅ **Shared Utilities:** Centralized OpenAI client, file utils, unified logging (Milestone 1.2)
@@ -8,6 +8,8 @@
 - ✅ **Smart Parser:** Modular parsing with 5-tier heuristics, 95%+ category detection (Milestone 2.1)
 - ✅ **Analyzer Architecture:** TaskAnalyzer, NoteAnalyzer with content preservation (Milestone 2.2)
 - ✅ **Data Loss Prevention:** P0 hotfix complete - safe file operations with Notion verification
+- ✅ **Category Detection Fix:** Tier 0 metadata suffix check prioritizes "note"/"task" at end of transcript
+- ✅ **Bug Fixes:** Staging permissions, transcription method name, Notion content chunking
 - ✅ **Performance Breakthrough:** 4.2x speed improvement (33 min → 8 min) with Phase 1 optimization
 - ✅ **USB Staging:** Local staging pipeline eliminates I/O bottlenecks and permission errors
 - ✅ **Turbo Whisper:** Upgraded to turbo model for faster, accurate transcription
@@ -40,6 +42,43 @@
 - ✅ **Project Matcher Refactoring:** Phase 5.2 COMPLETE - 4 modules with clean separation
 
 ## Major Architecture Decisions Made
+
+### 21. Category Detection Tier 0 Metadata Suffix (November 6, 2025)
+**Decision:** Add Tier 0 detection that checks last 20 lines of transcript for "note" or "task" metadata BEFORE checking content
+**Rationale:**
+- User's framework: Metadata at END of transcript = source of truth
+- "I might have tasks in a note... it's what's specified at the end that matters"
+- Transcription garbage (random numbers/words) can push metadata 12+ lines from end
+- Keywords in content (like "task" mentioned in note) should not override explicit user metadata
+**Implementation:**
+- Added `_check_metadata_suffix()` method in content_parser.py (lines 132-175)
+- Checks last 20 lines for standalone "note" or "task" using word boundary regex (`\bnote\b`)
+- Returns 100% confidence when metadata found (highest priority)
+- Returns None if nothing found, allowing fallback to other tiers or default to "task"
+**Result:**
+- Fixed Peak book notes detection (was "task" due to keyword in content, now correctly "note")
+- Handles transcription garbage robustly (tested with 12+ lines of junk)
+- 100% backward compatible with existing detection system
+**Principle:** User-specified metadata > Content heuristics. Always check explicit instructions first.
+
+### 22. Book Note Formatter (Attempted & Reverted - November 6, 2025)
+**Decision:** Attempted automated book note formatting with GPT-4o, then reverted to manual workflow
+**Rationale:** Quality and preservation matter more than automation for infrequent book notes
+**Implementation Attempted:**
+- Created `config/content_formatters.yaml` with detailed meta-prompt
+- Created `scripts/notion/smart_content_formatter.py` for config-driven formatting
+- Integrated into NoteAnalyzer and process_transcripts.py
+- Used GPT-4o (128k context) for long book notes
+**Why Reverted:**
+- GPT-4o heavily summarized content despite explicit preservation instructions
+- Output was not readable, broke off at end, felt "very summarized" (user feedback)
+- Manual workflow (Alfred → Claude → paste to Notion) is actually faster for infrequent use
+**Final State:**
+- Detection system KEPT (Tier 0 metadata suffix works perfectly)
+- Formatter integration REVERTED (NoteAnalyzer, process_transcripts.py, content_parser.py)
+- Config files KEPT for potential future use (content_formatters.yaml, smart_content_formatter.py)
+- Manual workflow established: Copy transcript → Alfred → Claude with prompt → Paste formatted version
+**Principle:** Automation is not always better. For infrequent, high-value content, manual quality control is acceptable.
 
 ### 20. Project Matcher Refactoring (Phase 5.2 - November 5, 2025)
 **Decision:** Extract project_matcher.py (663 lines) into 4 focused modules
@@ -349,6 +388,11 @@
 23. ✅ **Retry Logic:** Automatic retry with exponential backoff for API reliability (Milestone 1.2)
 24. ✅ **Unified Logging:** All scripts log to single file with auto-rotation (Milestone 1.2)
 25. ✅ **Data Loss Prevention:** P0 hotfix prevents file deletion when Notion fails (Oct 22)
+26. ✅ **Category Detection Priority:** Tier 0 metadata suffix check respects user's explicit tagging (Nov 6)
+27. ✅ **Staging Permission Errors:** macOS xattr cleanup prevents "Operation not permitted" errors (Nov 6)
+28. ✅ **Transcription Method Bug:** Fixed _extract_file_metadata AttributeError (Nov 6)
+29. ✅ **Notion Content Length:** Content chunking handles >2000 char paragraphs (Nov 6)
+30. ✅ **Book Note Workflow:** Manual formatting workflow established for high-value content (Nov 6)
 
 ## Remaining Technical Debt (Week 3 Roadmap)
 
@@ -434,4 +478,4 @@
 - **Error Recovery:** Robust handling of corrupted files and JSON serialization issues
 
 ---
-*Last Updated: October 22, 2025 - Phase 2 In Progress - Milestone 2.2 Complete + P0 Hotfix Complete*
+*Last Updated: November 6, 2025 - Phase 5 Complete + Bug Fixes (Category Detection, Staging, Notion Chunking)*

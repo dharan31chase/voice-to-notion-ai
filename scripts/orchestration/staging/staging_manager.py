@@ -59,12 +59,34 @@ class StagingManager:
                 staging_path = self.staging_folder / file_path.name
 
                 if staging_path.exists():
-                    logger.info(f"ℹ️ {file_path.name} already in staging")
-                    successful.append(staging_path)
-                else:
-                    shutil.copy2(str(file_path), str(staging_path))
-                    logger.info(f"✅ Copied {file_path.name} to staging ({file_path.stat().st_size / (1024*1024):.1f}MB)")
-                    successful.append(staging_path)
+                    # Check if file is the same size (already staged correctly)
+                    if staging_path.stat().st_size == file_path.stat().st_size:
+                        logger.info(f"ℹ️ {file_path.name} already in staging")
+                        successful.append(staging_path)
+                        continue
+                    else:
+                        # Size mismatch - remove old file and re-copy
+                        logger.info(f"⚠️ {file_path.name} exists but size differs - re-copying")
+                        try:
+                            # Strip extended attributes first (macOS-specific)
+                            subprocess.run(['xattr', '-c', str(staging_path)],
+                                         capture_output=True, check=False, timeout=5)
+                        except Exception:
+                            pass  # xattr might not exist or fail
+                        staging_path.unlink()
+
+                # Copy file to staging
+                shutil.copy2(str(file_path), str(staging_path))
+
+                # Strip extended attributes from the copy (prevents permission issues)
+                try:
+                    subprocess.run(['xattr', '-c', str(staging_path)],
+                                 capture_output=True, check=False, timeout=5)
+                except Exception:
+                    pass  # Not critical if xattr cleanup fails
+
+                logger.info(f"✅ Copied {file_path.name} to staging ({file_path.stat().st_size / (1024*1024):.1f}MB)")
+                successful.append(staging_path)
 
             except Exception as e:
                 error_msg = f"Copy failed: {e}"

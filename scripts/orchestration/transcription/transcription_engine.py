@@ -234,8 +234,10 @@ class TranscriptionEngine:
 
         Skips transcription if:
         - Transcript already exists
-        - Transcript is recent (<1 hour old)
         - Transcript has meaningful content (>10 characters)
+
+        Note: Once a transcript is successfully created, it is never re-transcribed
+        unless explicitly deleted or moved to failed folder.
 
         Args:
             audio_file: Path to audio file
@@ -253,14 +255,14 @@ class TranscriptionEngine:
             transcript_file = transcripts_folder / f"{audio_file.stem}.txt"
 
             if transcript_file.exists():
-                # Check if transcript is recent (within last hour) and has content
-                transcript_age = time.time() - transcript_file.stat().st_mtime
-                if transcript_age < 3600:  # 1 hour
-                    with open(transcript_file, 'r', encoding='utf-8') as f:
-                        content = f.read().strip()
-                    if len(content) > 10:  # Has meaningful content
-                        logger.info(f"INFO: Transcript already exists: {transcript_file.name} (age: {transcript_age/60:.1f} min)")
-                        return False
+                # Check if transcript has meaningful content
+                with open(transcript_file, 'r', encoding='utf-8') as f:
+                    content = f.read().strip()
+                if len(content) > 10:  # Has meaningful content
+                    # Calculate age for logging
+                    transcript_age = time.time() - transcript_file.stat().st_mtime
+                    logger.info(f"INFO: Transcript already exists: {transcript_file.name} (age: {transcript_age/60:.1f} min)")
+                    return False
 
             return True
 
@@ -307,8 +309,15 @@ class TranscriptionEngine:
 
             logger.info(f"Transcribing {file_path.name} (Batch {batch_num}, File {file_num})")
 
-            # Run Whisper with 300-second timeout
-            result = subprocess.run(cmd, capture_output=True, text=True, timeout=300)
+            # Calculate dynamic timeout based on file duration
+            # Whisper takes ~0.27x real-time, use 0.5x for safety margin with 20-minute minimum
+            metadata = self.extract_file_metadata(file_path)
+            estimated_minutes = metadata.get('estimated_minutes', 10)
+            dynamic_timeout = max(1200, int(estimated_minutes * 60 * 0.5))  # 0.5x audio duration, min 20 min
+            logger.debug(f"Using dynamic timeout: {dynamic_timeout}s for {estimated_minutes}-minute file")
+
+            # Run Whisper with dynamic timeout
+            result = subprocess.run(cmd, capture_output=True, text=True, timeout=dynamic_timeout)
 
             if result.returncode == 0 and output_path.exists():
                 # Validate transcript

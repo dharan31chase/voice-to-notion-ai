@@ -32,6 +32,19 @@ notion:
   retry_attempts: 3
   retry_delay_seconds: 2
 
+# Content Formatting (Phase 5.1 - Future Epic 2nd Brain Workflow)
+content_formatting:
+  confidence_threshold: 0.7  # Below this score = needs review
+  max_content_length: 2000  # Notion block character limit
+  enable_review_queue: false  # Turn on when clarification UI is ready
+  min_title_words: 3  # Minimum words for a good task title
+
+# Project Matching (Phase 5.2)
+project_matching:
+  fuzzy_threshold: 0.6  # Similarity threshold for fuzzy matching (0.0-1.0)
+  enable_ai_matching: true  # Use AI for project detection
+  cache_duration_minutes: 60  # How long to cache project list
+
 # Feature Flags
 features:
   enable_icon_matching: true
@@ -54,6 +67,10 @@ processing:
   skip_short_audio_seconds: 2  # Auto-skip audio files shorter than this (likely recording errors)
   retry_on_permission_errors: false  # Don't retry USB permission errors (Phase 1: use staging instead)
   retry_on_short_transcript_errors: false  # Don't retry "transcript too short" errors
+
+  # Audio File Duration Limits
+  max_file_duration_minutes: 120  # Skip files longer than this (-1 = unlimited, not recommended)
+  warn_duration_threshold_minutes: 90  # Warn if file exceeds this duration
 
 # Whisper Transcription Settings
 whisper:

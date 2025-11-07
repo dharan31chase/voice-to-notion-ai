@@ -59,20 +59,20 @@ def analyze_transcript(transcript_text):
     category = detection["category"]
     confidence = detection["confidence_score"]
     manual_review = detection["manual_review"]
-    
+
     logger.debug(f"Smart detection: {category} (confidence: {confidence:.2f}, review: {manual_review})")
-    
+
     # Initialize router for analyzers
     from intelligent_router import IntelligentRouter
     router = IntelligentRouter()
-    
+
     # Initialize analyzers with router
     global task_analyzer, note_analyzer
     if task_analyzer is None:
         task_analyzer = TaskAnalyzer(parser=content_parser, router=router)
     if note_analyzer is None:
         note_analyzer = NoteAnalyzer(parser=content_parser, router=router)
-    
+
     # Route to appropriate analyzer based on detected category
     if category == "task":
         return process_tasks(content, router)
@@ -107,12 +107,12 @@ def process_tasks(content, router):
 
 def process_note_with_analyzer(content, router):
     """Process note using new NoteAnalyzer"""
-    
+
     # Use note analyzer
     global note_analyzer
     if note_analyzer is None:
         note_analyzer = NoteAnalyzer(parser=content_parser, router=router)
-    
+
     return note_analyzer.analyze(content)
 
 

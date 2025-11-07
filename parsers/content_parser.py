@@ -77,10 +77,10 @@ class CategoryDetector:
     def detect_category(self, content: str) -> Tuple[str, float, bool]:
         """
         Detect category with confidence scoring and manual review flag.
-        
+
         Args:
             content: The transcript text to analyze
-        
+
         Returns:
             Tuple of (category, confidence, manual_review)
             - category: "task" or "note" (or future: "event")
@@ -88,9 +88,16 @@ class CategoryDetector:
             - manual_review: True if confidence below threshold
         """
         text = content.lower() if self.case_insensitive else content
-        
+
         logger.debug(f"🔍 Detecting category for: '{content[:50]}{'...' if len(content) > 50 else ''}'")
-        
+
+        # Tier 0: Explicit metadata at END of transcript (HIGHEST priority)
+        # Pattern: "Note 2" or "Task 1" in last 20 lines
+        category, confidence = self._check_metadata_suffix(content)
+        if category:
+            logger.debug(f"  ✅ Tier 0 (Metadata Suffix): {category} (confidence: {confidence})")
+            return category, confidence, False
+
         # Tier 1: Explicit keywords (highest confidence)
         category, confidence = self._check_explicit_keywords(text)
         if category:
@@ -121,7 +128,52 @@ class CategoryDetector:
         # Default: Passive content is NOTE, not task
         logger.debug(f"  ℹ️ Default: note (passive content, confidence: 0.5)")
         return "note", 0.5, True  # Low confidence, requires review
-    
+
+    def _check_metadata_suffix(self, content: str) -> Tuple[Optional[str], float]:
+        """
+        Check for explicit metadata at the END of the transcript.
+
+        Pattern: Standalone "note" or "task" in the last 20 lines.
+        This has HIGHEST priority because it's explicit user metadata.
+
+        Logic:
+        - Check last 20 lines (handles garbage/transcription errors up to 12+ lines)
+        - Look for standalone "note" or "task" (word boundary)
+        - Case-insensitive matching
+        - If nothing found: return None → defaults to "task" (user forgot tag)
+
+        Args:
+            content: Full transcript text
+
+        Returns:
+            Tuple of (category, confidence) or (None, 0.0)
+        """
+        import re
+
+        # Get last 20 lines of transcript (handles garbage at end - seen up to 12 lines)
+        lines = content.strip().split('\n')
+        last_lines = lines[-20:] if len(lines) >= 20 else lines
+
+        # Join and search for pattern
+        last_text = ' '.join(last_lines).lower()
+
+        # Pattern: standalone "note" or "task" (word boundary)
+        note_pattern = r'\bnote\b'
+        task_pattern = r'\btask\b'
+
+        # Check for note metadata (highest priority)
+        if re.search(note_pattern, last_text):
+            logger.debug(f"  🎯 Found 'note' metadata in last 20 lines")
+            return "note", 1.0  # Explicit metadata = 100% confidence
+
+        # Check for task metadata
+        if re.search(task_pattern, last_text):
+            logger.debug(f"  🎯 Found 'task' metadata in last 20 lines")
+            return "task", 1.0  # Explicit metadata = 100% confidence
+
+        # Nothing found - caller will default to "task" (user forgot tag)
+        return None, 0.0
+
     def _check_explicit_keywords(self, text: str) -> Tuple[Optional[str], float]:
         """Check for explicit task/note keywords"""
         # Check for task keywords
@@ -211,10 +263,10 @@ class ContentParser:
     def parse(self, transcript_text: str) -> Dict[str, Any]:
         """
         Parse transcript text into structured data.
-        
+
         Args:
             transcript_text: Raw transcript text
-        
+
         Returns:
             Dict with keys:
             - category: "task" or "note"
@@ -225,13 +277,13 @@ class ContentParser:
         """
         # Clean and normalize
         content = transcript_text.strip()
-        
+
         # Detect category with heuristics
         category, confidence, manual_review = self.detector.detect_category(content)
-        
+
         logger.info(f"📊 Detected category: {category} (confidence: {confidence:.2f}, "
                    f"manual_review: {manual_review})")
-        
+
         return {
             "category": category,
             "confidence_score": confidence,

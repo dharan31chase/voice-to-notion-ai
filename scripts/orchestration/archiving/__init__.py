@@ -1,7 +1,11 @@
-"""Archiving and cleanup modules."""
+"""
+Archiving Package - Phase B Step 7
 
-# Will expose once classes are created:
-# from .archive_manager import ArchiveManager
-# from .cleanup_manager import CleanupManager
+Handles archiving of successfully processed recordings to date-based folder structure
+and cleanup of source files after verification.
+"""
 
-__all__ = []  # Will be populated when classes are implemented
+from .archive_manager import ArchiveManager
+from .cleanup_manager import CleanupManager
+
+__all__ = ['ArchiveManager', 'CleanupManager']

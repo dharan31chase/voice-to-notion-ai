@@ -1,6 +1,6 @@
 # AI Assistant - Product Roadmap
-**Last Updated**: October 31, 2025
-**Status**: Active Development - Phase A (Router Extraction) In Progress
+**Last Updated**: November 4, 2025 (Testing & Documentation Infrastructure Enhanced)
+**Status**: Active Development - Phase B Complete, Testing Infrastructure Phase 1 Complete
 
 ---
 
@@ -557,7 +557,15 @@ Recording → Whisper → Raw Transcript → [GPT Formatter] → Structured Noti
   - Report summary at end
   - "15/17 succeeded, 2 need retry"
 
-#### **Validation & Testing**
+#### **Validation & Testing** ⭐ ENHANCED (Nov 4, 2025)
+- [x] **Testing Infrastructure Phase 1** - COMPLETE (Nov 4, 2025)
+  - pytest setup with unit/integration/e2e structure
+  - Shared fixtures and test utilities
+  - 4 passing tests for ContentParser
+  - **NEW**: Performance benchmark infrastructure (JSON metrics, golden baseline)
+  - **NEW**: Structured logging with run IDs (date-stamped logs)
+  - **NEW**: Golden test dataset (3-tier with expected outputs)
+  - See docs/testing-roadmap.md for complete plan
 - [ ] **Pre-flight Checks**
   - Verify API keys before processing
   - Check disk space proactively
@@ -566,10 +574,15 @@ Recording → Whisper → Raw Transcript → [GPT Formatter] → Structured Noti
   - End-to-end workflow tests
   - Mock external services (Notion, OpenAI)
   - Automated regression testing
-- [ ] **Monitoring & Alerts**
-  - Success rate tracking over time
-  - Alert when success rate drops
-  - Performance metrics dashboard
+- [ ] **Performance Monitoring** ⭐ NEW
+  - Benchmark regression detection (20% threshold)
+  - Golden baseline tracking (logs/benchmarks/golden.json)
+  - CI artifact publishing (logs, reports, metrics)
+  - Automatic alerts on performance degradation
+- [ ] **Session Traceability** ⭐ NEW
+  - Session log with commit ID mapping (docs/session-log.md)
+  - Git tagging strategy for validated states
+  - Reproducible benchmarks tied to commits
 
 ---
 
@@ -578,27 +591,45 @@ Recording → Whisper → Raw Transcript → [GPT Formatter] → Structured Noti
 ### 🔥 **Immediate (This Week)**
 1. ✅ Complete Milestone 2.2 (Analyzers) - DONE
 2. ✅ Complete Milestone 2.3 (Coordinator) - DONE
-3. 🎯 **Phase 1: Local Transcription Optimization** (1-2 days) - **CRITICAL PRIORITY**
+3. ✅ **Testing Infrastructure - Phase 1 Setup** - **DONE** (Nov 4, 2025)
+   - Created logs/ directory, moved test logs from /tmp/
+   - Created tests/ structure (unit, integration, e2e, fixtures)
+   - Set up pytest framework (pytest.ini, conftest.py)
+   - Wrote 4 passing tests for ContentParser
+   - Updated README.md with testing instructions
+   - See docs/testing-roadmap.md for complete plan
+4. 🎯 **Phase 1: Local Transcription Optimization** (1-2 days) - **CRITICAL PRIORITY**
    - Address 32-minute bottleneck (unacceptable performance)
    - Target: 6 files in <8-10 minutes (5-6x improvement)
    - Foundation for intelligent orchestrator
-4. 🎯 Add Configurable Duration Filter (~1 hour)
+5. 🎯 Add Configurable Duration Filter (~1 hour)
 
 ### 📅 **Short-term (Next 2 Weeks)**
-1. 🎯 **Phase 2: Groq Cloud Migration** (70 minutes) - **HIGH PRIORITY**
+1. 🎯 **Testing Infrastructure - Phase 2** (1 day/week) - **NEW PRIORITY**
+   - Set up test accounts (Notion test workspace, separate API keys)
+   - Create config/test.yaml for test-specific settings
+   - Add test data samples to tests/fixtures/
+   - See docs/testing-roadmap.md Phase 2 for detailed steps
+2. 🎯 **Phase 2: Groq Cloud Migration** (70 minutes) - **HIGH PRIORITY**
    - 10-20x speed improvement (6 files in <30 seconds)
    - 95-97% accuracy with Large-v3 model
    - Fallback chain for reliability
-2. 🎯 **Phase 3: Intelligent Auto-Switching** (30 minutes) - **HIGH PRIORITY**
+3. 🎯 **Phase 3: Intelligent Auto-Switching** (30 minutes) - **HIGH PRIORITY**
    - Automatic online/offline mode selection
    - Zero user intervention required
-3. Phase 3: Refactor intelligent_router.py
-4. Learning Note Formatter (GPT-4 post-processing for long-form content)
+4. Phase 3: Refactor intelligent_router.py
+5. Learning Note Formatter (GPT-4 post-processing for long-form content)
 
 ### 📅 **Medium-term (Next Month)**
-1. Phase 4: Refactor recording_orchestrator.py (production-critical)
-2. Implement multi-category support (calendar, projects, resources)
-3. Advanced analysis features (priority, deadlines, tags)
+1. 🎯 **Testing Infrastructure - Phase 3** (1 day/week) - **NEW PRIORITY**
+   - Write tests for Parser & Analyzer modules (20+ tests)
+   - Write tests for Router modules (15+ tests)
+   - Write tests for Orchestration modules (25+ tests, priority: TranscriptionEngine, ProcessingEngine)
+   - Target: 70% code coverage
+   - See docs/testing-roadmap.md Phase 3 for detailed plan
+2. Phase 4: Refactor recording_orchestrator.py (production-critical)
+3. Implement multi-category support (calendar, projects, resources)
+4. Advanced analysis features (priority, deadlines, tags)
 
 ### 📅 **Long-term (Next Quarter)**
 1. Phases 5-6: Complete refactoring initiative
@@ -675,6 +706,6 @@ These items are tagged for follow-up discussion:
 
 ---
 
-*Last Updated: October 30, 2025*  
-*Next Review: After Phase 1 Local Optimization completion*
+*Last Updated: November 4, 2025*
+*Next Review: After Testing Phase 2 completion*
 

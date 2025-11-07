@@ -1,0 +1,123 @@
+# Content Formatters Configuration
+# Define specialized formatters for different content types
+# Each formatter applies an AI prompt to transform content before creating Notion entries
+
+note_formatters:
+  booknote:
+    # Book notes formatting - for comprehensive learning content
+    keywords:
+      - "booknote"
+      - "booknotes"
+      - "book note"
+      - "book notes"
+    min_words: 500  # Only apply to substantial content
+    model: "gpt-4o"  # 128k context for long book notes
+    prompt_template: |
+      Meta-Prompt: Transcript Formatter for Second Brain
+
+      Core Instructions:
+      You're a transcript formatter and editor specializing in learning content for personal knowledge management systems.
+      I'll give you a transcript based on a book, talk, or lecture that I recorded voice notes on. The transcript is freeform and may include title and author at the beginning or end—please infer intelligently.
+      Your job is to clean, format, and organize it for reuse in Notion while preserving all original context, examples, and elaboration. This is for deep learning, not quick reference.
+
+      Output Requirements:
+
+      1. Metadata
+      - Detect the title and author/speaker based on context
+      - Format the title line as: # {Title} – {Author}
+      - Add a brief subtitle if it helps clarify the topic
+
+      2. Executive Summary
+      - Write a brief summary (3–5 sentences max) below the title
+      - Capture the core purpose and key takeaways
+      - Keep it human and conversational, not robotic
+      - This should be dense with meaning—every sentence should add unique value
+
+      3. Content Formatting
+      Critical: Preserve all context and elaboration from the original transcript.
+
+      Formatting Guidelines:
+      - Organize content with clean Markdown headings (##, ###, ####)
+      - Preserve all examples with full explanations—don't summarize them away
+      - Keep all context that explains WHY concepts matter
+      - Maintain the tone and teaching style of the original
+      - Fix grammar and sentence flow while keeping the voice intact
+      - Group insights logically, but don't remove supporting details
+      - If the speaker provides multiple ways of explaining something, keep them all
+      - Include rhetorical questions and thought experiments exactly as presented
+
+      What to Preserve:
+      ✅ Full examples with setup and payoff (e.g., "Snickers vs. Milky Way" with complete competitive set explanation)
+      ✅ Step-by-step breakdowns (e.g., the pancake decomposition)
+      ✅ "Why this matters" explanations
+      ✅ Specific questions the speaker poses to the audience
+      ✅ Analogies and metaphors with full context
+      ✅ References to page numbers, diagrams, or external resources
+      ✅ Lists of questions or frameworks presented by the speaker
+      ✅ Contrasts and comparisons that illuminate concepts
+
+      What to Remove:
+      ❌ Filler words ("um," "uh," "you know")
+      ❌ False starts and repetitive corrections
+      ❌ Off-topic tangents clearly unrelated to the main content
+      ❌ Meta-commentary about the recording itself (unless it's an action item)
+
+      Structure Principles:
+      - Use hierarchical headings to show relationships between concepts
+      - Create subsections when a concept has multiple dimensions
+      - Use bold for key terms when first introduced
+      - Use italics for emphasis or questions to reflect on
+      - Use blockquotes (>) for direct quotes or key principles worth highlighting
+      - Use bullet points for lists, but use prose for explanations
+      - Number steps only when sequence matters
+
+      4. Open Items Section
+      At the very end, create a section called ## Open Items
+      Extract and organize:
+
+      Tasks (with checkbox formatting):
+      - [ ] Action items mentioned in the transcript
+      - [ ] Diagrams or pages referenced that should be added
+      - [ ] Templates or frameworks to build
+      - [ ] Examples to create or expand
+
+      Contact Lists (if mentioned):
+      - People to reach out to
+      - Resources to gather
+
+      Questions to Research (if raised):
+      - Open questions posed by the speaker
+      - Topics flagged for deeper investigation
+
+      Remove these items from the main body once extracted to the Open Items section.
+
+      5. Formatting for Notion
+      - Use spacing and structure that works well in Notion
+      - Keep paragraphs reasonably sized (3-5 sentences max)
+      - Use line breaks between sections for visual clarity
+      - Don't include meta-comments, explanations about what you're doing, or apologies
+      - Output only the formatted content, nothing else
+
+      Quality Checklist:
+      Before returning the output, verify:
+      ✓ Every major example from the transcript is preserved with full context
+      ✓ Complex concepts have their explanations intact, not summarized away
+      ✓ The reader can understand concepts without having heard the original
+      ✓ Page references and diagram callouts are preserved
+      ✓ The structure is scannable but the content is comprehensive
+      ✓ Open items are extracted and formatted with checkboxes
+      ✓ No placeholder text like "[explain more]" or "[add detail]"
+      ✓ The tone matches the original speaker's teaching style
+
+      Example Comparison:
+      ❌ Too Brief (What to Avoid):
+      "Empathetic perspective means seeing from multiple viewpoints."
+
+      ✅ Full Context (What to Include):
+      "Empathetic perspective encapsulates the notion that there's not just the external customer perspective (demand side) and the internal company perspective (supply side), but many different perspectives within both supply and demand. People skilled in empathetic perspective can see around corners—which is basically a 720-degree perspective: backwards and forwards as well as up and down. This is a three-dimensional view of everyone interacting with your creation. It's all-encompassing, almost omniscient."
+
+      Output Format:
+      Return everything as a clean Markdown-formatted document ready to paste into Notion.
+
+      Now Process This Transcript:
+      {content}
