@@ -90,7 +90,7 @@ class NotionSyncEngine:
         commit_msg: str,
         commit_hash: str,
         status: str = "In Progress"
-    ) -> bool:
+    ) -> Optional[str]:
         """
         Update roadmap item status in Notion.
 
@@ -101,11 +101,11 @@ class NotionSyncEngine:
             status: Status to set (default: "In Progress")
 
         Returns:
-            True if successful, False otherwise
+            Page ID if successful, None otherwise
         """
         if not ROADMAP_DB_ID:
             logger.info("Skipping roadmap update (NOTION_ROADMAP_DB not set)")
-            return False
+            return None
 
         try:
             # Query for roadmap item with matching ID
@@ -142,15 +142,15 @@ class NotionSyncEngine:
                     }
                 )
                 logger.info(f"✓ Updated '{feature_name}' (ROADMAP-{item_id}) to '{status}'")
-                return True
+                return page_id  # Return page ID for linking to session
             else:
                 logger.warning(f"✗ Roadmap item ROADMAP-{item_id} not found in Notion")
                 logger.warning(f"  Make sure the 'Roadmap ID' property contains 'ROADMAP-{item_id}'")
-                return False
+                return None
 
         except Exception as e:
             logger.error(f"Error updating roadmap item {item_id}: {e}")
-            return False
+            return None
 
     def create_session_log(
         self,
@@ -159,7 +159,8 @@ class NotionSyncEngine:
         commit_author: str,
         commit_date: str,
         files_changed: str,
-        agent: str = "Claude Code"
+        agent: str = "Claude Code",
+        roadmap_page_ids: Optional[List[str]] = None
     ) -> Optional[Dict]:
         """
         Create session log entry in Notion.
@@ -171,6 +172,7 @@ class NotionSyncEngine:
             commit_date: Commit datetime (ISO format)
             files_changed: Comma-separated list of files
             agent: Agent name (default: "Claude Code")
+            roadmap_page_ids: List of Roadmap page IDs to link to this session
 
         Returns:
             Dict with Notion page info or None if failed
@@ -192,51 +194,61 @@ class NotionSyncEngine:
 
             logger.info(f"Creating session log: '{title}'...")
 
+            # Build properties for session log
+            properties = {
+                "Title": {
+                    "title": [
+                        {
+                            "text": {
+                                "content": title
+                            }
+                        }
+                    ]
+                },
+                "Agent": {
+                    "select": {
+                        "name": agent
+                    }
+                },
+                "What Shipped": {
+                    "rich_text": [
+                        {
+                            "text": {
+                                "content": commit_msg[:2000]  # Notion limit
+                            }
+                        }
+                    ]
+                },
+                "Git Commit": {
+                    "url": github_url
+                },
+                "Session Date": {
+                    "date": {
+                        "start": commit_date.split()[0]  # Extract date only (YYYY-MM-DD)
+                    }
+                },
+                "Project": {
+                    "rich_text": [
+                        {
+                            "text": {
+                                "content": "Epic 2nd Brain Workflow"
+                            }
+                        }
+                    ]
+                }
+            }
+
+            # Add relation to roadmap items if provided
+            if roadmap_page_ids:
+                properties["Roadmap"] = {
+                    "relation": [{"id": page_id} for page_id in roadmap_page_ids]
+                }
+                logger.info(f"  Linking to {len(roadmap_page_ids)} roadmap item(s)")
+
             # Create page in Sessions database
             response = self.wrapper.create_page(
                 database_id=SESSIONS_DB_ID,
-                properties={
-                    "Title": {
-                        "title": [
-                            {
-                                "text": {
-                                    "content": title
-                                }
-                            }
-                        ]
-                    },
-                    "Agent": {
-                        "select": {
-                            "name": agent
-                        }
-                    },
-                    "What Shipped": {
-                        "rich_text": [
-                            {
-                                "text": {
-                                    "content": commit_msg[:2000]  # Notion limit
-                                }
-                            }
-                        ]
-                    },
-                    "Git Commit": {
-                        "url": github_url
-                    },
-                    "Session Date": {
-                        "date": {
-                            "start": commit_date.split()[0]  # Extract date only (YYYY-MM-DD)
-                        }
-                    },
-                    "Project": {
-                        "rich_text": [
-                            {
-                                "text": {
-                                    "content": "Epic 2nd Brain Workflow"
-                                }
-                            }
-                        ]
-                    }
-                }
+                properties=properties
             )
 
             if response:
@@ -291,30 +303,35 @@ class NotionSyncEngine:
         logger.info(f"Files: {files_changed}")
 
         # Extract and update roadmap items
+        roadmap_page_ids = []  # Collect page IDs for linking to session
         roadmap_refs = self.extract_roadmap_refs(commit_msg)
         if roadmap_refs:
             logger.info(f"\nFound roadmap references: {roadmap_refs}")
             for item_id in roadmap_refs:
-                success = self.update_roadmap_status(
+                page_id = self.update_roadmap_status(
                     item_id=item_id,
                     commit_msg=commit_msg,
                     commit_hash=commit_hash
                 )
+                if page_id:
+                    roadmap_page_ids.append(page_id)
                 results["roadmap_updates"].append({
                     "item_id": item_id,
-                    "success": success
+                    "success": page_id is not None,
+                    "page_id": page_id
                 })
         else:
             logger.info("\nNo roadmap references found in commit message")
 
-        # Create session log
+        # Create session log (with links to roadmap items)
         logger.info("\nCreating session log...")
         session_log = self.create_session_log(
             commit_msg=commit_msg,
             commit_hash=commit_hash,
             commit_author=commit_author,
             commit_date=commit_date,
-            files_changed=files_changed
+            files_changed=files_changed,
+            roadmap_page_ids=roadmap_page_ids if roadmap_page_ids else None
         )
         results["session_log"] = session_log
 
