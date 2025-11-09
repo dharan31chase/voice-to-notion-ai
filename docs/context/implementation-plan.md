@@ -1600,7 +1600,77 @@ async def read_file(path: str) -> str:
         return content
     except Exception as e:
         return f"Error reading file: {str(e)}"
+# ============================================================================
+# TOOL 1B: Write Files (NEW - Critical for Claude Chat)
+# ============================================================================
 
+@app.tool()
+async def write_file(path: str, content: str) -> dict:
+    """
+    Write a file to the ai-assistant repo.
+    
+    This enables Claude (chat) to create PRDs, session logs, and other
+    docs directly in the repo without using /mnt/user-data/outputs workaround.
+    
+    Args:
+        path: Relative path from repo root (e.g., 'docs/prd/feature.md')
+        content: Full file content to write
+    
+    Returns:
+        Dict with status and file path
+        
+    Security:
+        - Only allows writes within project_root
+        - Creates parent directories if needed
+        - Overwrites existing files (use with caution)
+    """
+    full_path = project_root / path
+    
+    # Security: Ensure path is within project
+    if not str(full_path).startswith(str(project_root)):
+        return {
+            "status": "error",
+            "message": f"Path {path} is outside project root"
+        }
+    
+    # Create parent directories if needed
+    full_path.parent.mkdir(parents=True, exist_ok=True)
+    
+    try:
+        with open(full_path, 'w', encoding='utf-8') as f:
+            f.write(content)
+        
+        return {
+            "status": "success",
+            "path": str(full_path),
+            "message": f"File written successfully: {path}"
+        }
+    except Exception as e:
+        return {
+            "status": "error",
+            "message": f"Error writing file: {str(e)}"
+        }
+```
+
+**Why This Matters:**
+
+- Solves the `/mnt/user-data/outputs` workaround we just discovered
+- Claude (chat) can create PRDs directly in your repo
+- Eliminates manual download/move step
+- Proper information flow: Claude writes → Git commits → Notion syncs
+
+**Updated Phase 3 Success Criteria:**
+
+Add to the validation tests:
+```
+Test 5: Write File
+"Use write_file tool to create docs/test/sample.md with content 'Test'"
+
+Expected:
+- File created at correct path
+- Content matches exactly
+- Parent dirs created if needed
+- Security check prevents writing outside repo
 # ============================================================================
 # TOOL 2: Start Session
 # ============================================================================
