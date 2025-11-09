@@ -1,3 +1,38 @@
+- ## Tech Requirements Review Protocol
+
+  **BEFORE starting implementation:**
+
+  1. ✅ Create tech requirements doc (detailed, comprehensive)
+  2. ✅ Include Architecture Decision Framework (all 8 steps from ~/CLAUDE.md):
+     - Cohesion Analysis (What belongs together?)
+     - Single Responsibility Test (One reason to change)
+     - Dependency Flow Mapping (What depends on what?)
+     - Testability Check (Can I unit test this?)
+     - Extensibility Analysis (Future features)
+     - Pattern Validation (Proven patterns)
+     - Alternative Comparison (Why this over that?)
+     - Trade-offs Summary (Explicit trade-offs)
+  3. ✅ State ALL assumptions explicitly
+  4. ✅ Ask clarifying questions
+  5. ⏸️  **WAIT FOR USER APPROVAL** before writing code
+  6. ✅ User confirms: "Approved - start implementation"
+
+  **Why**: Ensures user understands "why" and validates assumptions before effort is invested.
+
+  **Example Flow**:
+  - User: "Implement X feature"
+  - Claude: Creates detailed tech requirements doc
+  - Claude: "I've created the tech requirements. Please review and approve before I start implementation."
+  - User: "Approved - start implementation"
+  - Claude: Proceeds with coding
+
+  **Gates This Applies To**:
+  - New features (not trivial bug fixes)
+  - Architecture changes
+  - Refactoring with >2 files
+  - Performance optimizations
+  - External API integrations
+
 - ::# Router Extraction Prompt Template
   Use this checklist BEFORE creating implementation plan
 
