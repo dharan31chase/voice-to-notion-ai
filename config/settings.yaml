@@ -72,7 +72,20 @@ processing:
   max_file_duration_minutes: 120  # Skip files longer than this (-1 = unlimited, not recommended)
   warn_duration_threshold_minutes: 90  # Warn if file exceeds this duration
 
-# Whisper Transcription Settings
+# Transcription Configuration (Groq Cloud API + Local Whisper fallback)
+transcription:
+  # Backend selection: auto, groq, local
+  # - auto: Try Groq Cloud API → Local Whisper (RECOMMENDED)
+  # - groq: Groq Cloud API only (fails if unavailable)
+  # - local: Local Whisper only (always works, slower)
+  backend: "auto"
+
+  # Groq Cloud API settings (10-20x faster than local)
+  groq:
+    model: "whisper-large-v3"  # Groq's Whisper model
+    timeout_seconds: 30  # API timeout
+
+# Local Whisper Settings (fallback when Groq unavailable)
 whisper:
   model: "turbo"  # Options: tiny, base, small, medium, large, large-v2, large-v3, turbo
   language: "en"     # Language code (en, es, fr, etc.)
@@ -81,7 +94,7 @@ whisper:
   # - tiny/base/small: Fast but less accurate
   # - medium: Balanced speed and accuracy
   # - large/large-v2/large-v3: Best accuracy, slower (~4x real-time)
-  # - turbo: Newest, optimized for speed with good accuracy (RECOMMENDED)
+  # - turbo: Newest, optimized for speed with good accuracy (RECOMMENDED for local fallback)
 
 # Archive Settings
 archive:

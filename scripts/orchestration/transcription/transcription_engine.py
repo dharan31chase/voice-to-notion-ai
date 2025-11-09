@@ -44,7 +44,13 @@ class TranscriptionEngine:
         """
         self.config = config
         self.file_validator = file_validator
-        logger.info("TranscriptionEngine initialized")
+
+        # Initialize TranscriptionService (Groq + Local Whisper backends)
+        from .transcription_service import TranscriptionService
+        self.transcription_service = TranscriptionService(config)
+
+        logger.info("TranscriptionEngine initialized with TranscriptionService")
+        logger.info(f"Available backends: {', '.join(self.transcription_service.get_available_backends())}")
 
     def extract_file_metadata(self, file_path: Path) -> Dict:
         """
@@ -273,7 +279,7 @@ class TranscriptionEngine:
     def transcribe_single_file(self, file_path: Path, transcripts_folder: Path,
                                batch_num: int, file_num: int) -> Tuple[bool, str, str]:
         """
-        Transcribe a single audio file using Whisper CLI.
+        Transcribe a single audio file using TranscriptionService (Groq → Local fallback).
 
         Args:
             file_path: Path to audio file (.mp3)
@@ -292,52 +298,24 @@ class TranscriptionEngine:
             output_name = file_path.stem + ".txt"
             output_path = transcripts_folder / output_name
 
-            # Get Whisper settings from config
-            whisper_model = self.config.get("whisper.model", "small")
-            whisper_language = self.config.get("whisper.language", "en")
-            whisper_output_format = self.config.get("whisper.output_format", "txt")
-
-            # Whisper command
-            cmd = [
-                'whisper',
-                str(file_path),
-                '--model', whisper_model,
-                '--language', whisper_language,
-                '--output_dir', str(transcripts_folder),
-                '--output_format', whisper_output_format
-            ]
-
             logger.info(f"Transcribing {file_path.name} (Batch {batch_num}, File {file_num})")
 
-            # Calculate dynamic timeout based on file duration
-            # Whisper takes ~0.27x real-time, use 0.5x for safety margin with 20-minute minimum
-            metadata = self.extract_file_metadata(file_path)
-            estimated_minutes = metadata.get('estimated_minutes', 10)
-            dynamic_timeout = max(1200, int(estimated_minutes * 60 * 0.5))  # 0.5x audio duration, min 20 min
-            logger.debug(f"Using dynamic timeout: {dynamic_timeout}s for {estimated_minutes}-minute file")
+            # Use TranscriptionService (tries Groq → Local)
+            success, transcript_text, error = self.transcription_service.transcribe_file(file_path)
 
-            # Run Whisper with dynamic timeout
-            result = subprocess.run(cmd, capture_output=True, text=True, timeout=dynamic_timeout)
+            if success:
+                # Save transcript to file
+                output_path.parent.mkdir(parents=True, exist_ok=True)
+                with open(output_path, 'w', encoding='utf-8') as f:
+                    f.write(transcript_text)
 
-            if result.returncode == 0 and output_path.exists():
-                # Validate transcript
-                with open(output_path, 'r', encoding='utf-8') as f:
-                    transcript_content = f.read().strip()
-
-                if len(transcript_content) > 10:  # Basic validation
-                    logger.info(f"SUCCESS: Transcribed {file_path.name} -> {output_name}")
-                    return True, str(output_path), transcript_content
-                else:
-                    logger.warning(f"WARNING: Transcript too short: {file_path.name}")
-                    return False, "Transcript too short", transcript_content
+                backend_used = self.transcription_service.get_active_backend()
+                logger.info(f"SUCCESS: Transcribed {file_path.name} -> {output_name} (via {backend_used})")
+                return True, str(output_path), transcript_text
             else:
-                error_msg = result.stderr if result.stderr else "Unknown error"
-                logger.error(f"ERROR: Transcription failed: {file_path.name} - {error_msg}")
-                return False, error_msg, ""
+                logger.error(f"ERROR: Transcription failed: {file_path.name} - {error}")
+                return False, error, ""
 
-        except subprocess.TimeoutExpired:
-            logger.error(f"ERROR: Transcription timeout: {file_path.name}")
-            return False, "Transcription timeout", ""
         except Exception as e:
             logger.error(f"ERROR: Transcription error: {file_path.name} - {e}")
             return False, str(e), ""

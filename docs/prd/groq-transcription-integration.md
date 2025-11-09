@@ -39,30 +39,29 @@ Skip processing long-form recordings, or batch them for "later" processing that 
 
 ## 🔧 High-Level Approach
 
-**Strategy**: Create TranscriptionService abstraction with fallback chain
+**Strategy**: Create TranscriptionService abstraction with simple fallback
 
 **Architecture**:
 ```
 TranscriptionService (abstraction layer)
 ├── GroqBackend (primary) - Cloud API, 1-5 sec/file
-├── OpenAIBackend (fallback) - Cloud API, reliable
 └── LocalWhisperBackend (fallback) - Local, always works offline
 ```
 
 **The flow**:
 1. User runs recording orchestrator
 2. TranscriptionService tries Groq first (fastest)
-3. If Groq fails (offline, API down, rate limit) → try OpenAI
-4. If OpenAI fails → fall back to local Whisper
-5. **Result**: System never fails, always uses fastest available method
+3. If Groq fails (offline, API down, rate limit) → fall back to local Whisper
+4. **Result**: System never fails, always uses fastest available method
 
 **Why This Approach**:
 
 - **Speed**: Groq is 10-20x faster than local (30 sec vs 8 min for 6 files)
-- **Reliability**: Fallback chain ensures 100% uptime (at least one backend always works)
+- **Reliability**: Fallback ensures 100% uptime (local Whisper always works)
 - **Accuracy**: whisper-large-v3 model maintains 95-97% accuracy
 - **Zero setup**: No model downloads, works immediately with API key
 - **Cost**: Free tier covers 14,400 sec/day (240 minutes of audio)
+- **Simplicity**: Two backends only - no unnecessary complexity
 
 **Alternatives Considered**:
 
@@ -72,8 +71,8 @@ TranscriptionService (abstraction layer)
 **Alternative B: Keep local Whisper only**
 - Why not: Still too slow, doesn't unlock customer interviews
 
-**Alternative C: OpenAI Whisper API primary**
-- Why not: Slower than Groq (though faster than local), higher cost
+**Alternative C: Add OpenAI Whisper API as middle fallback**
+- Why not: Unnecessary complexity, local Whisper already provides reliable fallback
 
 ---
 
@@ -91,10 +90,9 @@ TranscriptionService (abstraction layer)
    - Baseline: ~95% with local Whisper
    - Target: 95-97% with Groq whisper-large-v3
 
-3. **Reliability**: 100% success rate with fallback chain
+3. **Reliability**: 100% success rate with fallback
    - Measurement: No failed transcriptions even when Groq is down
-   - Test: Disable Groq, verify OpenAI fallback works
-   - Test: Disable Groq + OpenAI, verify local fallback works
+   - Test: Disable Groq API key, verify local fallback works seamlessly
 
 4. **Zero breaking changes**: Existing workflow still works
    - Measurement: Process recordings with no code changes needed
@@ -119,8 +117,8 @@ TranscriptionService (abstraction layer)
 
 ## 🚫 Non-Goals
 
-1. **Multi-cloud redundancy** (Groq + AssemblyAI + Deepgram)
-   - Why: Single cloud provider (Groq) + fallbacks is sufficient for Tier 0
+1. **Multi-cloud redundancy** (Groq + AssemblyAI + Deepgram + OpenAI)
+   - Why: Single cloud provider (Groq) + local fallback is sufficient for Tier 0
    - PARITY estimate if we did it: 6-8 hours (multiple API integrations)
    - Deferred to: Tier 1 (if Groq proves unreliable)
 
@@ -208,7 +206,7 @@ No new interfaces to learn. Seamless drop-in replacement.
 New environment variables in `.env`:
 ```bash
 GROQ_API_KEY=your_groq_api_key_here
-TRANSCRIPTION_BACKEND=auto  # Options: auto, groq, openai, local
+TRANSCRIPTION_BACKEND=auto  # Options: auto, groq, local
 ```
 
 New config in `config/settings.yaml`:
@@ -218,9 +216,6 @@ transcription:
   groq:
     model: whisper-large-v3
     timeout: 10  # seconds
-  openai:
-    model: whisper-1
-    timeout: 30
   local:
     model: turbo
 ```
@@ -237,7 +232,6 @@ scripts/
 │       │   ├── __init__.py               # NEW
 │       │   ├── base_backend.py           # NEW - Interface
 │       │   ├── groq_backend.py           # NEW - Groq implementation
-│       │   ├── openai_backend.py         # NEW - OpenAI implementation
 │       │   └── local_whisper_backend.py  # NEW - Existing logic extracted
 │       └── transcription_engine.py       # UPDATED - Use TranscriptionService
 ```
@@ -254,16 +248,16 @@ scripts/
 - **Impact**: 10-20x speed improvement enables customer interview processing
 - **Two-way door**: Can switch to different provider if Groq becomes unreliable
 
-**2. Fallback Chain Strategy** (November 8, 2025):
-- **Why**: Reliability matters more than pure speed - system must never fail
-- **Trade-offs**: More complex implementation, but zero downtime
-- **Impact**: 100% uptime even when cloud services are down
-- **Two-way door**: Can remove fallbacks if Groq proves 99.9% reliable
+**2. Simple Two-Backend Fallback** (November 8, 2025):
+- **Why**: Local Whisper already proven reliable - no need for OpenAI middle layer
+- **Trade-offs**: Less redundancy, but simpler implementation and zero additional dependencies
+- **Impact**: 100% uptime (local always works) with minimal complexity
+- **Two-way door**: Can add more cloud providers if Groq proves unreliable
 
 **3. TranscriptionService Abstraction** (November 8, 2025):
 - **Why**: Clean separation allows easy backend swapping, testing, and future enhancements
 - **Trade-offs**: Slightly more code, but much better architecture
-- **Impact**: Can add new backends (AssemblyAI, Deepgram) without touching orchestrator
+- **Impact**: Can add new backends (AssemblyAI, Deepgram, OpenAI) without touching orchestrator
 - **One-way door**: Once abstracted, should never go back to hardcoded backends
 
 **4. Auto-Detection Deferred to Phase 3** (November 8, 2025):
@@ -289,7 +283,7 @@ scripts/
 **Target Completion**: November 8, 2025 (70 minutes estimated)  
 
 **Timeline**:
-- **Phase 2 (This PRD)**: 70 minutes - Groq integration + fallback chain
+- **Phase 2 (This PRD)**: 70 minutes - Groq integration + fallback to local
 - **Phase 3 (Next PRD)**: 30 minutes - Auto-switching intelligence (defer until Phase 2 validated)
 
 **Key Milestones**:
@@ -305,6 +299,7 @@ scripts/
 | Date | Author | Changes |
 |------|--------|----------|
 | 2025-11-08 | Claude (Sonnet 4.5) | Initial draft - Groq transcription integration for 10-20x speed improvement |
+| 2025-11-08 | Claude (Sonnet 4.5) | Simplified to two-backend architecture (removed OpenAI, keeping Groq + Local only) |
 
 ---
 
@@ -332,7 +327,8 @@ System stays operational → (equilibrium)
 - **Amplifies, not replaces**: API speeds up transcription, but YOU still do the insight work
 - **Eliminates friction**: 8 min → 30 sec = 15.7x reduction in processing time
 - **Compounds over time**: Every customer interview benefits, every daily batch benefits
-- **Protects against failure**: Fallback chain ensures workflow never breaks
+- **Protects against failure**: Fallback ensures workflow never breaks
+- **Simplicity enables sustainability**: Two backends easier to maintain than three
 
 ---
 
