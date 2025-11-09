@@ -201,9 +201,11 @@ mcp_server/full_server.py  (+420)  # Created full MCP server with 5 tools
 
 ---
 
-## 🔄 Handoff to Claude Chat
+## 🔄 Handoff Prompts
 
-**Copy this prompt for your next Claude chat session:**
+### For Claude Chat (Strategy/Planning Session)
+
+**Copy this into Claude Desktop for strategy work:**
 
 ```
 Start session for Epic 2nd Brain.
@@ -218,7 +220,7 @@ Previous session (Claude Code - Nov 8) completed Phase 2+3:
 - **Phase 3 (MCP Server Expansion)**: COMPLETE ✅
   - 5 tools available: read_file, write_file, start_session, end_session, search_docs
   - All tools tested (100% success rate)
-  - Claude Desktop config updated
+  - Context loading <1 second (10x better than target!)
 
 Use start_session to load full context.
 
@@ -226,6 +228,32 @@ Questions for this session:
 1. Should we validate the current workflow with real usage before Phase 4?
 2. Is automating handoff prompts (15-20 min) worth doing before Phase 4?
 3. Or should we proceed directly to Phase 4 (Notion Command Center)?
+```
+
+---
+
+### For Claude Code (Implementation Session)
+
+**Copy this into Claude Code for implementation work:**
+
+```
+Continue Epic 2nd Brain implementation.
+
+Previous session completed Phase 2+3 (Nov 8, 2025):
+- Git hooks working (auto-update Notion + GitHub push)
+- MCP server with 5 tools tested (100% success)
+- Session management protocol added to CLAUDE.md
+
+Current state:
+- Phase 1A ✅, Phase 1B ✅, Phase 2 ✅, Phase 3 ✅
+- Implementation plan updated
+- Ready for Phase 4 (Notion Command Center) OR additional validation
+
+Waiting for decision:
+- If proceeding to Phase 4: Read docs/context/implementation-plan.md Phase 4 section
+- If validating workflow: Create test PRD using write_file MCP tool, test full flow
+
+What would you like to work on?
 ```
 
 ---
