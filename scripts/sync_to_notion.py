@@ -84,6 +84,27 @@ class NotionSyncEngine:
         matches = re.findall(pattern, commit_msg, re.IGNORECASE)
         return matches
 
+    def detect_agent_from_files(self, files_changed: str) -> str:
+        """
+        Detect agent based on session log file directory.
+
+        Args:
+            files_changed: Comma-separated list of files
+
+        Returns:
+            Agent name: "🪄 Claude" or "💻 Claude Code"
+        """
+        files_list = files_changed.split(",")
+
+        for file in files_list:
+            if "docs/sessions/claude-chat/" in file:
+                return "🪄 Claude"
+            elif "docs/sessions/claude-code/" in file:
+                return "💻 Claude Code"
+
+        # Fallback to Claude Code if no session log found
+        return "💻 Claude Code"
+
     def update_roadmap_status(
         self,
         item_id: str,
@@ -323,6 +344,10 @@ class NotionSyncEngine:
         else:
             logger.info("\nNo roadmap references found in commit message")
 
+        # Detect agent from files changed
+        agent = self.detect_agent_from_files(files_changed)
+        logger.info(f"Detected agent: {agent}")
+
         # Create session log (with links to roadmap items)
         logger.info("\nCreating session log...")
         session_log = self.create_session_log(
@@ -331,6 +356,7 @@ class NotionSyncEngine:
             commit_author=commit_author,
             commit_date=commit_date,
             files_changed=files_changed,
+            agent=agent,
             roadmap_page_ids=roadmap_page_ids if roadmap_page_ids else None
         )
         results["session_log"] = session_log
