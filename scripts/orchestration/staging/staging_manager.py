@@ -75,8 +75,9 @@ class StagingManager:
                             pass  # xattr might not exist or fail
                         staging_path.unlink()
 
-                # Copy file to staging
-                shutil.copy2(str(file_path), str(staging_path))
+                # Copy file to staging (use copy instead of copy2 to avoid metadata issues)
+                # copy2 preserves extended attributes which can cause permission errors
+                shutil.copy(str(file_path), str(staging_path))
 
                 # Strip extended attributes from the copy (prevents permission issues)
                 try:

@@ -138,4 +138,39 @@ See [roadmap.md](roadmap.md) for:
 
 ---
 
+## 📚 Template-Based Documentation (NEW - Nov 2025)
+
+### Epic 2nd Brain Workflow Documentation
+
+**Purpose**: Structured templates for PRDs, tech requirements, session logs, and architecture diagrams to support the Context Sync Bridge (Tier 0).
+
+**Templates Location**:
+- `prd/TEMPLATE.md` - Product Requirements Documents
+- `tech-requirements/TEMPLATE.md` - Technical Implementation Plans
+- `sessions/TEMPLATE.md` - Session Logs
+- `architecture/TEMPLATE.mermaid.md` - Architecture Diagrams (Mermaid)
+
+**How to Use**:
+1. Copy the relevant template
+2. Rename to `[feature-name].md` or `YYYY-MM-DD-[topic].md`
+3. Fill in all sections
+4. Commit to Git (auto-syncs to Notion via git hooks)
+
+**Session Logs**:
+- `sessions/claude-chat/` - Strategic decisions, PRD updates
+- `sessions/claude-code/` - Implementation work, tech decisions
+
+**Context Documents**:
+- `context/roadmap.md` - Epic 2nd Brain Roadmap (synced from Notion)
+- `context/implementation-plan.md` - Detailed Implementation Plan (synced from Notion)
+
+**MCP Integration**:
+Claude Desktop can auto-read these docs using the `ai-assistant:read_file` MCP tool:
+```
+"Use read_file tool to read docs/prd/context-sync-bridge.md"
+"Use read_file tool to read docs/sessions/claude-code/2025-11-08-mcp-setup.md"
+```
+
+---
+
 *This index is maintained manually. Update it when you add/remove/reorganize docs.*
