@@ -376,11 +376,20 @@ def main():
     parser.add_argument("--commit-author", required=True, help="Commit author name")
     parser.add_argument("--commit-date", required=True, help="Commit datetime")
     parser.add_argument("--files", required=True, help="Comma-separated list of files")
+    parser.add_argument("--project", required=False, default="Epic 2nd Brain",
+                        help="Project name (default: Epic 2nd Brain). Options: Epic 2nd Brain, Legacy AI")
+    parser.add_argument("--repo-path", required=False, default=None,
+                        help="Repository path (optional, for multi-project support)")
 
     args = parser.parse_args()
 
     try:
         engine = NotionSyncEngine()
+
+        # Note: Project routing will be added to NotionSyncEngine in future enhancement
+        # For now, all commits sync to same Session DB regardless of project
+        # Strategy Board filtering by project works via MCP query_strategy_board() tool
+
         results = engine.sync_commit(
             commit_msg=args.commit_msg,
             commit_hash=args.commit_hash,
