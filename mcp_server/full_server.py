@@ -44,17 +44,35 @@ VALID_STATUSES = [
     "🔴 Blocked"
 ]
 
+# Multi-Project Configuration
+PROJECT_CONFIG = {
+    "Epic 2nd Brain": {
+        "repo_path": Path.home() / "Documents" / "1. Projects" / "ai-assistant",
+        "context_folders": ["docs/prd", "docs/tech-requirements", "docs/sessions"],
+        "session_log_path": "docs/sessions/claude-chat",
+        "strategy_board_view": "Epic 2nd Brain Only"
+    },
+    "Legacy AI": {
+        "repo_path": Path.home() / "Documents" / "1. Projects" / "legacy-ai",
+        "context_folders": ["research", "product", "business", "sessions"],
+        "session_log_path": "sessions/customer-discovery",
+        "strategy_board_view": "Legacy AI Only"
+    }
+}
+
 # ============================================================================
 # TOOL 1: Read Files
 # ============================================================================
 
 @mcp.tool()
-def read_file(path: str) -> str:
+def read_file(path: str, project: str = "Epic 2nd Brain") -> str:
     """
-    Read a file from the ai-assistant repo.
+    Read a file from a project repo.
 
     Args:
         path: Relative path from repo root (e.g., 'docs/prd/feature.md')
+        project: Project name (default: "Epic 2nd Brain")
+                 Options: "Epic 2nd Brain", "Legacy AI"
 
     Returns:
         File contents as string
@@ -62,9 +80,14 @@ def read_file(path: str) -> str:
     Examples:
         - read_file("README.md")
         - read_file("docs/prd/context-sync-bridge.md")
-        - read_file("docs/sessions/claude-code/2025-11-08-mcp-poc-and-templates.md")
+        - read_file("research/requirements-vision.md", project="Legacy AI")
     """
-    full_path = project_root / path
+    # Get project repo path
+    if project not in PROJECT_CONFIG:
+        return f"Error: Unknown project '{project}'. Valid options: {list(PROJECT_CONFIG.keys())}"
+
+    repo_path = PROJECT_CONFIG[project]["repo_path"]
+    full_path = repo_path / path
 
     if not full_path.exists():
         return f"Error: File not found at {full_path}"
@@ -82,9 +105,9 @@ def read_file(path: str) -> str:
 # ============================================================================
 
 @mcp.tool()
-def write_file(path: str, content: str) -> dict:
+def write_file(path: str, content: str, project: str = "Epic 2nd Brain") -> dict:
     """
-    Write a file to the ai-assistant repo.
+    Write a file to a project repo.
 
     This enables Claude (chat) to create PRDs, session logs, and other
     docs directly in the repo without using /mnt/user-data/outputs workaround.
@@ -92,25 +115,35 @@ def write_file(path: str, content: str) -> dict:
     Args:
         path: Relative path from repo root (e.g., 'docs/prd/feature.md')
         content: Full file content to write
+        project: Project name (default: "Epic 2nd Brain")
+                 Options: "Epic 2nd Brain", "Legacy AI"
 
     Returns:
         Dict with status and file path
 
     Security:
-        - Only allows writes within project_root
+        - Only allows writes within project repos
         - Creates parent directories if needed
         - Overwrites existing files (use with caution)
 
     Examples:
         - write_file("docs/prd/new-feature.md", "# PRD: New Feature...")
-        - write_file("docs/sessions/claude-chat/2025-11-08-planning.md", "# Session...")
+        - write_file("research/requirements-vision.md", "# Requirements...", project="Legacy AI")
     """
-    full_path = project_root / path
+    # Get project repo path
+    if project not in PROJECT_CONFIG:
+        return {
+            "status": "error",
+            "message": f"Unknown project '{project}'. Valid options: {list(PROJECT_CONFIG.keys())}"
+        }
+
+    repo_path = PROJECT_CONFIG[project]["repo_path"]
+    full_path = repo_path / path
 
     # Security: Ensure path is within project
     try:
         full_path = full_path.resolve()
-        if not str(full_path).startswith(str(project_root)):
+        if not str(full_path).startswith(str(repo_path)):
             return {
                 "status": "error",
                 "message": f"Path {path} is outside project root"
@@ -153,44 +186,56 @@ def write_file(path: str, content: str) -> dict:
 # ============================================================================
 
 @mcp.tool()
-def start_session(project_name: str = "Epic 2nd Brain") -> dict:
+def start_session(project_name: str = "Epic 2nd Brain", work_stream: Optional[str] = None) -> dict:
     """
     Load all context needed for a Claude chat session.
 
-    NEW: Queries Strategy Board first to show top 3 prioritized initiatives.
+    Multi-project support: Loads context from correct repo based on PROJECT_CONFIG.
 
     Fetches:
-    - Top 3 prioritized initiatives from Strategy Board (NEW)
-    - Latest PRD(s) for this project
-    - Latest tech requirements
+    - Top 3 prioritized initiatives from Strategy Board (filtered by project)
+    - Latest documents (PRDs, requirements, analyses, etc.)
     - Recent session logs (last 3)
-    - Open roadmap items (from docs)
+    - Roadmap (project-specific)
     - Critical alerts
 
     Args:
         project_name: Name of project (default: "Epic 2nd Brain")
+                      Options: "Epic 2nd Brain", "Legacy AI"
+        work_stream: Optional work stream for Legacy AI
+                     Examples: "customer-discovery", "prototype", "funding"
 
     Returns:
         Dict with all context
 
     Examples:
         - start_session("Epic 2nd Brain")
-        - start_session("Legacy AI")
+        - start_session("Legacy AI", "customer-discovery")
     """
+    # Validate project
+    if project_name not in PROJECT_CONFIG:
+        return {
+            "status": "error",
+            "message": f"Unknown project '{project_name}'. Valid options: {list(PROJECT_CONFIG.keys())}"
+        }
+
+    config = PROJECT_CONFIG[project_name]
+    repo_path = config["repo_path"]
+
     context = {
         "project": project_name,
+        "work_stream": work_stream,
         "timestamp": datetime.now().isoformat(),
-        "strategy_board": {},  # NEW
-        "prds": [],
-        "tech_requirements": [],
+        "strategy_board": {},
+        "documents": [],
         "recent_sessions": [],
         "roadmap": {},
         "alerts": []
     }
 
-    # NEW: Query Strategy Board first
+    # Query Strategy Board (filtered by project)
     try:
-        board_result = query_strategy_board(limit=3)
+        board_result = query_strategy_board(limit=3, project_name=project_name)
         if board_result["status"] == "success":
             context["strategy_board"] = board_result
         else:
@@ -198,86 +243,51 @@ def start_session(project_name: str = "Epic 2nd Brain") -> dict:
     except Exception as e:
         context["alerts"].append(f"⚠️ Strategy Board query failed: {str(e)}")
 
-    # Load PRDs
-    prd_dir = project_root / "docs" / "prd"
-    if prd_dir.exists():
-        prd_files = sorted(prd_dir.glob("*.md"), key=lambda x: x.stat().st_mtime, reverse=True)
-        for prd_file in prd_files:
-            if prd_file.name != "TEMPLATE.md":
-                try:
-                    with open(prd_file, encoding='utf-8') as f:
-                        content = f.read()
-                        context["prds"].append({
-                            "file": prd_file.name,
-                            "path": str(prd_file.relative_to(project_root)),
-                            "preview": content[:500] + "..." if len(content) > 500 else content
-                        })
-                    if len(context["prds"]) >= 2:  # Max 2 PRDs
-                        break
-                except Exception as e:
-                    context["alerts"].append(f"Error reading PRD {prd_file.name}: {str(e)}")
+    # Load documents from context_folders
+    for folder_rel in config["context_folders"]:
+        folder_path = repo_path / folder_rel
+        if not folder_path.exists():
+            continue
 
-    # Load tech requirements
-    tech_dir = project_root / "docs" / "tech-requirements"
-    if tech_dir.exists():
-        tech_files = sorted(tech_dir.glob("*.md"), key=lambda x: x.stat().st_mtime, reverse=True)
-        for tech_file in tech_files:
-            if tech_file.name != "TEMPLATE.md":
-                try:
-                    with open(tech_file, encoding='utf-8') as f:
-                        content = f.read()
-                        context["tech_requirements"].append({
-                            "file": tech_file.name,
-                            "path": str(tech_file.relative_to(project_root)),
-                            "preview": content[:500] + "..." if len(content) > 500 else content
-                        })
-                    if len(context["tech_requirements"]) >= 2:
-                        break
-                except Exception as e:
-                    context["alerts"].append(f"Error reading tech req {tech_file.name}: {str(e)}")
+        # Recursively find all markdown files
+        md_files = sorted(folder_path.rglob("*.md"), key=lambda x: x.stat().st_mtime, reverse=True)
+        for md_file in md_files[:10]:  # Limit to 10 most recent per folder
+            if md_file.name in ["TEMPLATE.md", ".gitkeep"]:
+                continue
 
-    # Load recent sessions
-    sessions_dir = project_root / "docs" / "sessions"
-    session_count = 0
-    for agent_dir in ["claude-chat", "claude-code"]:
-        agent_path = sessions_dir / agent_dir
-        if agent_path.exists():
-            session_files = sorted(agent_path.glob("*.md"), key=lambda x: x.stat().st_mtime, reverse=True)
-            for session_file in session_files:
-                if session_file.name != "TEMPLATE.md":
-                    try:
-                        with open(session_file, encoding='utf-8') as f:
-                            content = f.read()
-                            context["recent_sessions"].append({
-                                "file": session_file.name,
-                                "agent": agent_dir,
-                                "path": str(session_file.relative_to(project_root)),
-                                "preview": content[:300] + "..." if len(content) > 300 else content
-                            })
-                        session_count += 1
-                        if session_count >= 3:  # Max 3 sessions total
-                            break
-                    except Exception as e:
-                        context["alerts"].append(f"Error reading session {session_file.name}: {str(e)}")
-        if session_count >= 3:
-            break
+            try:
+                with open(md_file, encoding='utf-8') as f:
+                    content = f.read()
+                    context["documents"].append({
+                        "file": md_file.name,
+                        "folder": folder_rel,
+                        "path": str(md_file.relative_to(repo_path)),
+                        "preview": content[:500] + "..." if len(content) > 500 else content
+                    })
+            except Exception as e:
+                context["alerts"].append(f"Error reading {md_file.name}: {str(e)}")
 
-    # Load roadmap (from docs/context/roadmap.md)
-    roadmap_file = project_root / "docs" / "context" / "roadmap.md"
-    if roadmap_file.exists():
-        try:
-            with open(roadmap_file, encoding='utf-8') as f:
-                roadmap_content = f.read()
-                context["roadmap"] = {
-                    "file": "docs/context/roadmap.md",
-                    "preview": roadmap_content[:1000] + "..." if len(roadmap_content) > 1000 else roadmap_content
-                }
-        except Exception as e:
-            context["alerts"].append(f"Error reading roadmap: {str(e)}")
+    # Load roadmap (different paths for each project)
+    roadmap_paths = [
+        repo_path / "docs" / "roadmap.md",  # Legacy AI
+        repo_path / "docs" / "context" / "roadmap.md"  # Epic 2nd Brain
+    ]
+    for roadmap_file in roadmap_paths:
+        if roadmap_file.exists():
+            try:
+                with open(roadmap_file, encoding='utf-8') as f:
+                    roadmap_content = f.read()
+                    context["roadmap"] = {
+                        "file": str(roadmap_file.relative_to(repo_path)),
+                        "preview": roadmap_content[:1000] + "..." if len(roadmap_content) > 1000 else roadmap_content
+                    }
+                break
+            except Exception as e:
+                context["alerts"].append(f"Error reading roadmap: {str(e)}")
 
     # Add helpful summary
     initiative_count = context["strategy_board"].get("count", 0)
-    context["summary"] = f"Loaded {initiative_count} top initiatives from Strategy Board, {len(context['prds'])} PRDs, {len(context['tech_requirements'])} tech requirements, {len(context['recent_sessions'])} recent sessions"
+    context["summary"] = f"Loaded {initiative_count} top initiatives from Strategy Board, {len(context['documents'])} documents, {len(context['recent_sessions'])} recent sessions"
 
     return context
 
@@ -322,6 +332,16 @@ def end_session(
     decisions = decisions or []
     next_steps = next_steps or []
 
+    # Validate project
+    if project_name not in PROJECT_CONFIG:
+        return {
+            "status": "error",
+            "message": f"Unknown project '{project_name}'. Valid options: {list(PROJECT_CONFIG.keys())}"
+        }
+
+    config = PROJECT_CONFIG[project_name]
+    repo_path = config["repo_path"]
+
     # Generate session log filename
     date_str = datetime.now().strftime("%Y-%m-%d")
     topic = summary.lower().replace(" ", "-")[:30]
@@ -329,7 +349,8 @@ def end_session(
     topic = "".join(c for c in topic if c.isalnum() or c == "-")
     filename = f"{date_str}-{topic}.md"
 
-    log_path = project_root / "docs" / "sessions" / "claude-chat" / filename
+    # Route to correct project's session log folder
+    log_path = repo_path / config["session_log_path"] / filename
 
     # Ensure directory exists
     log_path.parent.mkdir(parents=True, exist_ok=True)
@@ -361,19 +382,21 @@ def end_session(
 
         result = {
             "status": "success",
-            "log_path": str(log_path.relative_to(project_root)),
+            "log_path": str(log_path.relative_to(repo_path)),
             "full_path": str(log_path),
-            "reminder": "Don't forget to commit this session log!",
-            "next_action": f"Run: git add . && git commit -m '[ROADMAP-X] Session: {summary}'"
+            "reminder": f"Don't forget to commit this session log to {project_name} repo!",
+            "next_action": f"Run: cd {repo_path} && git add . && git commit -m '[ROADMAP-X] Session: {summary}'"
         }
 
         # NEW: Create handoff prompt if requested
+        # Note: Handoffs always go to ai-assistant repo (where Context Sync Bridge lives)
         if create_handoff:
             date_str = datetime.now().strftime("%Y-%m-%d")
             topic = summary.lower().replace(" ", "-")[:30]
             topic = "".join(c for c in topic if c.isalnum() or c == "-")
             handoff_filename = f"{date_str}-to-claude-code-{topic}.md"
-            handoff_path = project_root / "docs" / "handoffs" / handoff_filename
+            ai_assistant_repo = PROJECT_CONFIG["Epic 2nd Brain"]["repo_path"]
+            handoff_path = ai_assistant_repo / "docs" / "handoffs" / handoff_filename
 
             # Ensure handoffs directory exists
             handoff_path.parent.mkdir(parents=True, exist_ok=True)
@@ -392,7 +415,7 @@ def end_session(
             with open(handoff_path, 'w', encoding='utf-8') as f:
                 f.write(handoff_content)
 
-            result["handoff_path"] = str(handoff_path.relative_to(project_root))
+            result["handoff_path"] = str(handoff_path.relative_to(ai_assistant_repo))
             result["handoff_full_path"] = str(handoff_path)
 
         # NEW: Update Strategy Board if initiative ID provided
@@ -429,77 +452,101 @@ def end_session(
 @mcp.tool()
 def search_docs(
     query: str,
-    doc_types: Optional[List[str]] = None
+    doc_types: Optional[List[str]] = None,
+    project_name: Optional[str] = None
 ) -> list:
     """
     Search across project documentation.
 
+    Multi-project support: Search single project or all projects.
+
     Args:
         query: Search query (keywords or phrase)
         doc_types: Types to search (default: all)
-                   Options: "prd", "tech-req", "sessions", "context"
+                   Options: "prd", "tech-req", "sessions", "context", "research", "product"
+        project_name: Filter to specific project (default: None = search all projects)
+                      Options: "Epic 2nd Brain", "Legacy AI"
 
     Returns:
         List of relevant doc snippets with context
 
     Examples:
-        - search_docs("MCP server")
-        - search_docs("git hooks", ["tech-req"])
-        - search_docs("PARITY approach", ["prd", "sessions"])
+        - search_docs("MCP server")  # Search all projects
+        - search_docs("customer pain points", project_name="Legacy AI")  # Legacy AI only
+        - search_docs("git hooks", ["tech-req"], "Epic 2nd Brain")  # Epic 2nd Brain tech-req only
     """
-    doc_types = doc_types or ["prd", "tech-req", "sessions", "context"]
+    doc_types = doc_types or ["prd", "tech-req", "sessions", "context", "research", "product", "business"]
     results = []
 
-    # Map doc types to folders
-    folder_map = {
-        "prd": project_root / "docs" / "prd",
-        "tech-req": project_root / "docs" / "tech-requirements",
-        "sessions": project_root / "docs" / "sessions",
-        "context": project_root / "docs" / "context"
-    }
+    # Determine which projects to search
+    if project_name:
+        if project_name not in PROJECT_CONFIG:
+            return [{
+                "error": f"Unknown project '{project_name}'. Valid options: {list(PROJECT_CONFIG.keys())}"
+            }]
+        projects_to_search = [project_name]
+    else:
+        projects_to_search = list(PROJECT_CONFIG.keys())
 
-    # Simple keyword search (can enhance with semantic search later)
-    query_lower = query.lower()
+    # Search each project
+    for proj in projects_to_search:
+        config = PROJECT_CONFIG[proj]
+        repo_path = config["repo_path"]
 
-    for doc_type in doc_types:
-        folder = folder_map.get(doc_type)
-        if not folder or not folder.exists():
-            continue
+        # Map doc types to folders for this project
+        folder_map = {
+            "prd": repo_path / "docs" / "prd",
+            "tech-req": repo_path / "docs" / "tech-requirements",
+            "sessions": repo_path / "docs" / "sessions",
+            "context": repo_path / "docs" / "context",
+            "research": repo_path / "research",
+            "product": repo_path / "product",
+            "business": repo_path / "business"
+        }
 
-        # Search all markdown files
-        for md_file in folder.rglob("*.md"):
-            if md_file.name == "TEMPLATE.md":
+        # Simple keyword search (can enhance with semantic search later)
+        query_lower = query.lower()
+
+        for doc_type in doc_types:
+            folder = folder_map.get(doc_type)
+            if not folder or not folder.exists():
                 continue
 
-            try:
-                with open(md_file, encoding='utf-8') as f:
-                    content = f.read()
-                    content_lower = content.lower()
+            # Search all markdown files
+            for md_file in folder.rglob("*.md"):
+                if md_file.name == "TEMPLATE.md":
+                    continue
 
-                    # Check if query appears
-                    if query_lower in content_lower:
-                        # Find context around match
-                        idx = content_lower.find(query_lower)
-                        start = max(0, idx - 100)
-                        end = min(len(content), idx + 200)
-                        snippet = content[start:end]
+                try:
+                    with open(md_file, encoding='utf-8') as f:
+                        content = f.read()
+                        content_lower = content.lower()
 
-                        # Determine relevance based on position
-                        relevance = "high" if idx < 500 else "medium"
+                        # Check if query appears
+                        if query_lower in content_lower:
+                            # Find context around match
+                            idx = content_lower.find(query_lower)
+                            start = max(0, idx - 100)
+                            end = min(len(content), idx + 200)
+                            snippet = content[start:end]
 
-                        results.append({
-                            "file": md_file.name,
-                            "path": str(md_file.relative_to(project_root)),
-                            "doc_type": doc_type,
-                            "snippet": f"...{snippet}...",
-                            "relevance": relevance
-                        })
+                            # Determine relevance based on position
+                            relevance = "high" if idx < 500 else "medium"
 
-                        # Limit results per file to avoid spam
-                        break
-            except Exception as e:
-                # Skip files that can't be read
-                pass
+                            results.append({
+                                "project": proj,  # NEW: Project indicator
+                                "file": md_file.name,
+                                "path": str(md_file.relative_to(repo_path)),
+                                "doc_type": doc_type,
+                                "snippet": f"...{snippet}...",
+                                "relevance": relevance
+                            })
+
+                            # Limit results per file to avoid spam
+                            break
+                except Exception as e:
+                    # Skip files that can't be read
+                    pass
 
     # Sort by relevance and return top 10
     results.sort(key=lambda x: (x["relevance"] == "high", x["doc_type"]), reverse=True)
@@ -519,18 +566,21 @@ def query_strategy_board(
     """
     Query Notion Strategy Board for prioritized initiatives.
 
+    Multi-project support: Filter by project when provided.
+
     Args:
         filter_status: Status values to EXCLUDE (default: ["✅ Complete", "🔴 Blocked"])
         limit: Max initiatives to return (default: 3)
-        project_name: Filter by project (default: None = all projects) [V2 feature]
+        project_name: Filter by project (default: None = all projects)
+                      Options: "Epic 2nd Brain", "Legacy AI"
 
     Returns:
         Dict with initiatives list and metadata
 
     Examples:
-        - query_strategy_board()  # Top 3, exclude Complete/Blocked
+        - query_strategy_board()  # Top 3, exclude Complete/Blocked, all projects
         - query_strategy_board(limit=5)  # Top 5
-        - query_strategy_board(filter_status=["✅ Complete"])  # Exclude only Complete
+        - query_strategy_board(project_name="Legacy AI")  # Legacy AI initiatives only
     """
     # Check Notion client initialized
     if not notion_client:
@@ -554,10 +604,19 @@ def query_strategy_board(
     try:
         # Build filter query
         filter_conditions = []
+
+        # Add status filters
         for status in filter_status:
             filter_conditions.append({
                 "property": "Status",
                 "select": {"does_not_equal": status}
+            })
+
+        # Add project filter if specified (NEW)
+        if project_name:
+            filter_conditions.append({
+                "property": "Project",
+                "select": {"equals": project_name}
             })
 
         query_filter = {"and": filter_conditions} if len(filter_conditions) > 1 else filter_conditions[0] if filter_conditions else None
@@ -592,11 +651,16 @@ def query_strategy_board(
             category_prop = props.get("Category", {}).get("select", {})
             category = category_prop.get("name", "Unknown")
 
+            # Extract project (NEW)
+            project_prop = props.get("Project", {}).get("select", {})
+            project = project_prop.get("name", "Unknown")
+
             initiatives.append({
                 "name": name,
                 "priority_score": priority_score,
                 "status": status,
                 "category": category,
+                "project": project,  # NEW
                 "url": page.get("url", ""),
                 "page_id": page.get("id", "")
             })
