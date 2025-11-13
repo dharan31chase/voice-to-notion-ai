@@ -402,7 +402,7 @@ def end_session(
             try:
                 # Create session entry in Notion
                 session_properties = {
-                    "Name": {
+                    "Title": {
                         "title": [{"text": {"content": f"Session: {date_str} - {summary[:50]}"}}]
                     },
                     "Session Date": {
