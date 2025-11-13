@@ -612,12 +612,42 @@ def query_strategy_board(
                 "select": {"does_not_equal": status}
             })
 
-        # Add project filter if specified (NEW)
+        # Add project filter if specified (Relation property)
         if project_name:
-            filter_conditions.append({
-                "property": "Project",
-                "select": {"equals": project_name}
-            })
+            # Query Projects database to get project page ID
+            projects_db_id = os.getenv("PROJECTS_DATABASE_ID")
+            if projects_db_id:
+                try:
+                    # Find the project page with matching name
+                    projects_response = notion_client.databases.query(
+                        database_id=projects_db_id,
+                        filter={
+                            "property": "Name",
+                            "title": {"equals": project_name}
+                        }
+                    )
+
+                    if projects_response.get("results"):
+                        project_page_id = projects_response["results"][0]["id"]
+                        filter_conditions.append({
+                            "property": "Project",
+                            "relation": {"contains": project_page_id}
+                        })
+                    else:
+                        # Project not found, filter will return no results
+                        return {
+                            "status": "success",
+                            "count": 0,
+                            "initiatives": [],
+                            "query_time": datetime.now().isoformat(),
+                            "message": f"Project '{project_name}' not found in Projects database"
+                        }
+                except Exception as proj_err:
+                    # If Projects DB query fails, fall back to Python filtering
+                    print(f"Warning: Could not query Projects DB: {proj_err}")
+            else:
+                # No PROJECTS_DATABASE_ID, will filter in Python after query
+                print("Warning: PROJECTS_DATABASE_ID not set, filtering in Python")
 
         query_filter = {"and": filter_conditions} if len(filter_conditions) > 1 else filter_conditions[0] if filter_conditions else None
 
@@ -651,16 +681,36 @@ def query_strategy_board(
             category_prop = props.get("Category", {}).get("select", {})
             category = category_prop.get("name", "Unknown")
 
-            # Extract project (NEW)
-            project_prop = props.get("Project", {}).get("select", {})
-            project = project_prop.get("name", "Unknown")
+            # Extract project (Relation property)
+            # If we filtered by project_name, use that (efficient)
+            # Otherwise, resolve the relation to get the project name
+            if project_name:
+                project = project_name
+            else:
+                # Extract relation array
+                project_relations = props.get("Project", {}).get("relation", [])
+                if project_relations and len(project_relations) > 0:
+                    # Get first related project's ID
+                    project_id = project_relations[0]["id"]
+                    # Try to resolve to project name
+                    try:
+                        project_page = notion_client.pages.retrieve(page_id=project_id)
+                        project_title = project_page.get("properties", {}).get("Name", {}).get("title", [])
+                        if project_title:
+                            project = project_title[0]["text"]["content"]
+                        else:
+                            project = "Unknown"
+                    except Exception:
+                        project = "Unknown"
+                else:
+                    project = "No Project"
 
             initiatives.append({
                 "name": name,
                 "priority_score": priority_score,
                 "status": status,
                 "category": category,
-                "project": project,  # NEW
+                "project": project,
                 "url": page.get("url", ""),
                 "page_id": page.get("id", "")
             })
