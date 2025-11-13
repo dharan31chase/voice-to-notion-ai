@@ -335,61 +335,190 @@ class ContentParser:
     ) -> str:
         """
         Generate AI-powered title for task or note.
-        
+
         Shared logic used by all content types to eliminate duplication.
-        
+
         Args:
             content: The content to generate title for
             category: "task" or "note"
             project: Project name (optional, provides context)
             max_length: Maximum words in title
-        
+
         Returns:
             Generated title string
         """
+        # Clean excerpt, skipping transcription garbage
+        excerpt = self._clean_excerpt_for_title(content, max_chars=600)
+
         if category == "task":
             prompt = f"""
-            Create a clean, descriptive title for this task ({max_length-2}-{max_length} words):
-            
-            Task: "{content[:200]}"
-            Project: "{project}"
-            
-            Return ONLY the title, no quotes, no extra text.
-            Follow Verb + Object + Context pattern.
-            """
+Create a clear, actionable task title ({max_length-2}-{max_length} words maximum).
+
+Content excerpt:
+{excerpt}
+
+Project context: {project if project else "Not specified"}
+
+REQUIREMENTS:
+1. Pattern: [Action Verb] + [What/Object] + [Context]
+2. Focus on what needs to be DONE, not what's being discussed
+3. Be specific - avoid vague verbs
+
+GOOD examples (specific, actionable):
+✓ "Schedule Painting Project with Nina Before Weekend"
+✓ "Document First Principles for AI Problem Solving"
+✓ "Review PRD for Strategy Board Integration"
+✓ "Update Roadmap with Multi-Project Phases"
+
+BAD examples (meta, vague, or descriptive):
+✗ "Identify Key Phrases in Text Analysis" (describes analysis, not task)
+✗ "Verify AI Outputs for Complex Problems" (too abstract)
+✗ "Review Notes on Discussion" (what discussion?)
+✗ "Follow Up on Project" (which project? what follow-up?)
+
+Return ONLY the title. No quotes. No explanation.
+"""
         else:  # note
             prompt = f"""
-            Create a concise, descriptive title for this note ({max_length-2}-{max_length} words):
-            
-            {content[:500]}
-            
-            Focus on the MAIN TOPIC or KEY INSIGHT. Examples:
-            - "Preserving Authentic Voice in Writing"
-            - "Product Strategy Documentation Workflow"
-            - "Integration and Elusiveness in Eudaimonia"
-            
-            Return ONLY the title, no quotes, no extra text.
-            """
-        
+Create a concise, descriptive title for this note ({max_length-2}-{max_length} words).
+
+Content excerpt:
+{excerpt}
+
+Focus on the MAIN TOPIC or KEY INSIGHT.
+
+GOOD examples (clear topics):
+✓ "AI Market Dynamics and Decentralization Analysis"
+✓ "First Principles for Working with AI Systems"
+✓ "Product Strategy Documentation Workflow"
+✓ "Integration and Elusiveness in Eudaimonia"
+
+BAD examples (too generic):
+✗ "Notes on AI Discussion" (what about AI?)
+✗ "Thoughts About Project" (which project?)
+✗ "Meeting Summary" (which meeting?)
+
+Return ONLY the title. No quotes. No explanation.
+"""
+
         try:
             response = client.chat.completions.create(
                 model="gpt-3.5-turbo",
                 messages=[{"role": "user", "content": prompt}],
-                max_tokens=50
+                max_tokens=50,
+                temperature=0.3  # Lower temperature for more consistent titles
             )
-            
+
             title = response.choices[0].message.content.strip().strip('"').strip("'")
             logger.debug(f"  ✅ Generated title: '{title}'")
             return title
-            
+
         except Exception as e:
             logger.error(f"Error generating title: {e}")
-            # Fallback to first words
-            words = content.split()[:max_length]
+            # Fallback to first meaningful words (skip garbage)
+            cleaned = self._clean_excerpt_for_title(content, max_chars=200)
+            words = cleaned.split()[:max_length]
             fallback_title = " ".join(words)
-            if len(content.split()) > max_length:
+            if len(cleaned.split()) > max_length:
                 fallback_title += "..."
             return fallback_title
+
+    def _clean_excerpt_for_title(self, content: str, max_chars: int = 600) -> str:
+        """
+        Extract meaningful excerpt for title generation, skipping transcription garbage.
+
+        Handles common issues:
+        - K1-1, K1-2 metadata markers
+        - Foreign language fragments at start
+        - Repetitive stuttering
+        - Non-English garble
+
+        Args:
+            content: Original transcript content
+            max_chars: Maximum characters to return
+
+        Returns:
+            Cleaned excerpt suitable for title generation
+        """
+        # Step 1: Remove K1-X metadata markers
+        cleaned = re.sub(r'K\d+-\d+\s*', '', content)
+
+        # Step 2: Remove common transcription artifacts
+        cleaned = re.sub(r'\b(Ja|hallele|klina|okinda|Vi slått|er vi p)\b', '', cleaned, flags=re.IGNORECASE)
+
+        # Step 3: Check if first 100 chars are mostly garbage
+        first_100 = cleaned[:100].strip()
+        if self._is_likely_garbage(first_100):
+            # Find first sentence with real English content
+            sentences = cleaned.split('.')
+            for i, sentence in enumerate(sentences):
+                if len(sentence.strip()) > 30 and self._has_english_content(sentence):
+                    # Start from this sentence
+                    cleaned = '.'.join(sentences[i:])
+                    break
+
+        # Step 4: Remove excessive whitespace
+        cleaned = ' '.join(cleaned.split())
+
+        # Step 5: Return excerpt
+        result = cleaned[:max_chars].strip()
+        logger.debug(f"  📝 Cleaned excerpt: '{result[:100]}{'...' if len(result) > 100 else ''}'")
+        return result
+
+    def _is_likely_garbage(self, text: str) -> bool:
+        """
+        Check if text is likely transcription garbage.
+
+        Heuristics:
+        - High ratio of non-ASCII characters
+        - Very short "words" (avg length < 3)
+        - Low ratio of common English words
+        """
+        if not text:
+            return True
+
+        # Check 1: Non-ASCII ratio
+        non_ascii_count = sum(1 for c in text if ord(c) > 127)
+        non_ascii_ratio = non_ascii_count / len(text)
+
+        # Check 2: Average word length
+        words = text.split()
+        if words:
+            avg_word_length = sum(len(w) for w in words) / len(words)
+        else:
+            avg_word_length = 0
+
+        # Check 3: Common English word ratio
+        has_english = self._has_english_content(text)
+
+        is_garbage = (
+            non_ascii_ratio > 0.2 or
+            avg_word_length < 3 or
+            not has_english
+        )
+
+        if is_garbage:
+            logger.debug(f"  🗑️ Detected garbage: ascii={non_ascii_ratio:.2f}, avg_len={avg_word_length:.1f}, english={has_english}")
+
+        return is_garbage
+
+    def _has_english_content(self, text: str) -> bool:
+        """
+        Check if text has meaningful English content.
+
+        Uses common words as heuristic.
+        """
+        common_words = {
+            'the', 'a', 'to', 'and', 'i', 'you', 'it', 'is', 'we', 'can',
+            'this', 'that', 'have', 'do', 'be', 'on', 'for', 'with', 'as',
+            'but', 'not', 'they', 'so', 'if', 'what', 'when', 'my', 'need'
+        }
+
+        words = set(text.lower().split())
+        matching_words = words & common_words
+
+        # Need at least 2 common English words
+        return len(matching_words) >= 2
     
     def select_icon(
         self,

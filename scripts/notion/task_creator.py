@@ -140,34 +140,6 @@ class TaskCreator:
             # Create content blocks with CLEANED content (split if >2000 chars)
             content_blocks = self._create_content_blocks(content_chunks)
 
-            # Add divider
-            content_blocks.append({
-                "object": "block",
-                "type": "divider",
-                "divider": {}
-            })
-
-            # Add AI analysis metadata
-            content_blocks.append({
-                "object": "block",
-                "type": "paragraph",
-                "paragraph": {
-                    "rich_text": [{
-                        "text": {
-                            "content": (
-                                f"🤖 AI Analysis:\n"
-                                f"• Duration: {duration_info['duration_category']} "
-                                f"({duration_info['estimated_minutes']} min)\n"
-                                f"• Project: {project}\n"
-                                f"• Tags: {', '.join(special_tags) if special_tags else 'None'}\n"
-                                f"• Reasoning: {duration_info['reasoning']}\n"
-                                f"• Confidence: {analysis['metadata']['confidence_score']}"
-                            )
-                        }
-                    }]
-                }
-            })
-
             # Create the page with icon
             page = self.notion.create_page(
                 database_id=self.tasks_db,
