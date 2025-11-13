@@ -247,16 +247,8 @@ class NotionSyncEngine:
                     "date": {
                         "start": commit_date.split()[0]  # Extract date only (YYYY-MM-DD)
                     }
-                },
-                "Project": {
-                    "rich_text": [
-                        {
-                            "text": {
-                                "content": "Epic 2nd Brain Workflow"
-                            }
-                        }
-                    ]
                 }
+                # Note: "Project" property was removed - project is now inferred via Initiative relation
             }
 
             # Add relation to roadmap items if provided
