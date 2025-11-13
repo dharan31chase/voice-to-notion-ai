@@ -71,6 +71,7 @@
   - Performance: All operations < 5s (goal: < 10s)
   - Strategy Board filtered views verified
 - ✅ All 5 success criteria met
+- ✅ Session 2C: Task Title Generation Debug + Fix complete (Nov 13) - See Bug Fixes section
 - ⬜ Session 3: Real Legacy AI usage (customer discovery) - Ready to start
 
 **Detailed Roadmap**: See [roadmap-addendum-multi-project.md](roadmap-addendum-multi-project.md) for:
@@ -201,6 +202,62 @@
 3. **Customer discovery takes longer than expected** (Medium probability, Medium impact)
    - **Mitigation**: Focus on template quality, not automation
    - **Contingency**: Peter can help synthesize insights when he joins
+
+---
+
+## 🐛 Bug Fixes & Maintenance
+
+### **Task Title Generation Quality** ✅ FIXED (Nov 13, 2025)
+**Problem**: AI generating useless task titles like "Identify Key Phrases in Text Analysis Project" instead of describing the actual task
+
+**Root Causes**:
+1. Only using first 200 chars (often transcription garbage: K1-X markers, foreign language)
+2. No explicit examples of good vs bad titles in prompt
+3. No anti-patterns to avoid meta-descriptions
+4. Generic "Verb + Object + Context" pattern without examples
+
+**Solution Implemented**:
+- Increased excerpt from 200→600 chars (3x more context)
+- Added `_clean_excerpt_for_title()` to remove transcription garbage
+- Added explicit GOOD/BAD examples in prompt
+- Added anti-patterns (avoid meta-talk like "Identify...", "Verify...")
+- Lowered temperature from default to 0.3 for consistency
+- Added 3 helper methods: `_clean_excerpt_for_title()`, `_is_likely_garbage()`, `_has_english_content()`
+
+**Test Results**: 2/3 test cases excellent (67%), 1/3 acceptable (33%)
+- Before: All 3 test cases had problematic titles
+- After: 2 perfect titles, 1 acceptable (picked secondary topic in multi-topic transcript)
+
+**Files Changed**:
+- `parsers/content_parser.py` (+164, -57)
+- `scripts/notion/task_creator.py` (-20) - Removed AI analysis metadata clutter
+
+**Git Commits**: 80656c7, c8f374d
+**Session Log**: [2025-11-13-improved-task-title-generation.md](../sessions/claude-code/2025-11-13-improved-task-title-generation.md)
+
+---
+
+### **Notion Sync Character Limit** ✅ FIXED (Nov 13, 2025)
+**Problem**: Detailed commit messages (>2000 chars) failing to sync to Notion Sessions DB due to "What Shipped" property limit
+
+**Root Cause**: Hard 2000 char limit on Notion rich text properties
+
+**Solution Implemented**:
+- Smart truncation preserving structure: title + body summary + GitHub link footer
+- Cuts at line boundaries (cleaner than mid-sentence)
+- Default max 1950 chars (50 char buffer for safety)
+- Method: `_truncate_commit_message()` in `scripts/sync_to_notion.py`
+
+**Test Results**:
+- Short messages (<1950 chars): Pass through unchanged ✅
+- Long messages (2117 chars): Truncated to 1921 chars ✅
+- This commit itself synced successfully (proof it works!) ✅
+
+**Files Changed**:
+- `scripts/sync_to_notion.py` (+36, -1)
+
+**Git Commit**: c8f374d
+**Session Log**: Same as above
 
 ---
 
