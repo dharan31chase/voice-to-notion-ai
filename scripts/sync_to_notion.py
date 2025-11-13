@@ -84,6 +84,41 @@ class NotionSyncEngine:
         matches = re.findall(pattern, commit_msg, re.IGNORECASE)
         return matches
 
+    def _truncate_commit_message(self, commit_msg: str, max_length: int = 1950) -> str:
+        """
+        Smart truncation of commit message for Notion's 2000 char limit.
+
+        Strategy:
+        - Keep first line (commit title) intact
+        - Truncate body if needed
+        - Add GitHub link reference for full details
+
+        Args:
+            commit_msg: Full commit message
+            max_length: Maximum length (default 1950 to leave room for footer)
+
+        Returns:
+            Truncated commit message with footer
+        """
+        if len(commit_msg) <= max_length:
+            return commit_msg
+
+        # Split into title and body
+        lines = commit_msg.split('\n', 1)
+        title = lines[0]
+        body = lines[1] if len(lines) > 1 else ""
+
+        # Calculate space for body
+        footer = "\n\n[See full commit message on GitHub]"
+        available_space = max_length - len(title) - len(footer) - 2  # -2 for newlines
+
+        if available_space > 100:  # Only include body if we have reasonable space
+            truncated_body = body[:available_space].rsplit('\n', 1)[0]  # Cut at last full line
+            return f"{title}\n\n{truncated_body}...{footer}"
+        else:
+            # Just title + footer
+            return f"{title}{footer}"
+
     def detect_agent_from_files(self, files_changed: str) -> str:
         """
         Detect agent based on session log file directory.
@@ -235,7 +270,7 @@ class NotionSyncEngine:
                     "rich_text": [
                         {
                             "text": {
-                                "content": commit_msg[:2000]  # Notion limit
+                                "content": self._truncate_commit_message(commit_msg)
                             }
                         }
                     ]
