@@ -88,6 +88,42 @@
 - 100% uptime guarantee (fallback always works)
 - Clean architecture for future backend additions
 
+### 25. Three-Tier Execution Pipeline: Sessions ↔ Strategy Board ↔ Roadmap Integration (November 13, 2025)
+**Decision:** Implement three-database integration for execution timeline visualization
+**Rationale:**
+- Need meta-level view of execution timelines across initiatives
+- Sessions DB had no connection to strategic planning (Strategy Board)
+- Roadmap DB was underutilized and unclear in purpose
+- Required automatic data flow to avoid manual syncing
+**Implementation:**
+- Repurposed Roadmap DB as execution timeline tracker (not planning)
+- Created three-tier architecture:
+  - Strategy Board: Planning (Claude Chat territory - "What should I work on?")
+  - Sessions: Execution logs (Claude Code territory - "What did I do?")
+  - Roadmap: Timeline visualization (auto-populated - "What have we accomplished?")
+- Added relations: Sessions → Initiative ← Roadmap (two-way)
+- Roadmap uses rollups: Start Date (earliest session), End Date (latest session or completion), Total Execution Time (sum)
+- Enhanced `end_session()` MCP tool to auto-create Sessions DB entries and Roadmap entries
+**Database Schema Changes:**
+- Sessions DB: Added "🎯 Strategy Board" relation, "Duration" number field
+- Roadmap DB: Added "🎯 Strategy Board" relation, "🤝 Sessions Database" relation, Start/End Date rollups, Total Execution Time rollup
+- Removed redundant "Project" text fields (inferred via relation chain)
+**Automation Features:**
+- `end_session()` now accepts `session_duration_hours` and `initiative_page_id` parameters
+- Auto-creates Sessions DB entry with Duration and Initiative link
+- Auto-creates Roadmap entry if initiative doesn't have one
+- Rollups automatically calculate timeline metrics
+**Architecture Principles:**
+- **Clean separation of concerns**: Planning ≠ Execution tracking ≠ Timeline reporting
+- **Automatic data flow**: No manual entry, everything flows via relations and rollups
+- **Executive visibility**: Roadmap shows actual execution patterns over time
+- **Claude Code ownership**: Only Claude Code can populate Sessions/Roadmap (has start/end timestamps)
+**Result:**
+- Three-way integration working: Sessions ← → Initiative ← → Roadmap
+- Timeline visualization shows Start Date, End Date, Total Time for each initiative
+- Tested live: Session close auto-created both Sessions and Roadmap entries
+- Ready for backfilling historical initiatives
+
 ### 24. Multi-Project Architecture with PROJECT_CONFIG Dictionary (November 13, 2025)
 **Decision:** Implement multi-project support in MCP server with PROJECT_CONFIG centralized configuration
 **Rationale:**
