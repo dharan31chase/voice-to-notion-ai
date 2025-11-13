@@ -93,13 +93,6 @@ graph TD
 
 ---
 
-## Deletion Instructions
-
-Please delete these 3 test entries from the Strategy Board:
-1. Voice Memo Transcription Pipeline
-2. Energy Tracking Dashboard  
-3. Cross-Reference Automation System
-
 ---
 
 ## Summary

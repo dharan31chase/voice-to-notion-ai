@@ -1,708 +1,266 @@
-# Roadmap
-
 # Epic 2nd Brain: Tier 0 Roadmap
 
-Timeline: Nov 8-22, 2025 (2 weeks)
-
-Status: Requirements Defined, Ready to Build
-
-Last Updated: Nov 8, 2025
+**Timeline**: Nov 8-22, 2025 (2 weeks)
+**Status**: Phase 3 - Multi-Project Expansion (In Progress)
+**Last Updated**: Nov 12, 2025
 
 ---
 
 ## 🎯 Mission: Context Sync Bridge
 
-The Problem: You're the manual bridge between three disconnected systems (Claude chat, Claude Code, Notion), causing:
-
+**The Problem**: You're the manual bridge between three disconnected systems (Claude chat, Claude Code, Notion), causing:
 - Context loss between sessions (10-15 min/session spent reloading context)
-
 - Repeated copy-paste of requirements/decisions (5-10 events/session)
-
 - No single source of truth for project status
-
 - Manual documentation updates that don't flow bidirectionally
 
-The Vision: World-class product development framework at solo founder scale
-
+**The Vision**: World-class product development framework at solo founder scale
 - Claude (chat) = Strategic decisions, PRDs (write permission)
-
 - Claude Code = Technical implementation, requirements (write permission)
-
 - Notion = Command center with visual dashboard (read-only, synced from repo)
-
 - Git/GitHub = Single source of truth (version controlled, cloud backed up)
-
 - Automated handoffs via structured documentation
 
-The 100,000X Lens: This is a Tier 0 leverage point - solving context sync unlocks everything downstream (command center, session handoffs, advanced workflows).
+**The Leverage**: 70-120 min/week saved + cognitive load reduction + decision history preservation
 
 ---
 
-## 📊 Success Metrics (2-Week Target)
+## 📅 Phase Overview
 
-2x Leverage Validation:
+### **Phase 1: MCP PoC + Templates** ✅ COMPLETE
+**Completed**: Nov 8, 2025 (4 hours actual vs 6-8 estimated - ahead of schedule!)
+**What Shipped**:
+- MCP server with 5 core tools (read_file, write_file, start_session, end_session, search_docs)
+- Template system (PRD, tech requirements, session logs, architecture diagrams)
+- Proof of concept validated: Context loading works
 
-- Time saved per session: 10-15 min → 3 min = 7-12 min saved
-
-- Sessions per week: ~10
-
-- Total time saved: 70-120 min/week (1.2-2 hours)
-
-- Setup time: 30-40 hours
-
-- Payback period: 15-30 weeks
-
-Real Leverage (Beyond Time):
-
-- Reduced cognitive load (priceless)
-
-- Preserved decision context (prevents rework)
-
-- Foundation for advanced workflows (calendar, email, etc.)
-
-- Ability to onboard collaborators (future-proofing)
+**Tech Requirements**: [mcp-poc-and-templates.md](../tech-requirements/mcp-poc-and-templates.md)
 
 ---
 
-## 🏗️ Architecture: Hybrid System
+### **Phase 2: Strategy Board Workflow** ✅ COMPLETE
+**Completed**: Nov 11, 2025
+**What Shipped**:
+- 3 new MCP tools (query_strategy_board, update_initiative_status, write_to_page_content)
+- 2 enhanced tools (start_session with Strategy Board query, end_session with status updates)
+- Git hooks for automatic Notion sync
+- Strategy Board-driven workflow validated
 
-```javascript
-GITHUB (Cloud Backup)
-    ↓ (git push/pull)
-LOCAL REPO (ai-assistant/docs/)
-├── prd/ (Claude writes)
-├── tech-requirements/ (Claude Code writes)
-├── sessions/ (Both write)
-├── architecture/ (Mermaid diagrams)
-└── ROADMAP.md (Both update status)
-    ↓                           ↓
-MCP Server               Git Post-Commit Hook
-(Claude reads docs)      (Auto-backup + Notion sync)
-    ↓                           ↓
-CLAUDE CHAT    ←→    NOTION DASHBOARD
-(Strategy)              (Visual status, mobile access)
-    ↕
-CLAUDE CODE
-(Implementation)
-```
-
-Key Design Decisions:
-
-1. Git/GitHub = Source of Truth: Version controlled, cloud backed up (coffee-spill protection)
-
-1. Local docs/ = Work Here: Fast, structured, version history for rollback
-
-1. Notion = Dashboard: Visual status, mobile access, links OUT to GitHub docs
-
-1. MCP = Mac Power Tool: Claude auto-loads context (with fallback to manual file reading)
-
-1. Bidirectional Sync: Git hooks update Notion, both agents update docs
+**Tech Requirements**: [strategy-board-workflow.md](../tech-requirements/strategy-board-workflow.md)
+**Session Log**: [2025-11-11-completed-strategy-board-drive.md](../sessions/claude-chat/2025-11-11-completed-strategy-board-drive.md)
 
 ---
 
----
+### **Phase 3: Multi-Project Expansion** 🟡 IN PROGRESS
+**Started**: Nov 11, 2025 (Session 2A complete)
+**Target**: Nov 12, 2025 (Session 2B implementation)
+**Estimated**: 6-8 hours
 
-## 🎉 WEEK 1 COMPLETE! (Nov 8, 2025)
+**What This Unlocks**:
+- Legacy AI (business) gets same infrastructure as Epic 2nd Brain
+- Clean IP separation (co-founder ready, investor ready)
+- Professional repo structure from day 1
+- Foundation for Life Admin, Baby Prep, Project Franklin, etc.
 
-**Status**: ✅ ALL 3 PHASES SHIPPED IN ONE DAY
+**Current Status**:
+- ✅ Session 2A: PRD + Handoff + Test Suite complete
+- 🟡 Session 2B: Implementation (Claude Code) - starting
+- ⬜ Session 2C: Review & validation
+- ⬜ Session 3: Real Legacy AI usage (customer discovery)
 
-**Time**: ~7 hours actual vs 16-20 hours estimated (65% faster!)
+**Detailed Roadmap**: See [roadmap-addendum-multi-project.md](roadmap-addendum-multi-project.md) for:
+- Day-by-day execution plan (Phases 1-5)
+- Deferred features (mobile access, specialized tools, etc.)
+- Risk management
+- Success milestones
 
-**What We Shipped**:
-1. ✅ MCP Server with 5 tools (read, write, start_session, end_session, search_docs)
-2. ✅ Documentation templates (PRD, Tech Req, Session Log, Architecture)
-3. ✅ Git hooks → Notion sync (commit → update in <30 sec)
-4. ✅ Context Sync Bridge PRD created
-5. ✅ Zero blockers encountered
-
-**Key Wins**:
-- Context loading: <1 second (target was <3 min) = **99%+ improvement!**
-- write_file tool: Claude can create PRDs directly in repo (no more downloads!)
-- Git→Notion sync: Fully automated, tested, working
-- All templates validated and in active use
-
----
-
-## 📅 Week 1: Foundation (15-20 hours)
-
-### ✅ Day 1-2: Documentation Architecture (4-6 hours) - COMPLETE (Nov 8, 2025)
-
-Goal: Create structured doc system in ai-assistant/docs/
-
-Deliverables:
-
-- ✅ Folder structure: prd/, tech-requirements/, sessions/, architecture/
-
-- ✅ PRD Template (Claude writes, Claude Code reads)
-
-- ✅ Tech Requirements Template (Claude Code writes, Claude reads)
-
-- ✅ Session Log Template (Both agents write)
-
-- ✅ Mermaid diagram templates
-
-Success Criteria: ✅ Templates exist, sample docs created, committed to GitHub
+**Tech Requirements**: [To be created in Session 2B by Claude Code]
+**Session Logs**:
+- [2025-11-12-completed-session-2a-multi-pr.md](../sessions/claude-chat/2025-11-12-completed-session-2a-multi-pr.md) (Session 2A)
+- [To be created by Claude Code] (Session 2B)
 
 ---
 
-### ✅ Day 1-2: MCP Proof-of-Concept (2 hours) - COMPLETE (Nov 8, 2025)
+### **Phase 4: Notion Command Center Dashboard** ⬜ NOT STARTED
+**Target**: Week 2 (Nov 15-22)
+**Estimated**: 6-8 hours
+**Dependencies**: Phase 3 complete, real usage validated
 
-Goal: Prove MCP works on your Mac before building full system
+**What This Builds**:
+- Visual dashboard in Notion (board/table/timeline views)
+- Mobile-accessible roadmap and project status
+- Integration with existing PARA system
+- Quick health checks (what's blocked? what's next?)
 
-Phase 1A - Simple Test:
+**Deferred Decisions**:
+- Dashboard structure (after real multi-project usage)
+- Which views are most valuable (after Session 3)
 
-```python
-@mcp.tool()
-async def read_file(path: str) -> str:
-    """Read a file from the ai-assistant repo"""
-    # Implementation complete and tested
-```
-
-Test: ✅ "Claude, read PRD for voice-to-notion" → Returns full PRD content
-
-Success Criteria:
-
-- ✅ MCP server runs without errors
-
-- ✅ Claude can call read_file tool
-
-- ✅ Content returns correctly
-
-- ✅ All 3 validation tests passed (README, roadmap, error handling)
-
-Fallback Plan: Not needed - MCP working perfectly!
+**Tech Requirements**: [To be created after Phase 3]
 
 ---
 
-### ✅ Day 3-4: Git Hooks + Notion Sync (6-8 hours) - COMPLETE (Nov 8, 2025)
+### **Phase 5: Enhanced Capabilities** ⬜ NOT STARTED
+**Target**: Week 2-3 (Nov 15-29)
+**Estimated**: 8-12 hours total
+**Dependencies**: Phase 3 validated, usage patterns clear
 
-Goal: Automate flow from git commits → Notion updates
+**Sub-Phases**:
 
-Deliverables:
+#### **5A: Mobile Doc Access** (6-8 hours)
+**What**: Markdown → Notion sync for PRDs, Vision docs, Roadmaps
+**Why**: Review docs on phone during interviews, commutes, etc.
+**Priority**: High (immediate friction point identified in Session 2A)
+**Implementation**: Git hook enhancement (selective sync, not all docs)
 
-1. ✅ Post-Commit Hook (.git/hooks/post-commit):
+#### **5B: Template Enhancements** (3-4 hours)
+**What**: Add frameworks to Customer Interview Analysis template
+**When**: After 10-15 interviews (pattern emerges)
+**Frameworks**: 7 Powers, Michael Porter 5 Forces, Value Prop Canvas
+**Priority**: Medium (current template works, this makes it better)
 
-  - ✅ Triggers after each git commit
+#### **5C: Specialized MCP Tools** (4-6 hours)
+**What**: Legacy AI-specific automation
+**Tools**:
+- `analyze_interview()` - Auto-extract Jobs-to-be-done insights
+- `compare_interviews()` - Cross-interview pattern detection  
+- `generate_validation_questions()` - For prototype testing
+**Priority**: Medium (nice-to-have, not blocking)
 
-  - ✅ Calls Python script to sync to Notion
-
-  - ✅ Auto-pushes to GitHub (backup)
-
-1. ✅ Notion Sync Script (scripts/sync_to_notion.py):
-
-  - ✅ Parses commit message for roadmap references ([ROADMAP-X] format)
-
-  - ✅ Updates Notion roadmap database (status, last updated)
-
-  - ✅ Creates session log entry in Notion
-
-  - ✅ Links to relevant PRD/tech docs
-
-Success Criteria:
-
-- ✅ Commit → Notion updates within 30 seconds
-
-- ✅ Roadmap status reflects latest work
-
-- ✅ Session logs appear automatically
-
-- ✅ End-to-end test: [ROADMAP-1] successfully updated Notion + created Session entry
+**Tech Requirements**: [To be created after Phase 3 usage patterns emerge]
 
 ---
 
-### ✅ Day 5-6: Claude Chat Integration (4-6 hours) - COMPLETE (Nov 8, 2025)
+### **Phase 6: Testing & Documentation** ⬜ NOT STARTED
+**Target**: Week 2 end (Nov 20-22)
+**Estimated**: 3-4 hours
+**Dependencies**: Phases 3-5 complete
 
-Goal: Claude proactively fetches context at session start
+**What This Covers**:
+- Comprehensive test suite (already drafted in Phase 3)
+- Documentation polish (README updates, CONTRIBUTING guides)
+- Performance validation (all metrics under target)
+- Handoff prep for future collaborators
 
-Phase 3 - Full MCP Server (mcp_server/full_server.py):
+**Success Criteria**:
+- All 5 test scenarios pass (see Phase 3 test suite)
+- Peter can onboard from docs alone (no 1:1 briefing needed)
+- Context loading <10 seconds for all projects
+- Git hooks sync in <5 seconds
 
-**All 5 Tools Implemented & Tested:**
-
-1. ✅ `read_file(path)` - Read any file from repo
-2. ✅ `write_file(path, content)` - Write files directly (solves /outputs workaround!)
-3. ✅ `start_session(project_name)` - Auto-load context (PRDs, sessions, roadmap)
-4. ✅ `end_session(project_name, summary, decisions, next_steps)` - Auto-create session logs
-5. ✅ `search_docs(query, doc_types)` - Search across documentation
-
-**Key Innovation**: write_file tool enables Claude (chat) to create PRDs/docs directly in repo without manual download/move steps!
-
-Success Criteria:
-
-- ✅ "Start session: [project]" → Claude loads full context automatically (PRDs, tech reqs, sessions)
-
-- ✅ "End session" → Logs written to docs/ and synced to Notion via git hook
-
-- ✅ Claude can write PRDs directly using write_file tool
-
-- ✅ All 5 tools tested in Claude Desktop (100% success rate)
-
-- ✅ Claude Desktop config updated to use full_server.py
-
-- ✅ Context loading in <1 second (exceeds <3 min target by 99%+!)
+**Tech Requirements**: [To be created in Week 2]
 
 ---
 
-## 🎉 STRATEGY BOARD INTEGRATION COMPLETE! (Nov 11, 2025)
+## 🎯 Success Metrics (Overall Tier 0)
 
-**Status**: ✅ ALL FEATURES SHIPPED IN 2 HOURS
+### **Time Savings**:
+- **Baseline**: 10-15 min/session context loading + 5-10 copy-paste events
+- **Target**: <3 min context loading + <2 copy-paste events
+- **Actual** (to be measured in Session 3): ___
 
-**Time**: ~2 hours actual vs 6-8 hours estimated (67% faster!)
+### **Context Quality**:
+- **Baseline**: 3-5 "What changed?" moments per week
+- **Target**: 0 per week (full decision history searchable)
+- **Actual** (to be measured after Week 1): ___
 
-**What We Shipped**:
-1. ✅ 3 new MCP tools for Strategy Board integration
-   - `query_strategy_board()` - Query top initiatives by Priority Score
-   - `update_initiative_status()` - Update status and append decision notes
-   - `write_to_page_content()` - Write one-pagers with graceful degradation
-2. ✅ Modified `start_session()` - Auto-queries Strategy Board first
-3. ✅ Modified `end_session()` - Creates handoff prompts + updates Notion
-4. ✅ `generate_handoff_template()` helper - Standardized handoff structure
-5. ✅ Tech requirements document created (comprehensive architecture analysis)
-6. ✅ Zero blockers encountered
+### **Documentation Lag**:
+- **Baseline**: 1-3 days between work done and Notion updated
+- **Target**: <1 hour (automated sync)
+- **Actual** (Phase 2 complete): <5 seconds ✅
 
-**Key Wins**:
-- Zero-friction session starts: Top 3 initiatives loaded automatically
-- Automated handoff prompts: Git commands at top, interactive mode instructions
-- Strategy Board status updates: Fully automated via Notion API
-- Graceful degradation: One-pagers fall back to repo if Notion fails
-- Interactive implementation mode: Present options, wait for decisions
-
-**Architecture Decisions**:
-- Tool configurability: Hardcoded defaults with parameter overrides (Option C)
-- Error handling: Fail-fast for query/update, graceful degradation for write
-- Testing: Mocked tests for V1, integration during dogfooding week
-- All 8 architecture decision framework steps documented
-
-**Next Steps**:
-- Restart Claude Desktop to load updated MCP server
-- Dogfooding week (Nov 17-23): Validate 2x leverage metrics
-- Measure: Context loading time (<10 sec), copy-paste events (<2), manual updates (0)
+### **Scalability**:
+- **Target**: System works for 5-10 projects without degradation
+- **Actual** (Phase 3 in progress): Testing with 2 projects
 
 ---
 
-## 📅 Week 2: Dashboards + Validation (15-20 hours)
+## 🚧 Known Blockers & Risks
 
-### Day 7-9: Notion Command Center (6-8 hours)
+### **Active Blockers**:
+1. ⬜ **Session 2B Implementation** - 6-8 hours of work needed
+   - **Impact**: Blocks real Legacy AI usage (Session 3)
+   - **Resolution**: Starting today (Nov 12)
 
-Goal: Visual dashboard for 15-min morning ritual
+### **Upcoming Risks**:
+1. **Baby arrives early** (Low probability, High impact)
+   - **Mitigation**: Front-load Phase 3 this week
+   - **Contingency**: Phases 4-6 can be deferred
 
-Databases to Create:
+2. **MCP tools break existing workflow** (Low probability, High impact)
+   - **Mitigation**: Comprehensive test suite in Phase 3
+   - **Contingency**: Git rollback (all changes versioned)
 
-1. Roadmap Database (Master tracker):
-
-  - Properties: Feature Name, Status, Priority, Owner, Project, PRD Link, Tech Req Link, Last Updated, Notes
-
-  - Views: Board (by Status), Table (all features), Timeline (by deadline)
-
-1. Sessions Database (Activity log):
-
-  - Properties: Title, Agent (Claude|Claude Code), Project, Duration, What Shipped, Decisions, Next Steps, Critical Alerts, Git Commit, Session Date
-
-  - Views: Timeline (recent activity), Alerts (filtered for blockers)
-
-1. Projects Database (High-level view):
-
-  - Properties: Name, Status, Phase, Success Metric, Health, Architecture Diagram, Quick Links
-
-  - Views: Gallery (active projects)
-
-Dashboard Layout:
-
-```javascript
-┌─────────────────────────────────────┐
-│  🎯 Active Projects (Gallery)       │
-│  [Voice-to-Notion] [Epic 2nd Brain] │
-└─────────────────────────────────────┘
-
-┌─────────────────────────────────────┐
-│  🚀 In Progress (Roadmap Board)     │
-│  [Feature A] [Feature B]            │
-└─────────────────────────────────────┘
-
-┌─────────────────────────────────────┐
-│  📊 Recent Activity (Sessions)      │
-│  Nov 8: Claude Code - Shipped X     │
-│  Nov 7: Claude Chat - Decided Y     │
-└─────────────────────────────────────┘
-
-┌─────────────────────────────────────┐
-│  🚨 Alerts (Critical blockers)      │
-│  Nov 6: Bug in transcription        │
-└─────────────────────────────────────┘
-```
-
-Success Criteria:
-
-- Dashboard shows accurate project health
-
-- Session trail visible (last 5 activities)
-
-- Roadmap board updates in real-time
-
-- Accessible from mobile
+3. **Customer discovery takes longer than expected** (Medium probability, Medium impact)
+   - **Mitigation**: Focus on template quality, not automation
+   - **Contingency**: Peter can help synthesize insights when he joins
 
 ---
 
-### Day 10-12: RAG Search (Repo-Only) (6-8 hours)
+## 🗺️ Next Phases (Post-Tier 0)
 
-Goal: Query project docs instantly without manual searching
+### **Tier 1: Expansion & Polish** (Weeks 3-4)
+- Notion PARA integration (full workspace search)
+- Calendar intelligence (meetings → session blocks)
+- Advanced visualizations (Gantt charts, timeline views)
 
-Scope: Search only ai-assistant/docs/ (NOT Notion, deferred to Tier 1)
-
-Implementation:
-
-```python
-@mcp.tool()
-async def search_project_docs(
-    query: str,
-    doc_types: list[str] = ["prd", "tech-req", "sessions"]
-) -> list[dict]:
-    """Semantic search across project documentation"""
-    results = []
-    for doc_type in doc_types:
-        docs = load_docs(f"docs/{doc_type}/")
-        matches = semantic_search(query, docs)
-        results.extend(matches)
-    
-    return sorted(results, key=lambda x: x["relevance"])[:3]
-```
-
-Test Queries:
-
-- "What did we decide about icon matching?"
-
-- "When did we ship the transcription engine?"
-
-- "What are the open questions for the PRD?"
-
-Success Criteria:
-
-- Search returns relevant results in <2 seconds
-
-- Top 3 results include source file + excerpt
-
-- Links back to full document
-
----
-
-### Day 13-14: Testing + Iteration (3-4 hours)
-
-Goal: Validate 2x leverage achieved
-
-Validation Tests:
-
-1. Context Sync Test:
-
-
-1. Handoff Test:
-
-
-1. Dashboard Test:
-
-
-1. Copy-Paste Elimination Test:
-
-
-1. RAG Search Test:
-
-
-Success Criteria: All tests pass, 2x leverage validated
-
----
-
-## 🚫 Deferred to Future Tiers
-
-### Tier 1 (Weeks 3-4): Visual Enhancements
-
-Why Deferred: Foundation must work first before polishing
-
-- Mermaid diagram auto-generation from architecture docs
-
-- Figma integration for UI mockups (manual links sufficient for Tier 0)
-
-- Advanced roadmap visualizations (Gantt, timeline)
-
-- RAG search expansion to include Notion PARA
-
-### Tier 2 (Weeks 5-8): Advanced Automation
-
-Why Deferred: Requires Tier 0 + Tier 1 infrastructure
-
-- Calendar sync (meetings → session blocks)
-
+### **Tier 2: Automation & Scale** (Weeks 5-8)
 - Email pipeline (feedback → roadmap items)
-
-- Text message pipeline (quick captures)
-
 - Voice command integration ("Claude, what's blocking me?")
+- Automated interview transcription at scale
 
-### Tier 3 (Weeks 9-12): Collaboration Features
-
-Why Deferred: Solo founder first, scale later
-
-- Multi-user support (when hiring)
-
-- Permission layers (PRD vs code access)
-
-- External stakeholder views (sanitized roadmap)
-
-- Client portal (project status sharing)
+### **Tier 3: Team & Collaboration** (Weeks 9-12)
+- Multi-user collaboration features (when Peter joins + future hires)
+- Permissions and roles
+- Review workflows
 
 ---
 
-## 🎯 Architecture Decisions
+## 📊 Phase 3 Detailed Timeline (Current Focus)
 
-### Decision 1: Why Hybrid (Repo + Notion) vs Pure Notion?
+For detailed day-by-day execution plan, see: [roadmap-addendum-multi-project.md](roadmap-addendum-multi-project.md)
 
-Rationale:
-
-- Concern: Notion PARA mixes personal + IP-sensitive content
-
-- Concern: Not purpose-built for dev workflows
-
-- Solution: Repo = source of truth (version controlled, secure), Notion = dashboard (visual, mobile)
-
-- Benefit: Collaborator-friendly, IP-protected, best of both worlds
-
-### Decision 2: Why MCP Server vs Manual File Reading?
-
-Rationale:
-
-- Pro: Automatic context loading (10x faster than copy-paste)
-
-- Pro: Proven technology (Anthropic official SDK, active community)
-
-- Con: Mac-only (can't use from phone/web)
-
-- Con: Cutting-edge (requires proof-of-concept first)
-
-- Solution: Phase 1A proves it works, fallback to manual if fails
-
-### Decision 3: Why RAG Search (Repo-Only) First?
-
-Rationale:
-
-- Leverage: 90% of queries are about current project (not old notes)
-
-- Scope: 6-8 hours (manageable in Week 2)
-
-- Validation: Proves concept before expanding to Notion
-
-- Deferred: Notion integration to Tier 1 (lower priority)
-
-### Decision 4: Why Mermaid (Not Just Figma)?
-
-Rationale:
-
-- Speed: Mermaid = quick iteration during dev
-
-- Version Control: Markdown-based, Git tracks changes
-
-- Collaboration: Renders in GitHub, Notion, VS Code
-
-- Figma: Reserved for polished stakeholder presentations (Tier 1)
-
-- Workflow: Mermaid → commit → auto-render → (later polish in Figma)
-
-### Decision 5: Why Git Post-Commit Hook (Not Pre-Commit)?
-
-Rationale:
-
-- Post-commit: Already has commit hash, message, files changed
-
-- Pre-commit: Would block commit if Notion API fails (bad UX)
-
-- Trade-off: Slight delay (30 sec) vs guaranteed commit success
-
-- Fallback: Manual sync script if hook fails
+**Quick Summary**:
+- **Phase 3.1**: Foundation (Session 2B - 6-8 hours)
+  - Create legacy-ai/ repo, update MCP tools, migrate 5 docs
+- **Phase 3.2**: Real Usage Validation (Session 3 - Week of Nov 11)
+  - Uncle Bob interview analysis, end-to-end workflow test
+- **Phase 3.3**: Template Enhancement (Week 3-4)
+  - Add frameworks after 10-15 interviews
+- **Phase 3.4**: Specialized Tools (Week 2-4)
+  - Build Legacy AI-specific MCP tools
+- **Phase 3.5**: Collaboration Prep (Week 4-6)
+  - Peter onboarding, legal setup, engineering work stream
 
 ---
 
-## ⚠️ Risks & Mitigations
+## 🎓 Meta-Learning: Systems Thinking Applied
 
-### Risk 1: MCP Server Doesn't Work
+**This roadmap demonstrates leverage point #9 (Delays):**
+- Phases 1-2: Tight feedback loop (implementation → usage immediately)
+- Phase 3: Intentional delay (wait for real usage before optimization)
+- Phases 4-6: Data-driven iteration (build what's needed, not what's cool)
 
-Impact: Can't auto-load context, back to manual file reading
+**Feedback loops designed in:**
+- **R1**: Template Improvement (better template → better insights → better interviews)
+- **B1**: Time Management (baby deadline → ruthless prioritization → sufficient capability)
+- **B2**: Context Freshness (staleness → session start → fetch latest → updated context)
 
-Probability: Low (Anthropic official SDK, proven)
-
-Mitigation: Phase 1A proof-of-concept on Day 1-2
-
-Fallback: Manual file reading (still better than copy-paste)
-
-### Risk 2: Notion API Rate Limits
-
-Impact: Sync delays if hitting 3 req/sec limit
-
-Probability: Low (small team, batched updates)
-
-Mitigation: Queue system, retry logic
-
-Fallback: Manual sync button in dashboard
-
-### Risk 3: Git Hook Failures
-
-Impact: Commits don't trigger Notion updates
-
-Probability: Medium (network issues, API changes)
-
-Mitigation: Error logging, retry logic, alert on failure
-
-Fallback: End-of-day manual sync script
-
-### Risk 4: Documentation Overhead
-
-Impact: Templates become friction instead of help
-
-Probability: Medium (new habit formation)
-
-Mitigation: Start minimal (3 templates), iterate based on usage
-
-Fallback: Simplify templates if adoption low
-
-### Risk 5: RAG Search Quality
-
-Impact: Irrelevant results, low adoption
-
-Probability: Low (small corpus, focused queries)
-
-Mitigation: Tune relevance threshold, add filtering
-
-Fallback: Manual grep in docs/ (still fast)
+**This is systems thinking in practice**: Structure determines behavior, not willpower.
 
 ---
 
-## 🎓 Systems Thinking Applied
+## 📝 Change Log
 
-### Leverage Points Addressed
-
-#6 - Information Flows (High Leverage):
-
-- Before: Manual copy-paste between systems (broken flow)
-
-- After: Git hooks + MCP tools (automated flow)
-
-- Impact: 70-120 min/week saved
-
-#5 - Rules (High Leverage):
-
-- Before: No structure for how agents communicate
-
-- After: Templates, session logs, bidirectional sync rules
-
-- Impact: Consistent handoffs, no context loss
-
-#4 - Self-Organization (High Leverage):
-
-- Before: You manually orchestrate every handoff
-
-- After: System self-updates (commit → Notion, start session → fetch context)
-
-- Impact: Reduced cognitive load, scales to more projects
-
-#3 - Goals (Highest Leverage):
-
-- Before: Goal = "build features fast"
-
-- After: Goal = "build with preserved context and decision history"
-
-- Impact: Better decisions, less rework, foundation for 100,000X
-
-### Feedback Loops Created
-
-Reinforcing Loop R1: Documentation Value:
-
-```javascript
-Good docs → Easy context loading → More usage → Better docs → (repeat)
-```
-
-Balancing Loop B1: Context Freshness:
-
-```javascript
-Context staleness → Session start → Fetch latest → Updated context → (equilibrium)
-```
-
-Balancing Loop B2: Roadmap Accuracy:
-
-```javascript
-Roadmap drift → Git commit → Auto-update → Accurate roadmap → (equilibrium)
-```
+| Date | Change | Impact |
+|------|--------|--------|
+| 2025-11-08 | Phase 1 complete (4 hours, ahead of schedule) | Context loading validated |
+| 2025-11-11 | Phase 2 complete (Strategy Board workflow) | Git hooks + Notion sync operational |
+| 2025-11-11 | Phase 3 Session 2A complete (PRD + handoff) | Ready for implementation |
+| 2025-11-12 | Added roadmap addendum link for Phase 3 details | Clarified relationship between main roadmap and initiative-specific roadmaps |
 
 ---
 
-## 📝 Next Actions
-
-Immediate (Today):
-
-1. Review this roadmap with Claude
-
-1. Approve architecture decisions
-
-1. Confirm 2-week timeline commitment
-
-1. Set up first Claude Code session for Day 1 tasks
-
-Day 1 Kickoff (Tomorrow):
-
-1. Claude Code: Create docs/ folder structure
-
-1. Claude Code: Generate templates (PRD, tech req, session log)
-
-1. Claude Code: Set up MCP proof-of-concept
-
-1. Claude (chat): Review templates, provide feedback
-
-Week 1 Checkpoint (Day 7):
-
-- Validate MCP working
-
-- Validate git hooks syncing to Notion
-
-- Validate Claude can start sessions with auto-context
-
-- Adjust Week 2 plan based on progress
-
-Week 2 Checkpoint (Day 14):
-
-- Run all validation tests
-
-- Measure time saved (vs baseline)
-
-- Document lessons learned
-
-- Plan Tier 1 priorities
-
----
-
-## 📚 Reference Links
-
-Documentation:
-
-- Detailed Implementation Plan: [Link to other Notion page]
-
-- Systems Thinking Workbook: [Your existing doc]
-
-- Voice-to-Notion README: [GitHub repo]
-
-External Resources:
-
-- Anthropic MCP Documentation
-
-- GitHub MCP Examples
-
-- Mermaid Diagram Syntax
-
-Internal Tools:
-
-- Notion API: [Existing integration in voice-to-notion]
-
-- Git Hooks: [To be created in Week 1]
-
-- MCP Server: [To be created in Week 1]
-
----
-
-Last Updated: Nov 8, 2025
-
-Status: ✅ Roadmap Complete, Ready to Execute
-
-Next Review: Nov 15, 2025 (Week 1 checkpoint)
+**Last Updated**: 2025-11-12
+**Next Update**: After Phase 3 Session 2B complete (implementation)
+**Owner**: Dharan Chandra Hasan
