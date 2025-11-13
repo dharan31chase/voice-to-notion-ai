@@ -36,6 +36,10 @@ mcp = FastMCP(name="ai-assistant-full")
 notion_token = os.getenv("NOTION_TOKEN")
 notion_client = Client(auth=notion_token) if notion_token else None
 
+# Database IDs for Sessions and Roadmap
+SESSIONS_DB_ID = os.getenv("NOTION_SESSIONS_DB")
+ROADMAP_DB_ID = os.getenv("NOTION_ROADMAP_DB")
+
 # Status constants for Strategy Board
 VALID_STATUSES = [
     "🟡 Needs Decision",
@@ -300,34 +304,39 @@ def start_session(project_name: str = "Epic 2nd Brain", work_stream: Optional[st
 def end_session(
     project_name: str,
     summary: str,
+    session_duration_hours: Optional[float] = None,  # NEW: Session duration
     decisions: Optional[List[str]] = None,
     next_steps: Optional[List[str]] = None,
-    create_handoff: bool = False,  # NEW
-    handoff_initiative_id: Optional[str] = None,  # NEW
-    handoff_prd_path: Optional[str] = None,  # NEW
-    handoff_one_pager_location: Optional[str] = None  # NEW
+    initiative_page_id: Optional[str] = None,  # NEW: For linking to Strategy Board
+    create_handoff: bool = False,
+    handoff_initiative_id: Optional[str] = None,
+    handoff_prd_path: Optional[str] = None,
+    handoff_one_pager_location: Optional[str] = None
 ) -> dict:
     """
-    Log Claude chat session to docs/ and prepare for Notion sync.
+    Log Claude Code session to docs/ and Notion Sessions DB.
 
-    NEW: Optionally creates handoff prompt for Claude Code and updates Strategy Board status.
+    NEW: Creates entry in Sessions database with Duration and Initiative link.
+    NEW: Auto-creates Roadmap entry if initiative doesn't have one yet.
 
     Args:
         project_name: Project name
         summary: Brief summary of session
+        session_duration_hours: Session duration in hours (e.g., 1.5). Will prompt if not provided.
         decisions: List of key decisions made
         next_steps: List of recommended next actions
-        create_handoff: If True, create handoff prompt in docs/handoffs/ (NEW)
-        handoff_initiative_id: Notion page ID for Strategy Board initiative (NEW)
-        handoff_prd_path: Path to PRD file (e.g., "docs/prd/feature.md") (NEW)
-        handoff_one_pager_location: Notion URL or repo path to one-pager (NEW)
+        initiative_page_id: Notion page ID for Strategy Board initiative (for linking)
+        create_handoff: If True, create handoff prompt in docs/handoffs/
+        handoff_initiative_id: Notion page ID for handoff (same as initiative_page_id typically)
+        handoff_prd_path: Path to PRD file (e.g., "docs/prd/feature.md")
+        handoff_one_pager_location: Notion URL or repo path to one-pager
 
     Returns:
-        Dict with log path, handoff path (if created), and next steps
+        Dict with log path, Sessions DB entry, Roadmap status, and next steps
 
     Examples:
-        - end_session("Epic 2nd Brain", "Completed MCP server", ["Use FastMCP API"], ["Test all 5 tools"])
-        - end_session("Epic 2nd Brain", "PRD approved", create_handoff=True, handoff_initiative_id="page123", handoff_prd_path="docs/prd/feature.md")
+        - end_session("Epic 2nd Brain", "Multi-project validation", 1.5, initiative_page_id="page123")
+        - end_session("Legacy AI", "Customer interview analysis", 2.0, initiative_page_id="page456")
     """
     decisions = decisions or []
     next_steps = next_steps or []
@@ -387,6 +396,95 @@ def end_session(
             "reminder": f"Don't forget to commit this session log to {project_name} repo!",
             "next_action": f"Run: cd {repo_path} && git add . && git commit -m '[ROADMAP-X] Session: {summary}'"
         }
+
+        # NEW: Write to Sessions database in Notion
+        if notion_client and SESSIONS_DB_ID and session_duration_hours:
+            try:
+                # Create session entry in Notion
+                session_properties = {
+                    "Name": {
+                        "title": [{"text": {"content": f"Session: {date_str} - {summary[:50]}"}}]
+                    },
+                    "Session Date": {
+                        "date": {"start": datetime.now().date().isoformat()}
+                    },
+                    "Duration": {
+                        "number": session_duration_hours
+                    },
+                    "Project": {
+                        "select": {"name": project_name}
+                    }
+                }
+
+                # Add Strategy Board initiative relation if provided
+                if initiative_page_id:
+                    session_properties["🎯 Strategy Board"] = {
+                        "relation": [{"id": initiative_page_id}]
+                    }
+
+                # Create the session page
+                session_page = notion_client.pages.create(
+                    parent={"database_id": SESSIONS_DB_ID},
+                    properties=session_properties
+                )
+
+                result["sessions_db_created"] = True
+                result["sessions_db_url"] = session_page.get("url", "")
+
+                # NEW: Auto-create Roadmap entry if initiative provided and doesn't exist
+                if initiative_page_id and ROADMAP_DB_ID:
+                    try:
+                        # Check if Roadmap entry exists for this initiative
+                        roadmap_query = notion_client.databases.query(
+                            database_id=ROADMAP_DB_ID,
+                            filter={
+                                "property": "🎯 Strategy Board",
+                                "relation": {"contains": initiative_page_id}
+                            }
+                        )
+
+                        if not roadmap_query.get("results"):
+                            # No Roadmap entry exists - create one
+                            # Get initiative name from Strategy Board
+                            initiative = notion_client.pages.retrieve(page_id=initiative_page_id)
+                            initiative_name = ""
+                            title_prop = initiative["properties"].get("Initiative Name", {})
+                            if title_prop.get("title"):
+                                initiative_name = title_prop["title"][0]["text"]["content"]
+
+                            # Create Roadmap entry
+                            roadmap_properties = {
+                                "Initiative Name": {
+                                    "title": [{"text": {"content": initiative_name or "Unnamed Initiative"}}]
+                                },
+                                "🎯 Strategy Board": {
+                                    "relation": [{"id": initiative_page_id}]
+                                }
+                            }
+
+                            # Add Owner if NOTION_USER_ID is set
+                            if os.getenv("NOTION_USER_ID"):
+                                roadmap_properties["Owner"] = {
+                                    "people": [{"object": "user", "id": os.getenv("NOTION_USER_ID")}]
+                                }
+
+                            roadmap_page = notion_client.pages.create(
+                                parent={"database_id": ROADMAP_DB_ID},
+                                properties=roadmap_properties
+                            )
+
+                            result["roadmap_created"] = True
+                            result["roadmap_url"] = roadmap_page.get("url", "")
+                            result["roadmap_message"] = f"Created Roadmap entry for '{initiative_name}'"
+                        else:
+                            result["roadmap_created"] = False
+                            result["roadmap_message"] = "Roadmap entry already exists"
+
+                    except Exception as e:
+                        result["roadmap_error"] = f"Error checking/creating Roadmap entry: {str(e)}"
+
+            except Exception as e:
+                result["sessions_db_error"] = f"Error writing to Sessions DB: {str(e)}"
 
         # NEW: Create handoff prompt if requested
         # Note: Handoffs always go to ai-assistant repo (where Context Sync Bridge lives)
