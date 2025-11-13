@@ -1,6 +1,7 @@
 # Voice-to-Notion AI Assistant - Project State & Decisions
 
-## Current Status (Groq Integration COMPLETE - November 8, 2025)
+## Current Status (Multi-Project Expansion COMPLETE - November 13, 2025)
+- ✅ **Multi-Project Infrastructure:** MCP tools support Epic 2nd Brain AND Legacy AI with clean separation
 - ✅ **Complete automation pipeline:** Voice → AI Analysis → Organized Notion PARA content
 - ✅ **Configuration System:** YAML-based config with environment variable overrides (Milestone 1.1)
 - ✅ **Shared Utilities:** Centralized OpenAI client, file utils, unified logging (Milestone 1.2)
@@ -86,6 +87,40 @@
 - 100% backward compatibility (zero breaking changes)
 - 100% uptime guarantee (fallback always works)
 - Clean architecture for future backend additions
+
+### 24. Multi-Project Architecture with PROJECT_CONFIG Dictionary (November 13, 2025)
+**Decision:** Implement multi-project support in MCP server with PROJECT_CONFIG centralized configuration
+**Rationale:**
+- Need to support multiple projects (Epic 2nd Brain infrastructure + Legacy AI business)
+- Clean IP separation for co-founder onboarding and investor due diligence
+- Each project has different folder structures and session log paths
+- Foundation for future projects (Life Admin, Baby Prep, Project Franklin)
+**Implementation:**
+- Created `PROJECT_CONFIG` dictionary in mcp_server/full_server.py (lines 48-61)
+- Added optional `project` parameter to all MCP tools (read_file, search_docs, start_session, end_session)
+- Updated git hooks: Epic 2nd Brain uses default, Legacy AI passes `--project "Legacy AI"`
+- Implemented project filtering in search_docs() and query_strategy_board()
+- Created automated test suite with 8 scenarios (7/8 passed)
+**PROJECT_CONFIG Structure:**
+- `repo_path`: Absolute path to project repository
+- `context_folders`: Folders to load for context (PRDs, docs, research, etc.)
+- `session_log_path`: Where to write session logs
+- `strategy_board_view`: Filtered Notion view for this project
+**Testing Results:**
+- Context loading: < 5 seconds for both projects (goal: < 10s)
+- Search filtering: 100% accurate (project-specific and cross-project)
+- Git hooks: Both repos sync correctly to Notion
+- Strategy Board views: User-verified filtering works
+**Architecture Principles:**
+- **Single source of truth**: PROJECT_CONFIG is centralized configuration
+- **Explicit over implicit**: Project parameter makes intent clear
+- **Backward compatibility**: Default to "Epic 2nd Brain" for existing workflows
+- **Clean separation**: No cross-contamination between projects
+**Result:**
+- 2-repo architecture operational (ai-assistant/ and legacy-ai/)
+- All 5 success criteria met (repo structure, MCP tools, git hooks, Strategy Board, templates)
+- Performance under target (< 5s vs 10s goal)
+- Ready for Session 3 (real Legacy AI customer discovery)
 
 ### 22. Category Detection Tier 0 Metadata Suffix (November 6, 2025)
 **Decision:** Add Tier 0 detection that checks last 20 lines of transcript for "note" or "task" metadata BEFORE checking content
