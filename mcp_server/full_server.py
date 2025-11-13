@@ -410,11 +410,9 @@ def end_session(
                     },
                     "Duration": {
                         "number": session_duration_hours
-                    },
-                    "Project": {
-                        "select": {"name": project_name}
                     }
                 }
+                # Note: "Project" text field was removed - project is now inferred via Initiative relation
 
                 # Add Strategy Board initiative relation if provided
                 if initiative_page_id:
