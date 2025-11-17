@@ -131,11 +131,39 @@
 **What**: Legacy AI-specific automation
 **Tools**:
 - `analyze_interview()` - Auto-extract Jobs-to-be-done insights
-- `compare_interviews()` - Cross-interview pattern detection  
+- `compare_interviews()` - Cross-interview pattern detection
 - `generate_validation_questions()` - For prototype testing
 **Priority**: Medium (nice-to-have, not blocking)
 
 **Tech Requirements**: [To be created after Phase 3 usage patterns emerge]
+
+#### **5D: Refactor MCP Server to Modular Architecture** (2-3 hours)
+**What**: Extract context loading, session management, and project management into separate modules following Single Responsibility Principle (SRP)
+**Target Structure**:
+```
+mcp_server/
+  full_server.py              # Main entry point (routing only)
+  tools/
+    __init__.py
+    session_manager.py        # start_session, end_session
+    context_loader.py         # Profile management
+    project_manager.py        # Project path mapping
+  utils/
+    file_discovery.py         # Folder scanning
+    profile_storage.py        # JSON persistence
+    input_parser.py           # User input parsing
+  config/
+    project_paths.json
+```
+**Why**: Current Phase 1 implementation in `full_server.py` is fast to ship but will become unmaintainable as MCP server grows. Modular architecture enables adding 10+ tools without bloat.
+**Triggers**:
+- When `full_server.py` exceeds 1000 lines, OR
+- When adding 3rd MCP tool, OR
+- When adding cross-tool shared utilities
+**Priority**: Medium (critical for long-term maintainability, not immediate)
+**Dependencies**: Context Profile Optimization (Phase 1 complete)
+
+**Tech Requirements**: Documented in [context-profile-optimization.md](../tech-requirements/context-profile-optimization.md)
 
 ---
 
@@ -157,6 +185,28 @@
 - Git hooks sync in <5 seconds
 
 **Tech Requirements**: [To be created in Week 2]
+
+---
+
+## 📋 PRD Backlog (Approved, Not Yet Started)
+
+**Purpose**: Track PRDs from conception through completion. Both Claude agents update status.
+
+| PRD | Status | Priority | Effort | Dependencies | Notes |
+|-----|--------|----------|--------|--------------|-------|
+| [Context Profile Optimization](../prd/context-profile-optimization.md) | ✅ Approved for Implementation | High | 6-7h | None | Starting Nov 17, 2025 |
+
+**Status Definitions**:
+- `Draft` - Claude (chat) creating PRD
+- `Ready for Tech Requirements` - PRD approved, needs technical spec
+- `Approved for Implementation` - Tech requirements approved, ready to build
+- `In Progress` - Claude Code actively implementing
+- `Complete` - Feature shipped, documented, tested
+
+**How to Use**:
+- Claude (chat): Creates PRD → marks "Ready for Tech Requirements" → marks "Approved for Implementation"
+- Claude Code: Marks "In Progress" when starting → marks "Complete" when done
+- User: Reviews at start of each session to decide what to work on
 
 ---
 

@@ -16,9 +16,12 @@ Usage:
 from mcp.server.fastmcp import FastMCP
 import os
 from pathlib import Path
-from datetime import datetime
+from datetime import datetime, timezone
 from typing import List, Dict, Optional
 import sys
+import json
+import re
+import logging
 from notion_client import Client
 from dotenv import load_dotenv
 
@@ -190,56 +193,169 @@ def write_file(path: str, content: str, project: str = "Epic 2nd Brain") -> dict
 # ============================================================================
 
 @mcp.tool()
-def start_session(project_name: str = "Epic 2nd Brain", work_stream: Optional[str] = None) -> dict:
+def start_session(
+    project_name: str = "Epic 2nd Brain",
+    work_stream: Optional[str] = None,
+    debug: bool = False,
+    use_intelligent_loading: bool = True
+) -> dict:
     """
-    Load all context needed for a Claude chat session.
+    Load context for a Claude chat session with intelligent file selection.
 
-    Multi-project support: Loads context from correct repo based on PROJECT_CONFIG.
+    NEW: Intelligent context loading (Phase 1)
+    - Suggests 3-6 files based on work stream and file types
+    - Learns from your selections and creates profiles
+    - Auto-applies learned profiles in future sessions
+    - Reduces noise from 10-16 docs to 3-6 high-signal docs
 
-    Fetches:
-    - Top 3 prioritized initiatives from Strategy Board (filtered by project)
-    - Latest documents (PRDs, requirements, analyses, etc.)
-    - Recent session logs (last 3)
-    - Roadmap (project-specific)
-    - Critical alerts
+    Multi-project support: Works with Epic 2nd Brain and Legacy AI.
 
     Args:
         project_name: Name of project (default: "Epic 2nd Brain")
                       Options: "Epic 2nd Brain", "Legacy AI"
-        work_stream: Optional work stream for Legacy AI
-                     Examples: "customer-discovery", "prototype", "funding"
+                      Also accepts aliases: "legacy", "customer discovery", "ai-assistant", "mcp"
+        work_stream: Optional work stream (e.g., "interview-analysis", "synthesis")
+                     If not provided, will prompt for it
+        debug: Enable debug logging to logs/context-loader-YYYY-MM-DD.log
+        use_intelligent_loading: Use intelligent context loading (default: True)
+                                 Set to False for legacy behavior (load all docs)
 
     Returns:
-        Dict with all context
+        Dict with context, suggested files, and loading instructions
 
     Examples:
-        - start_session("Epic 2nd Brain")
-        - start_session("Legacy AI", "customer-discovery")
+        - start_session("Legacy AI", "interview-analysis")
+        - start_session("customer discovery")  # Uses alias, will prompt for work_stream
+        - start_session("Epic 2nd Brain", debug=True)
+
+    Flow:
+        1. Find project by name/alias
+        2. Check for learned profile (if work_stream provided)
+        3. If profile exists: Show learned files, confirm to load
+        4. If no profile: Suggest files, user selects, save profile
+        5. Load selected files into context
+        6. Also load Strategy Board and roadmap
     """
-    # Validate project
-    if project_name not in PROJECT_CONFIG:
+    # Setup debug logging if requested
+    log_file = None
+    if debug:
+        log_file = setup_debug_logging()
+        logging.info(f"Starting session for project: {project_name}, work_stream: {work_stream}")
+
+    # Find project (supports aliases and natural language)
+    try:
+        project = find_project(project_name)
+        if not project:
+            return {
+                "status": "error",
+                "message": f"Project '{project_name}' not found. Check docs/config/project-paths.json for available projects and aliases."
+            }
+
+        if debug:
+            logging.info(f"Found project: {project['name']}")
+
+    except Exception as e:
         return {
             "status": "error",
-            "message": f"Unknown project '{project_name}'. Valid options: {list(PROJECT_CONFIG.keys())}"
+            "message": f"Error loading project config: {str(e)}"
         }
 
-    config = PROJECT_CONFIG[project_name]
-    repo_path = config["repo_path"]
+    # Prompt for work_stream if not provided (backward compatible)
+    if not work_stream:
+        return {
+            "status": "needs_input",
+            "message": "Please provide a work_stream parameter",
+            "example": f'start_session("{project["name"]}", work_stream="interview-analysis")',
+            "suggestions": [
+                "interview-analysis",
+                "synthesis",
+                "prototype",
+                "customer-discovery"
+            ]
+        }
 
     context = {
-        "project": project_name,
+        "project": project["name"],
         "work_stream": work_stream,
         "timestamp": datetime.now().isoformat(),
         "strategy_board": {},
-        "documents": [],
-        "recent_sessions": [],
-        "roadmap": {},
+        "suggested_files": [],
+        "learned_profile": None,
+        "files_to_load": [],
         "alerts": []
     }
 
+    if debug:
+        context["debug_log"] = log_file
+
+    # Intelligent context loading (NEW)
+    if use_intelligent_loading:
+        try:
+            # Check for learned profile
+            profile = load_profile(project["name"], work_stream)
+
+            if profile:
+                # Learned profile exists - show it to user
+                context["learned_profile"] = profile
+                context["files_to_load"] = [f["path"] for f in profile["files"]]
+                context["message"] = f"✅ Found learned profile for '{work_stream}' (used {profile['usage_count']} times, last: {profile['last_used'][:10]})"
+                context["action_required"] = "Confirm these files or adjust selection"
+
+                if debug:
+                    logging.info(f"Loaded profile: {len(profile['files'])} files")
+
+            else:
+                # No profile - suggest files
+                suggestions = suggest_files_for_workstream(project, work_stream)
+                context["suggested_files"] = suggestions
+                context["files_to_load"] = [f["path"] for f in suggestions]
+                context["message"] = f"💡 Suggested {len(suggestions)} files for '{work_stream}' (first time)"
+                context["action_required"] = "Select files to load (will save as profile)"
+
+                if debug:
+                    logging.info(f"Generated suggestions: {len(suggestions)} files")
+
+        except Exception as e:
+            context["alerts"].append(f"⚠️ Intelligent loading failed: {str(e)}. Falling back to legacy behavior.")
+            use_intelligent_loading = False
+
+            if debug:
+                logging.error(f"Intelligent loading error: {str(e)}", exc_info=True)
+
+    # Legacy behavior: load all docs (if intelligent loading disabled or failed)
+    if not use_intelligent_loading:
+        repo_path = Path(project["root_path"])
+
+        # Use PROJECT_CONFIG if project is in it, otherwise use project config
+        if project["name"] in PROJECT_CONFIG:
+            config = PROJECT_CONFIG[project["name"]]
+            folders_to_scan = config["context_folders"]
+        else:
+            folders_to_scan = project.get("folders_to_scan", [])
+
+        documents = []
+        for folder_rel in folders_to_scan:
+            folder_path = repo_path / folder_rel
+            if not folder_path.exists():
+                continue
+
+            md_files = sorted(folder_path.rglob("*.md"), key=lambda x: x.stat().st_mtime, reverse=True)
+            for md_file in md_files[:10]:
+                if md_file.name in ["TEMPLATE.md", ".gitkeep"]:
+                    continue
+
+                try:
+                    rel_path = str(md_file.relative_to(repo_path))
+                    documents.append(rel_path)
+                except Exception as e:
+                    context["alerts"].append(f"Error processing {md_file.name}: {str(e)}")
+
+        context["files_to_load"] = documents
+        context["message"] = f"Loaded {len(documents)} documents (legacy mode)"
+
     # Query Strategy Board (filtered by project)
     try:
-        board_result = query_strategy_board(limit=3, project_name=project_name)
+        board_result = query_strategy_board(limit=3, project_name=project["name"])
         if board_result["status"] == "success":
             context["strategy_board"] = board_result
         else:
@@ -247,34 +363,11 @@ def start_session(project_name: str = "Epic 2nd Brain", work_stream: Optional[st
     except Exception as e:
         context["alerts"].append(f"⚠️ Strategy Board query failed: {str(e)}")
 
-    # Load documents from context_folders
-    for folder_rel in config["context_folders"]:
-        folder_path = repo_path / folder_rel
-        if not folder_path.exists():
-            continue
-
-        # Recursively find all markdown files
-        md_files = sorted(folder_path.rglob("*.md"), key=lambda x: x.stat().st_mtime, reverse=True)
-        for md_file in md_files[:10]:  # Limit to 10 most recent per folder
-            if md_file.name in ["TEMPLATE.md", ".gitkeep"]:
-                continue
-
-            try:
-                with open(md_file, encoding='utf-8') as f:
-                    content = f.read()
-                    context["documents"].append({
-                        "file": md_file.name,
-                        "folder": folder_rel,
-                        "path": str(md_file.relative_to(repo_path)),
-                        "preview": content[:500] + "..." if len(content) > 500 else content
-                    })
-            except Exception as e:
-                context["alerts"].append(f"Error reading {md_file.name}: {str(e)}")
-
-    # Load roadmap (different paths for each project)
+    # Load roadmap
+    repo_path = Path(project["root_path"])
     roadmap_paths = [
-        repo_path / "docs" / "roadmap.md",  # Legacy AI
-        repo_path / "docs" / "context" / "roadmap.md"  # Epic 2nd Brain
+        repo_path / "docs" / "roadmap.md",
+        repo_path / "docs" / "context" / "roadmap.md"
     ]
     for roadmap_file in roadmap_paths:
         if roadmap_file.exists():
@@ -289,10 +382,12 @@ def start_session(project_name: str = "Epic 2nd Brain", work_stream: Optional[st
             except Exception as e:
                 context["alerts"].append(f"Error reading roadmap: {str(e)}")
 
-    # Add helpful summary
+    # Summary
     initiative_count = context["strategy_board"].get("count", 0)
-    context["summary"] = f"Loaded {initiative_count} top initiatives from Strategy Board, {len(context['documents'])} documents, {len(context['recent_sessions'])} recent sessions"
+    file_count = len(context["files_to_load"])
+    context["summary"] = f"✅ Loaded {initiative_count} top initiatives, suggested {file_count} files for {work_stream}"
 
+    context["status"] = "success"
     return context
 
 
@@ -1259,6 +1354,396 @@ Before creating tech requirements, ask Dharan these questions:
 """
 
     return template
+
+
+# ============================================================================
+# TOOL 9: Save Context Profile (NEW - Context Profile Optimization)
+# ============================================================================
+
+@mcp.tool()
+def save_context_profile(
+    project_name: str,
+    work_stream: str,
+    selected_file_indices: str,
+    suggested_files: List[dict]
+) -> dict:
+    """
+    Save user's file selection as a learned profile.
+
+    This tool is called after user selects files from suggestions.
+    Next time they start a session with this project+workstream, these files
+    will be auto-suggested.
+
+    Args:
+        project_name: Project name
+        work_stream: Work stream name
+        selected_file_indices: User selection (e.g., "1,2,3" or "all")
+        suggested_files: List of file dicts that were suggested
+
+    Returns:
+        Dict with save confirmation
+
+    Examples:
+        - save_context_profile("Legacy AI", "interview-analysis", "1,2,4", [file1, file2, file3, file4])
+        - save_context_profile("Legacy AI", "interview-analysis", "all", [file1, file2, file3])
+    """
+    try:
+        # Parse user selection
+        selected_indices = parse_user_selection(selected_file_indices, suggested_files)
+
+        # Get selected files
+        selected_files = [suggested_files[i] for i in selected_indices]
+
+        # Save profile
+        save_profile(project_name, work_stream, selected_files)
+
+        return {
+            "status": "success",
+            "project": project_name,
+            "work_stream": work_stream,
+            "files_saved": len(selected_files),
+            "file_paths": [f["path"] for f in selected_files],
+            "message": f"✅ Saved profile for '{project_name}' - '{work_stream}'. Next time you'll see these {len(selected_files)} files automatically."
+        }
+
+    except ValueError as e:
+        return {
+            "status": "error",
+            "message": str(e)
+        }
+    except Exception as e:
+        return {
+            "status": "error",
+            "message": f"Error saving profile: {str(e)}"
+        }
+
+
+# ============================================================================
+# Context Profile Optimization: Helper Functions
+# ============================================================================
+
+def setup_debug_logging():
+    """Setup debug logging to file for context loading."""
+    log_dir = project_root / "logs"
+    log_dir.mkdir(exist_ok=True)
+
+    log_file = log_dir / f"context-loader-{datetime.now().strftime('%Y-%m-%d')}.log"
+
+    logging.basicConfig(
+        level=logging.DEBUG,
+        format='%(asctime)s - %(levelname)s - %(message)s',
+        handlers=[
+            logging.FileHandler(log_file),
+            logging.StreamHandler()
+        ]
+    )
+    return str(log_file)
+
+
+def load_project_config() -> dict:
+    """Load project configuration from docs/config/project-paths.json."""
+    config_path = project_root / "docs" / "config" / "project-paths.json"
+
+    if not config_path.exists():
+        raise FileNotFoundError(f"Project config not found at {config_path}")
+
+    with open(config_path, 'r', encoding='utf-8') as f:
+        return json.load(f)
+
+
+def load_file_type_patterns() -> dict:
+    """Load file type patterns from docs/config/file-type-patterns.json."""
+    patterns_path = project_root / "docs" / "config" / "file-type-patterns.json"
+
+    if not patterns_path.exists():
+        raise FileNotFoundError(f"File type patterns not found at {patterns_path}")
+
+    with open(patterns_path, 'r', encoding='utf-8') as f:
+        return json.load(f)
+
+
+def find_project(user_input: str) -> Optional[dict]:
+    """
+    Find project by name or alias using natural language matching.
+
+    Args:
+        user_input: Project name or alias (e.g., "Legacy AI", "customer discovery")
+
+    Returns:
+        Project dict or None if not found
+
+    Examples:
+        - find_project("Legacy AI") → exact match
+        - find_project("customer discovery") → alias match
+        - find_project("legacy ai interview") → fuzzy match
+    """
+    config = load_project_config()
+    user_input_lower = user_input.lower().strip()
+
+    for project in config["projects"]:
+        # Exact name match (case-insensitive)
+        if project["name"].lower() == user_input_lower:
+            return project
+
+        # Alias match
+        for alias in project["aliases"]:
+            if alias.lower() == user_input_lower:
+                return project
+
+        # Fuzzy match: check if user input is substring of name or aliases
+        if user_input_lower in project["name"].lower():
+            return project
+
+        for alias in project["aliases"]:
+            if user_input_lower in alias.lower():
+                return project
+
+    return None
+
+
+def classify_file_type(file_path: str) -> str:
+    """
+    Classify file type based on patterns.
+
+    Priority: always > latest > exemplar > synthesis > optional
+
+    Args:
+        file_path: Relative file path
+
+    Returns:
+        File type: "always", "latest", "exemplar", "synthesis", or "optional"
+    """
+    patterns = load_file_type_patterns()
+
+    # Sort by priority (lower number = higher priority)
+    sorted_patterns = sorted(
+        patterns["patterns"].items(),
+        key=lambda x: x[1].get("priority", 999)
+    )
+
+    for type_name, config in sorted_patterns:
+        if "regex" in config:
+            for pattern in config["regex"]:
+                if re.search(pattern, file_path, re.IGNORECASE):
+                    return type_name
+
+    return "optional"
+
+
+def scan_folders(project: dict) -> List[dict]:
+    """
+    Scan project folders and return all markdown files with metadata.
+
+    Args:
+        project: Project dict from config
+
+    Returns:
+        List of file dicts with path, type, mtime
+    """
+    all_files = []
+    root = Path(project["root_path"])
+
+    for folder_rel in project["folders_to_scan"]:
+        folder_path = root / folder_rel
+        if not folder_path.exists():
+            logging.warning(f"Folder not found: {folder_path}")
+            continue
+
+        # Recursively find all .md files
+        for md_file in folder_path.rglob("*.md"):
+            if md_file.name in ["TEMPLATE.md", ".gitkeep"]:
+                continue
+
+            rel_path = str(md_file.relative_to(root))
+            file_type = classify_file_type(rel_path)
+            mtime = md_file.stat().st_mtime
+
+            all_files.append({
+                "path": rel_path,
+                "type": file_type,
+                "mtime": mtime,
+                "name": md_file.name
+            })
+
+    return all_files
+
+
+def suggest_files_for_workstream(project: dict, workstream: str) -> List[dict]:
+    """
+    Suggest files for a given workstream.
+
+    Strategy:
+    1. Always include "always" type files
+    2. For each folder, get latest file (by mtime)
+    3. Include exemplar and synthesis files
+    4. Limit to 3-6 total suggestions
+
+    Args:
+        project: Project dict from config
+        workstream: Work stream name
+
+    Returns:
+        List of suggested files with type and path
+    """
+    all_files = scan_folders(project)
+    suggestions = []
+
+    # 1. Add "always" files
+    always_files = [f for f in all_files if f["type"] == "always"]
+    suggestions.extend(always_files)
+
+    # 2. Add latest file (highest mtime)
+    non_always_files = [f for f in all_files if f["type"] != "always"]
+    if non_always_files:
+        latest = max(non_always_files, key=lambda x: x["mtime"])
+        if latest not in suggestions:
+            suggestions.append(latest)
+
+    # 3. Add exemplar files (up to 1)
+    exemplar_files = [f for f in all_files if f["type"] == "exemplar"]
+    if exemplar_files:
+        # Take most recent exemplar
+        exemplar = max(exemplar_files, key=lambda x: x["mtime"])
+        if exemplar not in suggestions:
+            suggestions.append(exemplar)
+
+    # 4. Add synthesis files (up to 1)
+    synthesis_files = [f for f in all_files if f["type"] == "synthesis"]
+    if synthesis_files:
+        # Take most recent synthesis
+        synthesis = max(synthesis_files, key=lambda x: x["mtime"])
+        if synthesis not in suggestions:
+            suggestions.append(synthesis)
+
+    # Limit to 6 files max
+    return suggestions[:6]
+
+
+def load_profile(project_name: str, work_stream: str) -> Optional[dict]:
+    """
+    Load learned profile from context-profiles.json.
+
+    Args:
+        project_name: Project name
+        work_stream: Work stream name
+
+    Returns:
+        Profile dict or None if not found
+    """
+    profile_path = project_root / "docs" / "config" / "context-profiles.json"
+
+    if not profile_path.exists():
+        return None
+
+    with open(profile_path, 'r', encoding='utf-8') as f:
+        profiles_data = json.load(f)
+
+    profiles = profiles_data.get("profiles", {})
+    return profiles.get(project_name, {}).get(work_stream)
+
+
+def save_profile(project_name: str, work_stream: str, files: List[dict]):
+    """
+    Save user's file selection to learned profile.
+
+    Args:
+        project_name: Project name
+        work_stream: Work stream name
+        files: List of selected file dicts
+    """
+    profile_path = project_root / "docs" / "config" / "context-profiles.json"
+
+    # Load existing profiles
+    profiles_data = {"profiles": {}}
+    if profile_path.exists():
+        with open(profile_path, 'r', encoding='utf-8') as f:
+            profiles_data = json.load(f)
+
+    profiles = profiles_data.get("profiles", {})
+
+    # Create/update profile
+    if project_name not in profiles:
+        profiles[project_name] = {}
+
+    now = datetime.now(timezone.utc).isoformat()
+
+    if work_stream in profiles[project_name]:
+        # Update existing profile
+        profile = profiles[project_name][work_stream]
+        profile["last_used"] = now
+        profile["usage_count"] = profile.get("usage_count", 0) + 1
+        profile["files"] = [
+            {
+                "path": f["path"],
+                "type": f["type"],
+                "added": f.get("added", now)
+            }
+            for f in files
+        ]
+    else:
+        # Create new profile
+        profiles[project_name][work_stream] = {
+            "created": now,
+            "last_used": now,
+            "usage_count": 1,
+            "files": [
+                {
+                    "path": f["path"],
+                    "type": f["type"],
+                    "added": now
+                }
+                for f in files
+            ]
+        }
+
+    profiles_data["profiles"] = profiles
+
+    # Atomic write (temp file + rename)
+    temp_path = str(profile_path) + ".tmp"
+    with open(temp_path, 'w', encoding='utf-8') as f:
+        json.dump(profiles_data, f, indent=2)
+
+    os.rename(temp_path, profile_path)
+
+
+def parse_user_selection(response: str, options: List[dict]) -> List[int]:
+    """
+    Parse user input like "1,2,3" or "all" into file indices.
+
+    Supported formats:
+    - "1,2,3" → Select files 1, 2, 3
+    - "all" → Select all files
+    - "" (empty) → Confirm learned profile (load all)
+
+    Args:
+        response: User input string
+        options: List of file options
+
+    Returns:
+        List of selected indices (0-indexed)
+
+    Raises:
+        ValueError: If invalid format or out of range
+    """
+    response = response.strip().lower()
+
+    if not response or response == "all":
+        # Empty or "all" → select everything
+        return list(range(len(options)))
+
+    # Parse "1,2,3" format
+    try:
+        indices = [int(x.strip()) - 1 for x in response.split(',')]
+
+        # Validate indices
+        for idx in indices:
+            if idx < 0 or idx >= len(options):
+                raise ValueError(f"Index {idx+1} out of range (1-{len(options)})")
+
+        return indices
+
+    except ValueError as e:
+        raise ValueError(f"Invalid selection: {response}. Use format: '1,2,3' or 'all'")
 
 
 # ============================================================================

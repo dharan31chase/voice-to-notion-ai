@@ -1,0 +1,36 @@
+{
+  "patterns": {
+    "always": {
+      "regex": [
+        "requirements.*\\.md$",
+        "roadmap\\.md$",
+        "vision\\.md$",
+        "product-strategy\\.md$",
+        "Systems_Thinking_Workbook\\.md$"
+      ],
+      "priority": 1
+    },
+    "latest": {
+      "detection": "modification_date",
+      "priority": 2
+    },
+    "exemplar": {
+      "regex": [
+        ".*exemplar.*\\.md$",
+        ".*reference.*\\.md$",
+        ".*template.*\\.md$",
+        ".*bob-missy.*\\.md$"
+      ],
+      "priority": 3
+    },
+    "synthesis": {
+      "regex": [
+        ".*meta.*analysis.*\\.md$",
+        ".*comparison.*\\.md$",
+        ".*validation.*\\.md$",
+        ".*segment.*\\.md$"
+      ],
+      "priority": 4
+    }
+  }
+}

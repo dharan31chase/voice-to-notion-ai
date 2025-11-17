@@ -1,0 +1,32 @@
+{
+  "projects": [
+    {
+      "name": "Legacy AI",
+      "aliases": ["legacy ai", "legacy-ai", "legacy", "customer discovery", "customer interviews"],
+      "root_path": "/Users/dharanchandrahasan/Documents/1. Projects/legacy-ai",
+      "folders_to_scan": [
+        "interview-guides",
+        "insights",
+        "research/customer-interviews/analyses"
+      ],
+      "always_files": [
+        "research/requirements-vision.md",
+        "research/product-strategy.md"
+      ]
+    },
+    {
+      "name": "Epic 2nd Brain",
+      "aliases": ["ai-assistant", "2nd brain", "epic", "mcp", "orchestrator", "ai assistant"],
+      "root_path": "/Users/dharanchandrahasan/Documents/1. Projects/ai-assistant",
+      "folders_to_scan": [
+        "docs/prd",
+        "docs/sessions/claude-code",
+        "docs/context"
+      ],
+      "always_files": [
+        "docs/context/roadmap.md",
+        "docs/Systems_Thinking_Workbook.md"
+      ]
+    }
+  ]
+}

@@ -1,9 +1,37 @@
 # PRD: [Feature Name]
 
-**Status**: Draft | In Review | Approved | In Development | Shipped
+**Status**: Draft | Ready for Tech Requirements | Approved for Implementation | In Progress | Complete
+**Priority**: High | Medium | Low
+**Estimated Effort**: [X hours/days]
 **Owner**: [Your name]
+**Created**: [YYYY-MM-DD]
 **Last Updated**: [YYYY-MM-DD]
+**Notion Strategy Board**: [Link to Notion initiative - usually exists before PRD]
 **Tech Requirements**: [Link to tech-requirements/[feature].md]
+
+---
+
+## 📋 Implementation Readiness Checklist
+
+**Pre-Implementation** (Before Claude Code starts):
+- [ ] Tech requirements document created
+- [ ] Architecture decisions approved
+- [ ] Success criteria defined
+- [ ] Dependencies identified
+- [ ] Added to roadmap
+
+**Implementation** (Claude Code updates during work):
+- [ ] Config files created (if applicable)
+- [ ] Core functions implemented
+- [ ] Integration points complete
+- [ ] Unit tests written
+- [ ] Integration tests written
+
+**Post-Implementation** (Before marking Complete):
+- [ ] All tests passing
+- [ ] Documentation updated
+- [ ] Code reviewed (if applicable)
+- [ ] Ready for production use
 
 ---
 
@@ -87,21 +115,23 @@
 
 ---
 
-## ❓ Open Issues & Key Decisions
+## ❓ Open Questions & Key Decisions
 
-**Open Issues**:
-1. **[Issue]**:
+**Open Questions** (Track until resolved):
+1. **[Question]**:
    - Context: [Why this matters]
    - Options: A, B, C
    - Recommendation: [Option X + rationale]
-   - Status: Open | Under Review | Resolved
+   - Status: ⏳ Open | 🔍 Under Review | ✅ Resolved
+   - **Decision** (if resolved): [What was decided] - Date: [YYYY-MM-DD]
 
 **Key Decisions Made**:
 1. **[Decision]**: [What was decided]
    - Why: [Rationale]
    - Trade-offs: [What we're accepting]
    - Impact: [How this affects future work]
-   - Date: [When]
+   - Date: [YYYY-MM-DD]
+   - Who: [Claude chat | Claude Code | User]
 
 ---
 
