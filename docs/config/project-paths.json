@@ -5,14 +5,32 @@
       "aliases": ["legacy ai", "legacy-ai", "legacy", "customer discovery", "customer interviews"],
       "root_path": "/Users/dharanchandrahasan/Documents/1. Projects/legacy-ai",
       "folders_to_scan": [
-        "interview-guides",
-        "insights",
+        "research/customer-interviews/interview-guides",
+        "research/customer-interviews/insights",
         "research/customer-interviews/analyses"
       ],
       "always_files": [
         "research/requirements-vision.md",
         "research/product-strategy.md"
-      ]
+      ],
+      "workstreams": {
+        "synthesis": {
+          "description": "Synthesizing insights across interviews - load meta-analysis + last 3 interview analyses",
+          "always_files": [
+            "research/customer-interviews/insights/segment-comparison-meta-analysis.md"
+          ],
+          "folders_with_latest": {
+            "research/customer-interviews/analyses": 3
+          }
+        },
+        "interview-analysis": {
+          "description": "Analyzing individual interviews - load latest interview guide + last 2 analyses for comparison",
+          "folders_with_latest": {
+            "research/customer-interviews/interview-guides": 1,
+            "research/customer-interviews/analyses": 2
+          }
+        }
+      }
     },
     {
       "name": "Epic 2nd Brain",

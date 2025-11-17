@@ -1572,7 +1572,24 @@ def suggest_files_for_workstream(project: dict, workstream: str) -> List[dict]:
     """
     Suggest files for a given workstream.
 
-    Strategy:
+    NEW: Supports workstream-specific configuration in project config.
+    If project has "workstreams" section with config for this workstream,
+    uses that. Otherwise falls back to generic heuristics.
+
+    Workstream-specific config format:
+    {
+      "workstreams": {
+        "synthesis": {
+          "description": "Synthesizing insights across interviews",
+          "always_files": ["path/to/meta-analysis.md"],
+          "folders_with_latest": {
+            "path/to/analyses": 3
+          }
+        }
+      }
+    }
+
+    Generic heuristic strategy (fallback):
     1. Always include "always" type files
     2. For each folder, get latest file (by mtime)
     3. Include exemplar and synthesis files
@@ -1584,6 +1601,105 @@ def suggest_files_for_workstream(project: dict, workstream: str) -> List[dict]:
 
     Returns:
         List of suggested files with type and path
+    """
+    # Check for workstream-specific configuration
+    workstream_config = project.get("workstreams", {}).get(workstream)
+
+    if workstream_config:
+        # Use workstream-specific configuration
+        logging.info(f"Using workstream-specific config for '{workstream}'")
+        return suggest_files_from_workstream_config(project, workstream_config)
+    else:
+        # Fall back to generic heuristics
+        logging.info(f"No workstream config for '{workstream}', using generic heuristics")
+        return suggest_files_generic(project)
+
+
+def suggest_files_from_workstream_config(project: dict, workstream_config: dict) -> List[dict]:
+    """
+    Suggest files using workstream-specific configuration.
+
+    Args:
+        project: Project dict from config
+        workstream_config: Workstream-specific config dict
+
+    Returns:
+        List of suggested files
+    """
+    suggestions = []
+    root = Path(project["root_path"])
+
+    # 1. Add global always_files from project
+    for always_file in project.get("always_files", []):
+        file_path = root / always_file
+        if file_path.exists():
+            suggestions.append({
+                "path": always_file,
+                "type": "always",
+                "mtime": file_path.stat().st_mtime,
+                "name": file_path.name
+            })
+
+    # 2. Add workstream-specific always_files
+    for always_file in workstream_config.get("always_files", []):
+        file_path = root / always_file
+        if file_path.exists():
+            suggestions.append({
+                "path": always_file,
+                "type": "always",
+                "mtime": file_path.stat().st_mtime,
+                "name": file_path.name
+            })
+        else:
+            logging.warning(f"Workstream always_file not found: {always_file}")
+
+    # 3. Add last N files from specified folders
+    for folder_rel, count in workstream_config.get("folders_with_latest", {}).items():
+        folder_path = root / folder_rel
+        if not folder_path.exists():
+            logging.warning(f"Workstream folder not found: {folder_rel}")
+            continue
+
+        # Get all markdown files in folder
+        md_files = []
+        for md_file in folder_path.glob("*.md"):
+            if md_file.name in ["TEMPLATE.md", ".gitkeep"]:
+                continue
+
+            rel_path = str(md_file.relative_to(root))
+            file_type = classify_file_type(rel_path)
+            mtime = md_file.stat().st_mtime
+
+            md_files.append({
+                "path": rel_path,
+                "type": file_type,
+                "mtime": mtime,
+                "name": md_file.name
+            })
+
+        # Sort by mtime (descending) and take last N
+        md_files.sort(key=lambda x: x["mtime"], reverse=True)
+        suggestions.extend(md_files[:count])
+
+    return suggestions
+
+
+def suggest_files_generic(project: dict) -> List[dict]:
+    """
+    Suggest files using generic heuristics (fallback when no workstream config).
+
+    Strategy:
+    1. Always include "always" type files
+    2. Get latest file overall (by mtime)
+    3. Include exemplar files (up to 1)
+    4. Include synthesis files (up to 1)
+    5. Limit to 6 files max
+
+    Args:
+        project: Project dict from config
+
+    Returns:
+        List of suggested files
     """
     all_files = scan_folders(project)
     suggestions = []
