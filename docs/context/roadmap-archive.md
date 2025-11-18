@@ -1,5 +1,11 @@
 # Epic 2nd Brain: Tier 0 Roadmap
 
+**ARCHIVED**: 2025-11-18
+**Reason**: Replaced by unified `/ROADMAP.md` at repo root
+**See**: [/ROADMAP.md](../../../ROADMAP.md) for current roadmap
+
+---
+
 **Timeline**: Nov 8-22, 2025 (2 weeks)
 **Status**: Phase 3 - Multi-Project Expansion (✅ Complete) | Phase 4 - Notion Command Center (Next)
 **Last Updated**: Nov 13, 2025

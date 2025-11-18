@@ -41,8 +41,10 @@ Welcome to the AI Assistant documentation! This index helps you find the right d
 ### 2. Project Planning & Tracking
 **Current status, decisions, and future work**
 - [project-state.md](project-state.md) - Current status + 20 major decisions
-- [roadmap.md](roadmap.md) - Future enhancements and priorities
+- [../ROADMAP.md](../ROADMAP.md) - **Unified roadmap at repo root** (all projects: Infrastructure, Legacy AI)
 - [documentation-roadmap.md](documentation-roadmap.md) - Documentation improvement plan
+
+**Archive**: Old roadmap saved at `context/roadmap-archive.md` for reference.
 
 ### 3. Development Guides
 **How to work with the codebase**
@@ -82,7 +84,7 @@ Welcome to the AI Assistant documentation! This index helps you find the right d
 **"What did I accomplish and what's next?"**
 1. Start with [context/philosophy-and-strategy.md](context/philosophy-and-strategy.md) - Understand the vision
 2. Review [project-state.md](project-state.md) - See current status
-3. Check [roadmap.md](roadmap.md) - Review priorities
+3. Check [../ROADMAP.md](../ROADMAP.md) - Review priorities (unified across all projects)
 4. Review [refactoring-plan.md](refactoring-plan.md) - Understand architecture
 5. Browse [walkthroughs/](walkthroughs/) - See how it actually works
 
@@ -137,7 +139,7 @@ Welcome to the AI Assistant documentation! This index helps you find the right d
 - **Maturity**: 3 days of data (early validation phase)
 
 ### Next Steps
-See [roadmap.md](roadmap.md) for:
+See [../ROADMAP.md](../ROADMAP.md) for:
 - Performance optimizations
 - New pipelines (email, calendar, text)
 - UI layer (draft mode, review queue)
@@ -179,7 +181,7 @@ See [roadmap.md](roadmap.md) for:
 |----------|-------|---------|
 | **Philosophy** | context/philosophy-and-strategy.md, context/one-pager-vision.md | Vision & strategy |
 | **Architecture** | technical-requirements.md, refactoring-plan.md | System design |
-| **Planning** | project-state.md, roadmap.md | Status & future |
+| **Planning** | project-state.md, ../ROADMAP.md | Status & future |
 | **Development** | cli-usage-guide.md, testing-roadmap.md | How to work |
 | **Milestones** | milestone-1.1-completion.md, phase-b-plan.md | Completed work |
 | **Fixes** | CRITICAL-BUG-FIX-PLAN.md, icon-mapping-analysis.md | Problem solving |
@@ -224,9 +226,10 @@ See [roadmap.md](roadmap.md) for:
 **Context Documents** (NEW):
 - `context/philosophy-and-strategy.md` - **Complete philosophy, vision, workflow loop, agent orchestration**
 - `context/one-pager-vision.md` - **Distilled one-pager for external feedback**
-- `context/roadmap.md` - Epic 2nd Brain Roadmap (synced from Notion)
+- `../ROADMAP.md` - **Unified roadmap at repo root** (all projects: Infrastructure, Legacy AI)
 - `context/implementation-plan.md` - Detailed Implementation Plan (synced from Notion)
 - `context/Systems_Thinking_Workbook__Energy___Voice-to-Notion.md` - Systems thinking frameworks
+- `context/one-pagers/` - **Initiative one-pagers** (context aggregation layer)
 
 **Product Walkthroughs** (NEW):
 - `walkthroughs/` - Demonstrations of how the system works in real-world usage

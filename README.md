@@ -245,20 +245,33 @@ python scripts/intelligent_router.py  # Test routing logic
 
 ## 🔮 Future Enhancements
 
-- Auto cleanup scheduling (7-day retention)
+See [ROADMAP.md](ROADMAP.md) for current priorities across all projects.
+
+Key upcoming features:
+- Mobile doc access (Notion sync)
+- RAG search across project docs
 - Email intelligence system
-- Multi-device support
-- Performance analytics
-- Advanced categorization
+- Calendar integration
+- Auto cleanup scheduling (7-day retention)
 
 ## 📚 Documentation
 
+- [ROADMAP.md](ROADMAP.md) - **Unified roadmap** (all projects: Infrastructure, Legacy AI)
 - [Documentation Index](docs/README.md) - Start here for all documentation
 - [Project State & Decisions](docs/project-state.md) - Current status and major decisions
 - [Technical Requirements](docs/technical-requirements.md) - System architecture
+- [One-Pagers](docs/context/one-pagers/) - Initiative context aggregation
 - [Refactoring Plan](docs/refactoring-plan.md) - Phase 1, 2, B, 5 complete
-- [Testing Roadmap](docs/testing-roadmap.md) - Testing strategy
-- [CLI Usage Guide](docs/cli-usage-guide.md) - Command-line reference
+
+## 🧠 Epic 2nd Brain Workflow
+
+This Voice-to-Notion pipeline is part of a larger "Epic 2nd Brain" infrastructure project that includes:
+- **Context Sync Bridge** - MCP-based agent coordination (Claude Chat + Claude Code)
+- **Unified roadmap** - Single source of truth across multiple projects
+- **Template-based documentation** - PRDs, tech requirements, session logs, one-pagers
+- **Git hooks** - Automatic Notion sync on commit
+
+See [ROADMAP.md](ROADMAP.md) for full project scope and current priorities.
 
 ## 🤝 Contributing
 
@@ -270,6 +283,6 @@ Private project for personal use.
 
 ---
 
-*Last Updated: November 5, 2025 - Phase 5 complete: Fully modular architecture with Notion Manager and Project Matcher refactored*
+*Last Updated: November 18, 2025 - Roadmap Architecture Improvements Phase 1 & 2 complete: Unified multi-project roadmap at repo root*
 
 

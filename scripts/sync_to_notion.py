@@ -45,6 +45,7 @@ logger = get_logger(__name__)
 # Notion database IDs (from environment)
 ROADMAP_DB_ID = os.getenv("NOTION_ROADMAP_DB")
 SESSIONS_DB_ID = os.getenv("NOTION_SESSIONS_DB")
+UNIFIED_ROADMAP_PAGE_ID = os.getenv("NOTION_UNIFIED_ROADMAP_PAGE")
 GITHUB_USERNAME = "dharan31chase"  # From git remote
 
 
@@ -67,6 +68,8 @@ class NotionSyncEngine:
             logger.warning("NOTION_ROADMAP_DB not set - roadmap updates will be skipped")
         if not SESSIONS_DB_ID:
             logger.warning("NOTION_SESSIONS_DB not set - session logging will be skipped")
+        if not UNIFIED_ROADMAP_PAGE_ID:
+            logger.warning("NOTION_UNIFIED_ROADMAP_PAGE not set - unified roadmap sync will be skipped")
 
     def extract_roadmap_refs(self, commit_msg: str) -> List[str]:
         """
@@ -314,6 +317,238 @@ class NotionSyncEngine:
             logger.error(f"Error creating session log: {e}")
             return None
 
+    def sync_unified_roadmap(self, files_changed: str) -> Optional[Dict]:
+        """
+        Sync ROADMAP.md to Notion unified roadmap page.
+
+        Only syncs if ROADMAP.md is in the changed files list.
+
+        Args:
+            files_changed: Comma-separated list of changed files
+
+        Returns:
+            Dict with sync result or None if not synced
+        """
+        if not UNIFIED_ROADMAP_PAGE_ID:
+            logger.info("Skipping unified roadmap sync (NOTION_UNIFIED_ROADMAP_PAGE not set)")
+            return None
+
+        # Check if ROADMAP.md was changed
+        files_list = files_changed.split(",")
+        roadmap_changed = any("ROADMAP.md" in f for f in files_list)
+
+        if not roadmap_changed:
+            logger.info("ROADMAP.md not in changed files - skipping sync")
+            return None
+
+        try:
+            # Read ROADMAP.md content
+            roadmap_path = project_root / "ROADMAP.md"
+            if not roadmap_path.exists():
+                logger.warning(f"ROADMAP.md not found at {roadmap_path}")
+                return None
+
+            with open(roadmap_path, 'r', encoding='utf-8') as f:
+                roadmap_content = f.read()
+
+            logger.info(f"Syncing ROADMAP.md ({len(roadmap_content)} chars) to Notion...")
+
+            # Clear existing page content first
+            # Get all existing blocks
+            existing_blocks = self.notion_client.blocks.children.list(
+                block_id=UNIFIED_ROADMAP_PAGE_ID
+            )
+
+            # Delete existing blocks
+            for block in existing_blocks.get("results", []):
+                try:
+                    self.notion_client.blocks.delete(block_id=block["id"])
+                except Exception as e:
+                    logger.warning(f"Could not delete block {block['id']}: {e}")
+
+            # Convert markdown to Notion blocks
+            blocks = self._markdown_to_notion_blocks(roadmap_content)
+
+            # Append new blocks to page
+            if blocks:
+                self.notion_client.blocks.children.append(
+                    block_id=UNIFIED_ROADMAP_PAGE_ID,
+                    children=blocks
+                )
+
+            # Get page URL
+            page = self.notion_client.pages.retrieve(page_id=UNIFIED_ROADMAP_PAGE_ID)
+            page_url = page.get("url", "")
+
+            logger.info(f"✓ Synced ROADMAP.md to Notion")
+            logger.info(f"  URL: {page_url}")
+
+            return {
+                "status": "success",
+                "url": page_url,
+                "blocks_created": len(blocks)
+            }
+
+        except Exception as e:
+            logger.error(f"Error syncing unified roadmap: {e}")
+            return {"status": "error", "message": str(e)}
+
+    def _markdown_to_notion_blocks(self, content: str) -> list:
+        """
+        Convert markdown to Notion blocks.
+
+        Supports:
+        - Headings (# ## ###)
+        - Paragraphs
+        - Bulleted lists (- or *)
+        - Tables (as code blocks for now)
+        - Horizontal rules (---)
+
+        Args:
+            content: Markdown content
+
+        Returns:
+            List of Notion block objects
+        """
+        blocks = []
+        lines = content.split("\n")
+        i = 0
+        in_table = False
+        table_lines = []
+
+        while i < len(lines):
+            line = lines[i]
+
+            # Detect table start (line with |)
+            if "|" in line and not in_table:
+                # Check if this is a table (has separator line)
+                if i + 1 < len(lines) and re.match(r'^[\|\s\-:]+$', lines[i + 1]):
+                    in_table = True
+                    table_lines = [line]
+                    i += 1
+                    continue
+
+            # Collect table lines
+            if in_table:
+                if "|" in line:
+                    table_lines.append(line)
+                    i += 1
+                    continue
+                else:
+                    # End of table - convert to code block
+                    in_table = False
+                    table_content = "\n".join(table_lines)
+                    blocks.append({
+                        "object": "block",
+                        "type": "code",
+                        "code": {
+                            "rich_text": [{"type": "text", "text": {"content": table_content}}],
+                            "language": "markdown"
+                        }
+                    })
+                    table_lines = []
+                    # Don't increment i, process current line
+
+            # Skip empty lines
+            if not line.strip():
+                i += 1
+                continue
+
+            # Horizontal rule
+            if line.strip() == "---":
+                blocks.append({
+                    "object": "block",
+                    "type": "divider",
+                    "divider": {}
+                })
+                i += 1
+                continue
+
+            # Heading 1
+            if line.startswith("# "):
+                blocks.append({
+                    "object": "block",
+                    "type": "heading_1",
+                    "heading_1": {
+                        "rich_text": [{"type": "text", "text": {"content": line[2:].strip()}}]
+                    }
+                })
+                i += 1
+                continue
+
+            # Heading 2
+            if line.startswith("## "):
+                blocks.append({
+                    "object": "block",
+                    "type": "heading_2",
+                    "heading_2": {
+                        "rich_text": [{"type": "text", "text": {"content": line[3:].strip()}}]
+                    }
+                })
+                i += 1
+                continue
+
+            # Heading 3
+            if line.startswith("### "):
+                blocks.append({
+                    "object": "block",
+                    "type": "heading_3",
+                    "heading_3": {
+                        "rich_text": [{"type": "text", "text": {"content": line[4:].strip()}}]
+                    }
+                })
+                i += 1
+                continue
+
+            # Bulleted list
+            if line.strip().startswith("- ") or line.strip().startswith("* "):
+                blocks.append({
+                    "object": "block",
+                    "type": "bulleted_list_item",
+                    "bulleted_list_item": {
+                        "rich_text": [{"type": "text", "text": {"content": line.strip()[2:].strip()}}]
+                    }
+                })
+                i += 1
+                continue
+
+            # Bold text line (like **Last Updated**: ...)
+            if line.strip().startswith("**") and "**:" in line:
+                blocks.append({
+                    "object": "block",
+                    "type": "paragraph",
+                    "paragraph": {
+                        "rich_text": [{"type": "text", "text": {"content": line.strip()}}]
+                    }
+                })
+                i += 1
+                continue
+
+            # Paragraph (default)
+            if line.strip():
+                blocks.append({
+                    "object": "block",
+                    "type": "paragraph",
+                    "paragraph": {
+                        "rich_text": [{"type": "text", "text": {"content": line.strip()}}]
+                    }
+                })
+            i += 1
+
+        # Handle any remaining table
+        if table_lines:
+            table_content = "\n".join(table_lines)
+            blocks.append({
+                "object": "block",
+                "type": "code",
+                "code": {
+                    "rich_text": [{"type": "text", "text": {"content": table_content}}],
+                    "language": "markdown"
+                }
+            })
+
+        return blocks
+
     def sync_commit(
         self,
         commit_msg: str,
@@ -338,6 +573,7 @@ class NotionSyncEngine:
         results = {
             "roadmap_updates": [],
             "session_log": None,
+            "unified_roadmap_sync": None,
             "success": True
         }
 
@@ -387,6 +623,11 @@ class NotionSyncEngine:
             roadmap_page_ids=roadmap_page_ids if roadmap_page_ids else None
         )
         results["session_log"] = session_log
+
+        # Sync unified roadmap if ROADMAP.md was changed
+        logger.info("\nChecking for unified roadmap sync...")
+        roadmap_sync = self.sync_unified_roadmap(files_changed)
+        results["unified_roadmap_sync"] = roadmap_sync
 
         logger.info("\n" + "=" * 60)
         logger.info("NOTION SYNC COMPLETE")

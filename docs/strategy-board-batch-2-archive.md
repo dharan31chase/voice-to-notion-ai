@@ -1,5 +1,11 @@
 # Strategy Board - Batch 2: Legacy AI & Voice-to-Notion Expansion
 
+**ARCHIVED**: 2025-11-18
+**Reason**: Replaced by unified `/ROADMAP.md` at repo root
+**See**: [/ROADMAP.md](../ROADMAP.md) for current roadmap
+
+---
+
 ## LEGACY AI INTEGRATION (3 Initiatives)
 
 ### Initiative 4: Multi-Project Expansion (Context Sync Bridge)
