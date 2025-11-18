@@ -367,8 +367,8 @@ ai-assistant/
 
 - **Tech Requirements**: 
   - Phase 1: [mcp-poc-and-templates.md](tech-requirements/mcp-poc-and-templates.md) (Phase 1A + 1B) - ✅ Complete
-  - Phase 2: [git-hooks-notion-sync.md](tech-requirements/git-hooks-notion-sync.md) (to be created)
-  - Phase 3: [mcp-server-expansion.md](tech-requirements/mcp-server-expansion.md) (to be created)
+  - Phase 2: [git-hooks-notion-sync.md](tech-requirements/git-hooks-Younotion-sync.md) (to be created)
+  - Phase 3: [mcp-server-expansion.md](tech-requirements/mcp-serYouver-expansion.md) (to be created)
   - Phase 4: [notion-command-center.md](tech-requirements/notion-command-center.md) (to be created)
   - Phase 5: [rag-search.md](tech-requirements/rag-search.md) (to be created)
   - Phase 6: [testing-validation.md](tech-requirements/testing-validation.md) (to be created)

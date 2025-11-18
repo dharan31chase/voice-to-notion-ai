@@ -205,6 +205,13 @@
       "status": "Ongoing",
       "aliases": [],
       "archived": false
+    },
+    "Ian & Emmi's Wedding": {
+      "name": "Ian & Emmi's Wedding",
+      "id": "2aa8369c-7305-806f-9b38-d41257721918",
+      "status": "Backlog",
+      "aliases": [],
+      "archived": false
     }
   },
   "aliases": {
@@ -263,12 +270,12 @@
     "steven wolff": "AMS Analytics Product Strategy"
   },
   "metadata": {
-    "last_fetch": "2025-11-10T15:56:38.752472",
+    "last_fetch": "2025-11-17T09:53:44.865692",
     "cache_age_minutes": 0,
     "source": "notion",
-    "total_projects": 20,
-    "fetch_duration_ms": 786,
-    "last_successful_fetch": "2025-11-10T15:56:38.752472",
+    "total_projects": 21,
+    "fetch_duration_ms": 669,
+    "last_successful_fetch": "2025-11-17T09:53:44.865692",
     "failed_fetch_attempts": 0
   }
 }

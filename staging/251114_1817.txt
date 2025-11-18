@@ -1,0 +1,284 @@
+From Carrie's Deep Dive Analysis, two key things that stand out are
+experiencing transition from active parenting to a retirement and legacy
+focused life stage. Two has significant family trauma and complexity in
+background. Stood out to me because a lot of the times people stop because they
+feel like the act of creation too challenging so like prompting with the
+right questions is really important and that's where like the questioning aspect
+comes in and for her voice native is the way because she finds writing too
+challenging. It's not how she thinks, she's not a journal keeper.
+Inheritance, this is the family legacy.
+I mean that could be a good sort of...
+Who's farting?
+I think that's yeah I think it could be a useful like marketing or messaging right
+like what is the inheritance you're leaving behind beyond just money.
+So this is the four forces table all right and
+Why is it not there? For all these customers, if they are a potential customer, the one thing that is clear is like they already have a need for this.
+I am not creating a need that doesn't exist. So they need to have gone through at least one phase where they're like hey I care about this and I'm solving for those people.
+So for her, she looked around five years back when she first started going to retirement phase and she had a lot of free time, the empty nesting.
+So she suddenly had a lot more time and she's like what am I doing with my life?
+And the other thing was her dad passed away when he was 62 and she was turning 62.
+And she's like I've already had more time with my kids than my dad had in his entire life.
+Right?
+So I think those kind of key stages is something to think about how it connects to what they want to do and whether we can solve that need for them.
+Understanding a customer is there are two things, right? Four things. Basically, they are in a current state where they're not creating anything or they're creating something that they don't like.
+Right? And so there's a push away from that. And then there is pull towards something. I want something better.
+And then there's like, oh, I don't know if this will solve my need. That's my anxiety.
+And the last one is like the habit, which is like I'm already doing this. I'm invested in this.
+So it's about like figuring out if there is a good balance that people are actually overcoming their anxiety, overcoming the status quo and saying, you know what?
+I hate my current solution and this solution still looks really promising enough to solve the thing that I'm struggling with.
+That's the only reason they would switch or they would actually adopt this product.
+I think I am like noticing vacancy. Like a lot of these people have a really big hole or gap and they really want that connection.
+But just life doesn't make them get that connection because they live in different areas.
+I've noticed this with Bob. I've noticed this with her, Callie.
+So it's distance. It's something that can bridge the gap between two people now and be a resource for them in the future.
+So it's not only about creating something that people use in 10 years and you're not here anymore.
+It's also about what connection does it facilitate here today with you and your kids.
+Oh, this is another key thing I noticed across multiple people, including yesterday I spoke to Sarah.
+Make sure the voice matches.
+People really want to make it feel like it's their output, not an AI generated output.
+How do you get to do that?
+Also, she is one of the people who is actually tried to use some of this and really didn't like the solution.
+So I think in terms of like motivation, transformation, witnessing for the creator, even narrating a transformation, like for Uncle Bob, this was true about the transformation that the war and coming back into seemed like a big key moment that he wanted to share.
+For Carrie, it was the same thing.
+Her transformation for Lanisha, she wanted her transformation to be seen.
+Like she's come so far and she wants her family to appreciate that.
+So transformation is a huge part of the story arc.
+I know I have that need.
+Like I like yesterday I was talking about being seen.
+It's like I have transformed so much.
+Why can't people give me credit for it?
+So I think transformation witnessing is a huge aspect of this.
+And then the vacancy filling.
+That's another thing, especially older generations feel this pinch a lot.
+This is truth preservation.
+I don't know if it's across multiple different people.
+I think these are really good product insights.
+They want the voice authenticity.
+So how do you train a model that is actually able to replicate and be do justice to the person creating it rather than just like, you know, making it all appear like a general thing.
+The second thing is like the guided structure.
+How do you prompt it?
+Like how can you teach it effective interviewing techniques?
+So if you're having a conversation, it's pausing, it's letting you respond and like finishing what you respond.
+If you could talk to someone, that's the pitch right there.
+That's where I think it's going to vary by customer though.
+Not everyone's going to want it to be a person that can talk to.
+Some of them are just going to want it to be.
+Yeah.
+Yeah, I agree.
+So I think re-engagement like this is also a key part of designing is like, I don't want this to be an app everyone goes to every single day.
+Like I don't want to compete with Facebook's and
+But is it going to be like, you want people to input over two years or you want them to input over a three month period?
+I want them to think of this as the shelling point or like the place to return to when something significant is happening in their life.
+Their birthdays.
+Parents funerals.
+Wedding days, like significant things.
+Birthdays are cyclical, like around like seasons changing.
+For the inputter or the receiver?
+For both?
+See, I have a very different intuition.
+Okay, then.
+I don't think anyone remembers that they have anything available to them for that long.
+I don't remember that I have an app on my phone in 10 years.
+I'm not going to remember it three years from now when it's my cousin's wedding.
+I'm not going to be like, oh, I'm going to Henry's wedding time to make a note about a wedding.
+I'm not going to remember that.
+That seems like an entirely too long time horizon.
+So, like, this is not from a customer interview.
+This is Jessica's intuition.
+It seems that having a dedicated time horizon for the inputting and the story capturing keeps it front of mind for people.
+Keeps them in the legacy building mindset to say, if I was going to give six months to write down, talk down my top memories, my top points, my top values, I can do it once every two weeks.
+But to me, having, like, Uncle Bob doesn't know the apps on his phone.
+He doesn't know what's on there if he hasn't used it in the last month.
+And so I don't feel that, especially if you're targeting older folks, I don't feel that an indefinite time horizon keeps their attention more than a dedicated time horizon.
+Because I think if they're invested in this concept, they're excited when it starts, and you can prompt these things.
+You can say, okay, well, when Henry gets married, what's the story you'd want to tell him?
+When it's Henry's 21st birthday, what's the story you'd want to tell him?
+And you can prompt those moments.
+But I really doubt that anyone would keep something active on their phone across multiple years.
+It's a good assessment.
+I don't, I think one, your phone itself will archive apps that you don't delete, that you don't use for a while.
+I don't know the answer to how much, how long it does that for.
+Yeah, but we're not there right now.
+Yeah, but what I'm saying is, I am not trying to...
+What you're notifying is a problem, we still haven't designed a solution.
+You think the app is an interface, so that's where you need to...
+Well, I'm talking about attention span.
+Okay.
+How do you keep someone's attention on this?
+My intuition, not from a single interview, is that if I went to Aunt Felice and said,
+Aunt Felice, I really want to make sure that we can write down your stories.
+And I said, can I call you once a month to do an interview?
+She would say yes to that for six months, as opposed to, can I call you once a year for the next six years?
+Because she doesn't even know that she has six years.
+Hmm.
+So I'm not talking about the app, the phone call, the whatever.
+I'm talking about the attention span for the person who's inputting the stories.
+Again, not from an interview, my intuition is that a shorter, concentrated delivery of information, as opposed to a longer, dispersed delivery of information, will keep them engaged.
+What about having, testing the option for both?
+Hear me out.
+No, you have to test.
+There are, I do think there should be a sense of urgency, especially for people who are old.
+And what I noticed from Sarah's session with her dad was, they had a ritual every week for the next year.
+And the pandemic enabled it, but that helped them feel like a sense of completion towards the project.
+That's one aspect of it.
+Yeah, it does have to be done at some point.
+And like, there is one completion part of the legacy.
+And then I'm talking also about a Carrie-like person, about like, creating legacy as it happens.
+Now, what I'm thinking, at least like hypothesizing as a solution is there are customers who know, and like, it's a key moment.
+It's like, hey, I want, I suddenly had this thought, it's my birthday, or I know it's a cousin Trevor's wedding in a few months and the whole family is going to come together.
+I want to ask this, or we are all together.
+And then suddenly, so we send a text or like an email the way they want it.
+And a link up here.
+The way who wants it?
+The storyteller or the person who asked them to tell the stories?
+However, no, the, the, the, the, the, the storyteller communicates.
+So it's, if it's email, they get it an email with a link, just say, Hey, it, the email comes from your cousin or the nephew.
+And that's it.
+So it's the cousin that said, today's my wedding.
+I want you to tell me a story.
+Yeah.
+So the motivation comes from the cousin, not the storyteller.
+Yeah, that's what I'm telling you.
+Yeah.
+But that's not the storyteller's attention span.
+What I'm talking about is the storyteller's attention span.
+We're talking about two different things.
+I hear you, what you're saying.
+I'm talking about a different use case.
+Okay.
+I hear the other use case.
+We've completed that.
+I agree with you.
+There should be a timeframe to the end of the legacy.
+And then to keep the engagement.
+And then you forget about it.
+The problem is that's what I don't want to happen.
+It's like those books, Fred's memoir.
+Now, because I asked, she picked it up from the shelf, Sarah.
+Otherwise it just gathers dust.
+Right.
+But for people who have completed this and who continue to live longer,
+there is still meaning being formed.
+That's fair.
+Right.
+And when those things happen and like the receivers,
+once they've gone through this whole exercise,
+they now know there is something that's capturing all of this.
+So on their birthdays, they ask these questions on like a very tough relationship.
+They actually ask these questions and say, how would you respond to this?
+Respond to this.
+So those things also get captured in a continuing way,
+but like more this disparate after.
+Right.
+Do you think that nobody will want that?
+I don't know because like, that's where I'm trying out.
+I don't understand your vision of this or maybe it's just still evolving.
+That's fine.
+But like, that is very different than a thing that asks 25 questions
+and records two and a half hours of content from a person.
+That's a package.
+That's a start to finish, close the loop.
+I have 25 questions answered by Aunt Felice.
+Then to say, Aunt Felice, you might get a random question once every year.
+But like, who has the right to motivate that?
+I'm saying, Aunt Felice, my first grandchild was born.
+I want you to send an audio recording of what you would tell my grandchild.
+Yeah.
+I don't know.
+Because that diffuses the responsibility for continued engagement.
+When it's, I know I have 25 questions to answer in the next six months,
+the storyteller owns that process.
+But then when you sign up Aunt Felice's 10 grandchildren
+to each be able to prompt her for a new question,
+no one feels the responsibility at the same time.
+It like diffuses the, there's both more potential moments for questions,
+and it diffuses responsibility for doing it.
+Okay.
+The problem you're saying is like, if you don't have that deadline,
+then people just won't know.
+And my thing is the app is pitched as this.
+To want to do your engagement, depending on your frequency,
+it just prompts you.
+And like someone will, like the family upvotes for instance,
+and then you, like they get a message and they do,
+or the family can go and interview in person, whatever happens.
+So over two years, you collect everything to build a memoir.
+And say the person you built the memoir for lives for 10 more years.
+Or there are other family members who are approaching that horizon.
+Right.
+A family is a continued living legacy.
+The family is intertwined.
+I'm trying to create a matrix of the family.
+Right.
+So this is basically, this will pass on to the next person.
+And how like today you go to Facebook whenever you think about,
+Hey, I want to know what my friends are up to.
+Or Instagram or whatever people use for doing that.
+I want this to be the place whenever there's a significant thing
+in the family happening after.
+Right.
+But they're going to it to ask it.
+What would Aunt Felice tell me on my, on my kid's birthday?
+Or they're going to it to ask, ask Aunt Felice to answer this new question.
+Those are two different things.
+Yes.
+They could do it for both.
+Hmm.
+And when they do it, it's not like you're, it's asking you to go to the app.
+It's you get a text or you get an email and fill it like in, because at the, one of the
+things that will people struggle with and most people struggle with in my opinion is,
+uh, like asking you to create a habit for a new thing, but understanding how they communicate
+and saying, Hey, you've got a question and that maybe the text directly comes from cousin
+Jeremy or whatever.
+Right.
+And, um, uh, it's the text is from them and say, click this link and just record yourself
+and you have time in the next week.
+And it is just a continued place where you can keep asking those questions.
+I mean, I like it.
+I like the concept.
+I suspect that will have less engagement.
+Again, intuition, not based on interviews because people don't remember things for a
+long time if it's not on the front of their mind.
+So if I'm cousin Jeremy and two years ago, you sent me the output of my great aunt and
+I got to hear her and I got to know that I have this resource to go to her.
+I'm not thinking about it two years later when I have a hard day.
+I'm not like, aunt Felice is still there.
+So I'm either calling her and I'm saying, wow, aunt Felice today was super tough.
+So I want to talk to you, but I'm probably not remembering an app I had two years ago or a,
+a output I had two years ago.
+That's just intuition.
+Again, total intuition.
+Let's test this out.
+Yeah.
+I think that's the fun part about this, but a set of questions around if you knew you had
+the opportunity to relay this information to the next generation, not only what would
+you pay for it, but how much time would you give it?
+Maybe you're already asking something.
+Mm-hmm.
+Can you repeat that?
+They need to answer one question and see the output of that one question and already like
+it before they know how it's going to become a bigger thing answering 25 questions.
+Mm-hmm.
+No?
+Mm-hmm.
+This is what I'm trying to say.
+What you are saying is it's a project driven and I'm saying is it depends on the trigger itself.
+Is it like birthdays, anniversaries, seasons, is it relational, grandchild milestones, family
+events, when, you know, graduation, you know, those kinds of places.
+We need to figure out what the actual solution is for the system to know it well.
+So it prompts them at the right time to say, Hey, what are you thinking?
+Mm-hmm.
+Right.
+But, and the thematic first memory of fear.
+And then I think the other thing is like understanding what they care about, like who are the primary
+topics, who are the key relationships, you know, like stories, those are like how you keep
+them engaged because people want to see stories and questions that they want to respond to.
+Mm-hmm.
+Not everyone wants to say what do you think is the meaning of life.
+Like maybe I would be interested in doing that.
+Sure.
+Sure.
+Yeah.
+Sure.
+It's good for the purposes only in hypạnh booming day.
+I have the ability to walk to sleep and people who apparently present and see your

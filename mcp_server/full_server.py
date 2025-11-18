@@ -366,6 +366,7 @@ def start_session(
     # Load roadmap
     repo_path = Path(project["root_path"])
     roadmap_paths = [
+        repo_path / "ROADMAP.md",
         repo_path / "docs" / "roadmap.md",
         repo_path / "docs" / "context" / "roadmap.md"
     ]

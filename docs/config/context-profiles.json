@@ -1,4 +1,31 @@
 {
   "_comment": "Learned context profiles per project and work stream. Auto-populated by start_session tool.",
-  "profiles": {}
+  "profiles": {
+    "Legacy AI": {
+      "customer-interviews": {
+        "created": "2025-11-17T20:47:55.349585+00:00",
+        "last_used": "2025-11-17T20:47:55.349585+00:00",
+        "usage_count": 1,
+        "files": [
+          {
+            "path": "research/customer-interviews/analyses/2025-ripanshi.md",
+            "type": "optional",
+            "added": "2025-11-17T20:47:55.349585+00:00"
+          }
+        ]
+      },
+      "synthesis": {
+        "created": "2025-11-17T21:26:18.799407+00:00",
+        "last_used": "2025-11-17T21:26:18.799407+00:00",
+        "usage_count": 1,
+        "files": [
+          {
+            "path": "research/customer-interviews/insights/segment-comparison-meta-analysis.md",
+            "type": "always",
+            "added": "2025-11-17T21:26:18.799407+00:00"
+          }
+        ]
+      }
+    }
+  }
 }

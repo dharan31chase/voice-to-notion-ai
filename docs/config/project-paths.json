@@ -39,12 +39,25 @@
       "folders_to_scan": [
         "docs/prd",
         "docs/sessions/claude-code",
-        "docs/context"
+        "docs/context",
+        "docs/insights/context-engineering"
       ],
       "always_files": [
         "docs/context/roadmap.md",
-        "docs/Systems_Thinking_Workbook.md"
-      ]
+        "docs/Systems_Thinking_Workbook.md",
+        "docs/insights/context-engineering/README.md"
+      ],
+      "workstreams": {
+        "context-engineering": {
+          "description": "Research and planning for context management strategies (RAG, prompt caching, etc.)",
+          "always_files": [
+            "docs/insights/context-engineering/README.md"
+          ],
+          "folders_with_latest": {
+            "docs/insights/context-engineering": 3
+          }
+        }
+      }
     }
   ]
 }
