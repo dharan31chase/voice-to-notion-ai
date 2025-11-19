@@ -1,7 +1,7 @@
 # Dharan's Roadmap: All Projects
 
 **Last Updated**: 2025-11-18
-**Current Focus**: Roadmap Architecture Improvements + Applied Context Engineering
+**Current Focus**: RAG Implementation for Legacy AI + Applied Context Engineering
 
 ---
 
@@ -9,10 +9,11 @@
 
 | Priority | Initiative | Project | Status | Owner | Target | One-Pager |
 |----------|-----------|---------|--------|-------|--------|-----------|
-| P0 | Roadmap Architecture Improvements | Infrastructure | ✅ Complete | Dharan | Nov 18 | [Link](docs/context/one-pagers/infrastructure/roadmap-architecture-improvements.md) |
+| P0 | RAG Implementation (Tier 1) - Legacy AI | Infrastructure | 🚀 In Progress | Dharan | Nov 22 | [Link](docs/context/one-pagers/infrastructure/rag-implementation-legacy-ai.md) |
 | P1 | Applied Context Engineering | Infrastructure | 🚀 In Progress | Dharan | Nov 22 | [Link](docs/context/one-pagers/infrastructure/context-engineering.md) |
 | P1 | Prototype Validation | Legacy AI | 🚀 In Progress | Dharan | Nov 25 | [Link](../legacy-ai/docs/context/one-pagers/prototype-validation.md) |
 | P1 | Customer Interview Analysis | Legacy AI | 🚀 In Progress | Dharan | Nov 25 | [Link](../legacy-ai/docs/context/one-pagers/customer-interview-analysis.md) |
+| P0 | Roadmap Architecture Improvements | Infrastructure | ✅ Complete | Dharan | Nov 18 | [Link](docs/context/one-pagers/infrastructure/roadmap-architecture-improvements.md) |
 | P1 | Context Sync Bridge | Infrastructure | ✅ Complete | Dharan | Nov 13 | [Link](docs/context/one-pagers/infrastructure/context-sync-bridge.md) |
 
 ## 📅 Near-Term Backlog (P2-P3, Weeks 3-4)
@@ -20,7 +21,6 @@
 | Priority | Initiative | Project | Status | Owner | Target | One-Pager |
 |----------|-----------|---------|--------|-------|--------|-----------|
 | P2 | Mobile Doc Access | Infrastructure | 🟢 Ready to Build | Dharan | Nov 29 | [Link](docs/context/one-pagers/infrastructure/mobile-doc-access.md) |
-| P2 | RAG Implementation (Tier 1) | Infrastructure | 🟢 Ready to Build | Dharan | Dec 6 | [Link](docs/context/one-pagers/infrastructure/rag-implementation.md) |
 | P3 | Notion Command Center | Infrastructure | 📋 Backlog | Dharan | Dec 13 | [Link](docs/context/one-pagers/infrastructure/notion-command-center.md) |
 | P3 | Switchback Time Tracking | Infrastructure | 📋 Backlog | Dharan | Dec 13 | - |
 
@@ -30,6 +30,7 @@
 |----------|-----------|---------|--------|-------|--------|-----------|
 | P4 | Template Enhancements | Legacy AI | 📋 Backlog | Dharan | Dec 20 | [Link](../legacy-ai/docs/context/one-pagers/template-enhancements.md) |
 | P4 | MCP Server Refactor | Infrastructure | 📋 Backlog | Dharan | Dec 27 | [Link](docs/context/one-pagers/infrastructure/mcp-server-refactor.md) |
+| P4 | RAG Expansion to Epic 2nd Brain | Infrastructure | 📋 Backlog | Dharan | When triggered | Note: 2-4 hours when Epic 2nd Brain crosses 200k tokens |
 | P5 | API Automation (Tier 3) | Infrastructure | 📋 Backlog | Dharan | Q2 2026 | [Link](docs/context/one-pagers/infrastructure/api-automation.md) |
 | P5 | Email Intelligence | Infrastructure | 📋 Backlog | Dharan | Jan 10 | [Link](docs/context/one-pagers/infrastructure/email-intelligence.md) |
 | P5 | Calendar Integration | Infrastructure | 📋 Backlog | Dharan | Jan 17 | [Link](docs/context/one-pagers/infrastructure/calendar-integration.md) |
@@ -46,17 +47,19 @@
 
 **Legacy AI (Business)**:
 - Interviews Complete: 5 / 30 target
-- Customer Insights Documented: 5 interviews analyzed
+- Customer Insights Corpus: 208k tokens (RAG implementation urgent ⚠️)
 - Prototype Decision: On track for Dec 15
 
 **Cost**:
 - Claude Max: $100/month (Desktop-first architecture)
-- Additional Costs: $0 (Tier 0-2 covered by Max)
+- Additional Costs: $0 (BGE local re-ranking, Chroma local - all free)
 
 ---
 
 ## 🔄 Recent Updates
 
+- **2025-11-18**: RAG Implementation PRD approved (v2) - moved from P2 to P0, Phase 1 starting this week
+- **2025-11-18**: RAG architecture: BGE local (privacy-first), header-based chunking, auto daily reindex
 - **2025-11-18**: Roadmap Architecture Improvements marked complete (Phases 1-3 done)
 - **2025-11-18**: Aligned ROADMAP.md with Strategy Board (nomenclature, status)
 - **2025-11-18**: Added Prototype Validation as P1 (Legacy AI, starting this week)
@@ -65,3 +68,20 @@
 - **2025-11-18**: Context Sync Bridge marked complete (core goals achieved)
 - **2025-11-13**: Multi-project expansion complete
 - **2025-11-11**: Strategy Board workflow complete
+
+---
+
+## 📝 Notes
+
+**RAG Implementation (P0 - Active This Week)**:
+- **Problem**: Legacy AI corpus at 208k tokens (over 200k limit), manual context loading taking 10-15 min/session
+- **Solution**: Hybrid RAG (BM25 + embeddings + BGE local re-ranking) for instant search (<1 sec)
+- **Phase 1**: Nov 18-22 (4 days, 10.5-12.5 hours)
+  - Day 1: Setup (Chroma, BGE, OpenAI API)
+  - Day 2: Indexing pipeline (header-based chunking, auto daily reindex)
+  - Day 3: Search implementation (BM25, semantic, BGE re-rank, MCP tools)
+  - Day 4: Testing & validation (accuracy >60%, Story 6 workflow)
+- **Phase 2**: Nov 25-29 (validation with real customer discovery sessions)
+- **Privacy**: 100% local processing (BGE local, no third-party APIs)
+- **Cost**: $100/month (no increase)
+- **Future**: Easy expansion to Epic 2nd Brain (2-4 hours when triggered)

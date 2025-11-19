@@ -1,0 +1,56 @@
+# RAG Configuration for Legacy AI
+# Location: ai-assistant/config/rag_config.yaml
+
+corpus:
+  path: "~/Documents/1. Projects/legacy-ai/research"
+  include_patterns:
+    - "**/*.md"
+    - "**/*.txt"
+  exclude_patterns:
+    - "**/.*"           # Hidden files
+    - "**/__pycache__"
+    - "**/node_modules"
+
+chunking:
+  max_chunk_tokens: 2000
+  min_chunk_tokens: 100
+  overlap_tokens: 200
+  header_levels: ["#", "##", "###"]
+
+embeddings:
+  model: "text-embedding-3-small"
+  batch_size: 100
+  max_retries: 3
+  retry_delay: 1.0
+  timeout: 30
+
+storage:
+  persist_directory: "~/.cache/legacy-ai-rag/chroma"
+  collection_name: "legacy_ai_interviews"
+
+bm25:
+  k1: 1.5
+  b: 0.75
+  persist_path: "~/.cache/legacy-ai-rag/bm25_index.pkl"
+
+reranker:
+  model: "BAAI/bge-reranker-base"
+  device: "mps"  # Apple Silicon GPU
+  batch_size: 32
+  max_length: 512
+  enabled: true
+
+search:
+  default_top_k: 5
+  bm25_candidates: 50
+  semantic_candidates: 50
+  rerank_candidates: 20
+  bm25_weight: 0.3
+  semantic_weight: 0.7
+  rrf_k: 60
+  default_rerank: true
+
+logging:
+  level: "INFO"
+  file: "~/.cache/legacy-ai-rag/rag.log"
+  format: "%(asctime)s - %(name)s - %(levelname)s - %(message)s"
