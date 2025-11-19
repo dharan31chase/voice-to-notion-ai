@@ -1,6 +1,7 @@
 # Voice-to-Notion AI Assistant - Project State & Decisions
 
-## Current Status (Multi-Project Expansion COMPLETE - November 13, 2025)
+## Current Status (RAG Implementation Days 1-3 - November 18, 2025)
+- ✅ **RAG System for Legacy AI:** Hybrid BM25 + semantic embeddings + BGE reranking (896 chunks, 274k tokens)
 - ✅ **Multi-Project Infrastructure:** MCP tools support Epic 2nd Brain AND Legacy AI with clean separation
 - ✅ **Complete automation pipeline:** Voice → AI Analysis → Organized Notion PARA content
 - ✅ **Configuration System:** YAML-based config with environment variable overrides (Milestone 1.1)
@@ -153,6 +154,41 @@
 - Zero sync failures for detailed commits going forward
 - Better workflow: summary visible, pointer to full details
 - Future-proof for any commit message length
+
+### 28. RAG System for Legacy AI Corpus (November 18, 2025)
+**Decision:** Implement hybrid RAG with BM25 + semantic embeddings + BGE reranking for customer discovery corpus
+**Rationale:**
+- Need instant access to 208k tokens of customer interviews without manual loading
+- Current workflow requires 10-15 min context loading per session
+- Hybrid approach captures both keyword matches and semantic meaning
+**Implementation:**
+- Header-based chunking with 200-token overlap (preserves document structure)
+- OpenAI text-embedding-3-small for semantic embeddings (1536 dimensions)
+- BM25 keyword search for exact term matching
+- Reciprocal Rank Fusion (RRF) to combine scores without normalization
+- BGE reranker (BAAI/bge-reranker-base) for final precision boost
+- Chroma vector database for persistent storage
+- launchd for daily 7am automatic reindexing
+**Architecture Components:**
+- `scripts/rag/chunker.py`: Header-based document chunking
+- `scripts/rag/embeddings.py`: OpenAI embeddings with batch/cache/retry
+- `scripts/rag/storage.py`: Chroma vector store wrapper
+- `scripts/rag/bm25_index.py`: BM25 keyword search
+- `scripts/rag/searcher.py`: Hybrid search with RRF fusion
+- `scripts/rag/reranker.py`: BGE cross-encoder reranking
+- `scripts/rag/mcp_tools.py`: MCP tools for Claude Code integration
+**Indexing Results:**
+- 25 documents → 896 chunks → 274,882 tokens
+- Processing time: ~10 seconds
+- Storage: ~/.cache/legacy-ai-rag/
+**Trade-offs:**
+- More complex than simple keyword search
+- Requires OpenAI API for embeddings (cost)
+- BGE model is 1.3GB (memory)
+**Result:**
+- Sub-second search across all customer interviews
+- High-quality results combining keyword and semantic matching
+- Day 4 pending: Testing and MCP server configuration
 
 ### 27. Pre-Cleaning Transcript Excerpts for Title Generation (November 13, 2025)
 **Decision:** Clean transcription garbage BEFORE sending to GPT for title generation, not after
@@ -668,4 +704,4 @@
 - **Error Recovery:** Robust handling of corrupted files and JSON serialization issues
 
 ---
-*Last Updated: November 6, 2025 - Phase 5 Complete + Bug Fixes (Category Detection, Staging, Notion Chunking)*
+*Last Updated: November 18, 2025 - RAG Implementation Days 1-3 Complete (Hybrid BM25 + Semantic + BGE Reranking)*
