@@ -26,6 +26,45 @@
           }
         ]
       }
+    },
+    "Epic 2nd Brain": {
+      "roadmap-prioritization": {
+        "created": "2025-11-18T19:20:31.407020+00:00",
+        "last_used": "2025-11-18T19:20:31.407020+00:00",
+        "usage_count": 1,
+        "files": [
+          {
+            "path": "docs/context/one-pager-vision.md",
+            "type": "always",
+            "added": "2025-11-18T19:20:31.407020+00:00"
+          },
+          {
+            "path": "docs/context/documentation-roadmap.md",
+            "type": "always",
+            "added": "2025-11-18T19:20:31.407020+00:00"
+          },
+          {
+            "path": "docs/context/testing-roadmap.md",
+            "type": "always",
+            "added": "2025-11-18T19:20:31.407020+00:00"
+          },
+          {
+            "path": "docs/context/roadmap-archive.md",
+            "type": "optional",
+            "added": "2025-11-18T19:20:31.407020+00:00"
+          },
+          {
+            "path": "docs/sessions/claude-code/2025-11-08-mcp-poc-and-templates.md",
+            "type": "exemplar",
+            "added": "2025-11-18T19:20:31.407020+00:00"
+          },
+          {
+            "path": "docs/sessions/claude-code/2025-11-13-multi-project-expansion-validation.md",
+            "type": "synthesis",
+            "added": "2025-11-18T19:20:31.407020+00:00"
+          }
+        ]
+      }
     }
   }
 }
