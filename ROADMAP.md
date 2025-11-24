@@ -1,6 +1,6 @@
 # Dharan's Roadmap: All Projects
 
-**Last Updated**: 2025-11-18
+**Last Updated**: 2025-11-24
 **Current Focus**: RAG Implementation for Legacy AI + Applied Context Engineering
 
 ---
@@ -10,7 +10,7 @@
 | Priority | Initiative | Project | Status | Owner | Target | One-Pager |
 |----------|-----------|---------|--------|-------|--------|-----------|
 | P0 | RAG Implementation (Tier 1) - Legacy AI | Infrastructure | 🚀 In Progress | Dharan | Nov 22 | [Link](docs/context/one-pagers/infrastructure/rag-implementation-legacy-ai.md) |
-| P1 | Applied Context Engineering | Infrastructure | 🚀 In Progress | Dharan | Nov 22 | [Link](docs/context/one-pagers/infrastructure/context-engineering.md) |
+| P1 | Applied Context Engineering | Infrastructure | 🚀 In Progress | Dharan | Dec 13 | [Link](docs/context/one-pagers/infrastructure/context-engineering.md) |
 | P1 | Prototype Validation | Legacy AI | 🚀 In Progress | Dharan | Nov 25 | [Link](../legacy-ai/docs/context/one-pagers/prototype-validation.md) |
 | P1 | Customer Interview Analysis | Legacy AI | 🚀 In Progress | Dharan | Nov 25 | [Link](../legacy-ai/docs/context/one-pagers/customer-interview-analysis.md) |
 | P0 | Roadmap Architecture Improvements | Infrastructure | ✅ Complete | Dharan | Nov 18 | [Link](docs/context/one-pagers/infrastructure/roadmap-architecture-improvements.md) |
@@ -20,9 +20,9 @@
 
 | Priority | Initiative | Project | Status | Owner | Target | One-Pager |
 |----------|-----------|---------|--------|-------|--------|-----------|
-| P2 | Mobile Doc Access | Infrastructure | 🟢 Ready to Build | Dharan | Nov 29 | [Link](docs/context/one-pagers/infrastructure/mobile-doc-access.md) |
-| P3 | Notion Command Center | Infrastructure | 📋 Backlog | Dharan | Dec 13 | [Link](docs/context/one-pagers/infrastructure/notion-command-center.md) |
-| P3 | Switchback Time Tracking | Infrastructure | 📋 Backlog | Dharan | Dec 13 | - |
+| P2 | Mobile Doc Access | Infrastructure | 🟢 Ready to Build | Dharan | Dec 20 | [Link](docs/context/one-pagers/infrastructure/mobile-doc-access.md) |
+| P3 | Notion Command Center | Infrastructure | 📋 Backlog | Dharan | Dec 27 | [Link](docs/context/one-pagers/infrastructure/notion-command-center.md) |
+| P3 | Switchback Time Tracking | Infrastructure | 📋 Backlog | Dharan | Dec 27 | - |
 
 ## 🔮 Future Work (P4+, Weeks 5+)
 
@@ -58,6 +58,9 @@
 
 ## 🔄 Recent Updates
 
+- **2025-11-24**: Applied Context Engineering extended to Dec 13 (Phase 1 architecture complete, Phases 2-4 approved)
+- **2025-11-24**: Live Context Control PRD created (context visibility, smart discovery, learning loop)
+- **2025-11-24**: Systems architecture diagrams complete (Levels 1-3: System Context, Container Architecture, Leverage Points)
 - **2025-11-18**: RAG Implementation PRD approved (v2) - moved from P2 to P0, Phase 1 starting this week
 - **2025-11-18**: RAG architecture: BGE local (privacy-first), header-based chunking, auto daily reindex
 - **2025-11-18**: Roadmap Architecture Improvements marked complete (Phases 1-3 done)
@@ -85,3 +88,20 @@
 - **Privacy**: 100% local processing (BGE local, no third-party APIs)
 - **Cost**: $100/month (no increase)
 - **Future**: Easy expansion to Epic 2nd Brain (2-4 hours when triggered)
+
+**Applied Context Engineering (P1 - Active, Extended to Dec 13)**:
+- **Phase 1**: ✅ Systems Architecture Complete (Nov 18-24)
+  - Level 1-3 diagrams (System Context, Container Architecture, Leverage Points)
+  - Level 4 (component deep dives) will iterate over time
+- **Phase 2**: Context Visibility + Control (Nov 25-29, 6-8 hours)
+  - list_context(), reload_context() tools
+  - Always-load core files (ROADMAP.md)
+  - Usage tracking (silent, for Phase 4 learning)
+- **Phase 3**: Smart Discovery (Dec 2-6, 6-8 hours)
+  - search_repo(), list_files() tools
+  - Semantic search over repo
+- **Phase 4**: Learning Loop (Dec 9-13, 4-6 hours)
+  - Analyze usage data, auto-update profiles
+  - Suggestion accuracy: 30% → 80%
+- **Time saved**: 100-140 min/week across all phases
+- **Details**: [Live Context Control PRD](docs/prd/live-context-control.md)

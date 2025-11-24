@@ -1,7 +1,8 @@
 # Voice-to-Notion AI Assistant - Project State & Decisions
 
-## Current Status (RAG Implementation Days 1-3 - November 18, 2025)
-- ✅ **RAG System for Legacy AI:** Hybrid BM25 + semantic embeddings + BGE reranking (896 chunks, 274k tokens)
+## Current Status (RAG Implementation Complete - November 24, 2025)
+- ✅ **RAG System for Legacy AI:** Hybrid BM25 + semantic embeddings (896 chunks, 274k tokens, 1.5s avg search)
+- ✅ **RAG Testing Complete:** Performance validated, MCP configured, production-ready
 - ✅ **Multi-Project Infrastructure:** MCP tools support Epic 2nd Brain AND Legacy AI with clean separation
 - ✅ **Complete automation pipeline:** Voice → AI Analysis → Organized Notion PARA content
 - ✅ **Configuration System:** YAML-based config with environment variable overrides (Milestone 1.1)
@@ -155,8 +156,8 @@
 - Better workflow: summary visible, pointer to full details
 - Future-proof for any commit message length
 
-### 28. RAG System for Legacy AI Corpus (November 18, 2025)
-**Decision:** Implement hybrid RAG with BM25 + semantic embeddings + BGE reranking for customer discovery corpus
+### 28. RAG System for Legacy AI Corpus (November 18-24, 2025)
+**Decision:** Implement hybrid RAG with BM25 + semantic embeddings for customer discovery corpus
 **Rationale:**
 - Need instant access to 208k tokens of customer interviews without manual loading
 - Current workflow requires 10-15 min context loading per session
@@ -166,29 +167,38 @@
 - OpenAI text-embedding-3-small for semantic embeddings (1536 dimensions)
 - BM25 keyword search for exact term matching
 - Reciprocal Rank Fusion (RRF) to combine scores without normalization
-- BGE reranker (BAAI/bge-reranker-base) for final precision boost
 - Chroma vector database for persistent storage
 - launchd for daily 7am automatic reindexing
+- MCP server configured in Claude Desktop (legacy-ai-rag)
 **Architecture Components:**
 - `scripts/rag/chunker.py`: Header-based document chunking
 - `scripts/rag/embeddings.py`: OpenAI embeddings with batch/cache/retry
 - `scripts/rag/storage.py`: Chroma vector store wrapper
 - `scripts/rag/bm25_index.py`: BM25 keyword search
 - `scripts/rag/searcher.py`: Hybrid search with RRF fusion
-- `scripts/rag/reranker.py`: BGE cross-encoder reranking
-- `scripts/rag/mcp_tools.py`: MCP tools for Claude Code integration
+- `scripts/rag/reranker.py`: BGE cross-encoder reranking (disabled due to HuggingFace timeout)
+- `scripts/rag/mcp_tools.py`: MCP tools for Claude Chat integration
+- `scripts/rag/mcp_server.py`: MCP server for Claude Desktop
 **Indexing Results:**
 - 25 documents → 896 chunks → 274,882 tokens
 - Processing time: ~10 seconds
-- Storage: ~/.cache/legacy-ai-rag/
+- Storage: ~/.cache/legacy-ai-rag/ (51MB)
+**Testing Results (November 24, 2025):**
+- Performance: 1.5s average (cold cache), <100ms (warm cache)
+- Accuracy: Keyword, semantic, and filtered searches all working
+- Coverage: 11 unique documents in top 20 results
+- Edge cases: Empty queries, network errors handled gracefully
+- MCP Integration: Configured and ready for Claude Chat
 **Trade-offs:**
 - More complex than simple keyword search
-- Requires OpenAI API for embeddings (cost)
-- BGE model is 1.3GB (memory)
+- Requires OpenAI API for embeddings (cost: ~$0.02/1M tokens)
+- Performance slightly above <1s target (1.5s), but 600x faster than manual
+- BGE reranker disabled temporarily (HuggingFace timeout), hybrid search quality still good
 **Result:**
-- Sub-second search across all customer interviews
-- High-quality results combining keyword and semantic matching
-- Day 4 pending: Testing and MCP server configuration
+- ✅ Production-ready RAG system for Legacy AI customer discovery
+- ✅ 600x faster than manual context loading (15 min → 1.5s)
+- ✅ Full corpus coverage (100% vs 15-20% with manual loading)
+- ✅ Cross-interview synthesis now possible (was impossible before)
 
 ### 27. Pre-Cleaning Transcript Excerpts for Title Generation (November 13, 2025)
 **Decision:** Clean transcription garbage BEFORE sending to GPT for title generation, not after
