@@ -1,0 +1,698 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Epic 2nd Brain - How the Pieces Connect</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, sans-serif;
+            background: #f8fafc;
+            min-height: 100vh;
+            padding: 32px;
+        }
+        
+        .container {
+            max-width: 1600px;
+            margin: 0 auto;
+        }
+        
+        header {
+            text-align: center;
+            margin-bottom: 40px;
+        }
+        
+        h1 {
+            color: #0f172a;
+            font-size: 1.75rem;
+            margin-bottom: 8px;
+        }
+        
+        .subtitle {
+            color: #64748b;
+            font-size: 1rem;
+        }
+        
+        /* Main Grid Layout */
+        .architecture {
+            display: grid;
+            grid-template-columns: 200px 1fr 200px;
+            grid-template-rows: auto auto auto;
+            gap: 24px;
+        }
+        
+        /* Section Styling */
+        .section {
+            background: white;
+            border-radius: 16px;
+            padding: 20px;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.08);
+        }
+        
+        .section-label {
+            font-size: 0.7rem;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            color: #94a3b8;
+            margin-bottom: 16px;
+            font-weight: 600;
+        }
+        
+        /* External Actors - Left Column */
+        .actors {
+            grid-column: 1;
+            grid-row: 1 / 4;
+            display: flex;
+            flex-direction: column;
+            gap: 16px;
+        }
+        
+        .actor {
+            background: white;
+            border-radius: 12px;
+            padding: 16px;
+            text-align: center;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.08);
+            border: 2px solid #e2e8f0;
+        }
+        
+        .actor-icon {
+            font-size: 2rem;
+            margin-bottom: 8px;
+        }
+        
+        .actor-name {
+            font-weight: 600;
+            color: #0f172a;
+            font-size: 0.9rem;
+        }
+        
+        .actor-desc {
+            font-size: 0.75rem;
+            color: #64748b;
+            margin-top: 4px;
+        }
+        
+        .actor.you {
+            border-color: #3b82f6;
+            background: #eff6ff;
+        }
+        
+        /* Shared State - Top */
+        .shared-state {
+            grid-column: 2;
+            grid-row: 1;
+            background: linear-gradient(135deg, #fef3c7 0%, #fde68a 100%);
+            border: 2px solid #f59e0b;
+        }
+        
+        .state-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 12px;
+        }
+        
+        .state-item {
+            background: white;
+            border-radius: 10px;
+            padding: 14px;
+            text-align: center;
+        }
+        
+        .state-icon {
+            font-size: 1.5rem;
+            margin-bottom: 6px;
+        }
+        
+        .state-name {
+            font-size: 0.8rem;
+            font-weight: 600;
+            color: #0f172a;
+        }
+        
+        .state-details {
+            font-size: 0.7rem;
+            color: #64748b;
+            margin-top: 4px;
+        }
+        
+        .state-badge {
+            display: inline-block;
+            background: #f59e0b;
+            color: white;
+            font-size: 0.6rem;
+            padding: 2px 8px;
+            border-radius: 10px;
+            margin-top: 6px;
+            font-weight: 600;
+        }
+        
+        /* Interface Layer - Middle Row Top */
+        .interface-layer {
+            grid-column: 2;
+            grid-row: 2;
+            background: linear-gradient(135deg, #dbeafe 0%, #bfdbfe 100%);
+            border: 2px solid #3b82f6;
+        }
+        
+        .interface-grid {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 12px;
+        }
+        
+        .interface-item {
+            background: white;
+            border-radius: 10px;
+            padding: 14px;
+            text-align: center;
+        }
+        
+        .interface-item.mcp-main {
+            border-left: 3px solid #8b5cf6;
+        }
+        
+        .interface-item.mcp-rag {
+            border-left: 3px solid #10b981;
+        }
+        
+        .interface-item.git-hooks {
+            border-left: 3px solid #f59e0b;
+        }
+        
+        .interface-item.filesystem {
+            border-left: 3px solid #6b7280;
+        }
+        
+        .interface-icon {
+            font-size: 1.3rem;
+            margin-bottom: 6px;
+        }
+        
+        .interface-name {
+            font-size: 0.8rem;
+            font-weight: 600;
+            color: #0f172a;
+        }
+        
+        .interface-details {
+            font-size: 0.7rem;
+            color: #64748b;
+            margin-top: 4px;
+        }
+        
+        .tool-count {
+            display: inline-block;
+            background: #3b82f6;
+            color: white;
+            font-size: 0.6rem;
+            padding: 2px 8px;
+            border-radius: 10px;
+            margin-top: 6px;
+            font-weight: 600;
+        }
+        
+        /* Processing Subsystems - Middle Row Bottom */
+        .subsystems {
+            grid-column: 2;
+            grid-row: 3;
+            background: linear-gradient(135deg, #1e293b 0%, #334155 100%);
+            border: none;
+        }
+        
+        .subsystems .section-label {
+            color: #94a3b8;
+        }
+        
+        .subsystem-grid {
+            display: grid;
+            grid-template-columns: repeat(5, 1fr);
+            gap: 12px;
+        }
+        
+        .subsystem {
+            background: rgba(255,255,255,0.1);
+            border-radius: 10px;
+            padding: 14px;
+            text-align: center;
+            transition: background 0.2s;
+        }
+        
+        .subsystem:hover {
+            background: rgba(255,255,255,0.15);
+        }
+        
+        .subsystem-icon {
+            font-size: 1.5rem;
+            margin-bottom: 8px;
+        }
+        
+        .subsystem-name {
+            font-size: 0.8rem;
+            font-weight: 600;
+            color: white;
+        }
+        
+        .subsystem-desc {
+            font-size: 0.65rem;
+            color: #94a3b8;
+            margin-top: 4px;
+            line-height: 1.3;
+        }
+        
+        /* External APIs - Right Column */
+        .apis {
+            grid-column: 3;
+            grid-row: 1 / 4;
+            display: flex;
+            flex-direction: column;
+            gap: 16px;
+        }
+        
+        .api {
+            background: white;
+            border-radius: 12px;
+            padding: 16px;
+            text-align: center;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.08);
+            border: 2px solid #e2e8f0;
+        }
+        
+        .api-icon {
+            font-size: 1.5rem;
+            margin-bottom: 8px;
+        }
+        
+        .api-name {
+            font-weight: 600;
+            color: #0f172a;
+            font-size: 0.85rem;
+        }
+        
+        .api-purpose {
+            font-size: 0.7rem;
+            color: #64748b;
+            margin-top: 4px;
+        }
+        
+        /* Connection Lines Legend */
+        .legend {
+            margin-top: 32px;
+            background: white;
+            border-radius: 12px;
+            padding: 20px;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.08);
+        }
+        
+        .legend h3 {
+            font-size: 0.8rem;
+            color: #64748b;
+            margin-bottom: 16px;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+        
+        .legend-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+            gap: 16px;
+        }
+        
+        .legend-section h4 {
+            font-size: 0.75rem;
+            color: #0f172a;
+            margin-bottom: 10px;
+            font-weight: 600;
+        }
+        
+        .legend-item {
+            display: flex;
+            align-items: flex-start;
+            gap: 10px;
+            padding: 8px 0;
+            border-bottom: 1px solid #f1f5f9;
+            font-size: 0.8rem;
+        }
+        
+        .legend-item:last-child {
+            border-bottom: none;
+        }
+        
+        .legend-arrow {
+            font-weight: 600;
+            min-width: 40px;
+            color: #64748b;
+        }
+        
+        .legend-text {
+            color: #334155;
+            line-height: 1.4;
+        }
+        
+        .legend-text strong {
+            color: #0f172a;
+        }
+        
+        /* Flow Annotations */
+        .flows-section {
+            margin-top: 24px;
+            background: white;
+            border-radius: 12px;
+            padding: 20px;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.08);
+        }
+        
+        .flows-section h3 {
+            font-size: 0.8rem;
+            color: #64748b;
+            margin-bottom: 16px;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+        
+        .flow-list {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 16px;
+        }
+        
+        .flow-item {
+            display: flex;
+            gap: 12px;
+            padding: 12px;
+            background: #f8fafc;
+            border-radius: 8px;
+        }
+        
+        .flow-num {
+            background: #1e293b;
+            color: white;
+            width: 24px;
+            height: 24px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 0.75rem;
+            font-weight: 600;
+            flex-shrink: 0;
+        }
+        
+        .flow-content h4 {
+            font-size: 0.85rem;
+            color: #0f172a;
+            margin-bottom: 4px;
+        }
+        
+        .flow-content p {
+            font-size: 0.75rem;
+            color: #64748b;
+            line-height: 1.4;
+        }
+        
+        .flow-path {
+            font-family: monospace;
+            font-size: 0.7rem;
+            color: #94a3b8;
+            margin-top: 4px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>Epic 2nd Brain — How the Pieces Connect</h1>
+            <p class="subtitle">Diagram B: Complete Architecture for Builders</p>
+        </header>
+        
+        <div class="architecture">
+            <!-- External Actors - Left -->
+            <div class="actors">
+                <div class="section-label">External Actors</div>
+                
+                <div class="actor you">
+                    <div class="actor-icon">👤</div>
+                    <div class="actor-name">You (Dharan)</div>
+                    <div class="actor-desc">Voice notes, commands, decisions</div>
+                </div>
+                
+                <div class="actor">
+                    <div class="actor-icon">🎙️</div>
+                    <div class="actor-name">Sony Recorder</div>
+                    <div class="actor-desc">USB mount → .mp3 files</div>
+                </div>
+                
+                <div class="actor">
+                    <div class="actor-icon">💬</div>
+                    <div class="actor-name">Claude Chat</div>
+                    <div class="actor-desc">Strategy, planning via MCP</div>
+                </div>
+                
+                <div class="actor">
+                    <div class="actor-icon">⚡</div>
+                    <div class="actor-name">Claude Code</div>
+                    <div class="actor-desc">Implementation via filesystem</div>
+                </div>
+            </div>
+            
+            <!-- Shared State - Top Center -->
+            <div class="section shared-state">
+                <div class="section-label">Shared State (Read + Write)</div>
+                <div class="state-grid">
+                    <div class="state-item">
+                        <div class="state-icon">📋</div>
+                        <div class="state-name">Notion</div>
+                        <div class="state-details">5 databases</div>
+                        <div class="state-badge">READ + WRITE</div>
+                    </div>
+                    <div class="state-item">
+                        <div class="state-icon">📂</div>
+                        <div class="state-name">Git Repo</div>
+                        <div class="state-details">docs, PRDs, sessions</div>
+                        <div class="state-badge">READ + WRITE</div>
+                    </div>
+                    <div class="state-item">
+                        <div class="state-icon">🗄️</div>
+                        <div class="state-name">RAG Index</div>
+                        <div class="state-details">ChromaDB + BM25</div>
+                        <div class="state-badge">READ + WRITE</div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Interface Layer - Middle Center -->
+            <div class="section interface-layer">
+                <div class="section-label">Interface Layer (How Things Get In/Out)</div>
+                <div class="interface-grid">
+                    <div class="interface-item mcp-main">
+                        <div class="interface-icon">🔌</div>
+                        <div class="interface-name">MCP Server #1</div>
+                        <div class="interface-details">Main server for Claude Chat</div>
+                        <div class="tool-count">9 tools</div>
+                    </div>
+                    <div class="interface-item mcp-rag">
+                        <div class="interface-icon">🔍</div>
+                        <div class="interface-name">MCP Server #2</div>
+                        <div class="interface-details">RAG search server</div>
+                        <div class="tool-count">3 tools</div>
+                    </div>
+                    <div class="interface-item git-hooks">
+                        <div class="interface-icon">🪝</div>
+                        <div class="interface-name">Git Hooks</div>
+                        <div class="interface-details">post-commit trigger</div>
+                        <div class="tool-count">Auto-sync</div>
+                    </div>
+                    <div class="interface-item filesystem">
+                        <div class="interface-icon">📁</div>
+                        <div class="interface-name">File System</div>
+                        <div class="interface-details">Direct read/write</div>
+                        <div class="tool-count">Claude Code</div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Processing Subsystems - Bottom Center -->
+            <div class="section subsystems">
+                <div class="section-label">Processing Subsystems</div>
+                <div class="subsystem-grid">
+                    <div class="subsystem">
+                        <div class="subsystem-icon">🎙️</div>
+                        <div class="subsystem-name">Voice Pipeline</div>
+                        <div class="subsystem-desc">8 stages: USB → transcribe → analyze → upload</div>
+                    </div>
+                    <div class="subsystem">
+                        <div class="subsystem-icon">🤖</div>
+                        <div class="subsystem-name">AI Processing</div>
+                        <div class="subsystem-desc">4 routers: project, duration, tags, icons</div>
+                    </div>
+                    <div class="subsystem">
+                        <div class="subsystem-icon">🔄</div>
+                        <div class="subsystem-name">Notion Sync</div>
+                        <div class="subsystem-desc">Git commits → Roadmap + Sessions DBs</div>
+                    </div>
+                    <div class="subsystem">
+                        <div class="subsystem-icon">🔍</div>
+                        <div class="subsystem-name">RAG Search</div>
+                        <div class="subsystem-desc">BM25 + semantic + BGE rerank</div>
+                    </div>
+                    <div class="subsystem">
+                        <div class="subsystem-icon">📂</div>
+                        <div class="subsystem-name">Context Loader</div>
+                        <div class="subsystem-desc">Intelligent file selection + profiles</div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- External APIs - Right -->
+            <div class="apis">
+                <div class="section-label">External APIs</div>
+                
+                <div class="api">
+                    <div class="api-icon">⚡</div>
+                    <div class="api-name">Groq API</div>
+                    <div class="api-purpose">Transcription (10x faster)</div>
+                </div>
+                
+                <div class="api">
+                    <div class="api-icon">🤖</div>
+                    <div class="api-name">OpenAI API</div>
+                    <div class="api-purpose">GPT-4 + Embeddings</div>
+                </div>
+                
+                <div class="api">
+                    <div class="api-icon">📋</div>
+                    <div class="api-name">Notion API</div>
+                    <div class="api-purpose">Database CRUD</div>
+                </div>
+                
+                <div class="api">
+                    <div class="api-icon">🐙</div>
+                    <div class="api-name">GitHub API</div>
+                    <div class="api-purpose">Cloud backup</div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Data Flows -->
+        <div class="flows-section">
+            <h3>🔀 Data Flows (How Information Moves)</h3>
+            <div class="flow-list">
+                <div class="flow-item">
+                    <div class="flow-num">1</div>
+                    <div class="flow-content">
+                        <h4>Voice → Notion</h4>
+                        <p>Sony recorder → Voice Pipeline → AI Processing → Notion Tasks/Notes</p>
+                        <div class="flow-path">Batch: 5-15 min for 10-20 recordings</div>
+                    </div>
+                </div>
+                <div class="flow-item">
+                    <div class="flow-num">2</div>
+                    <div class="flow-content">
+                        <h4>Git → Notion</h4>
+                        <p>Commit [ROADMAP-X] → Git Hook → Notion Sync → Roadmap + Sessions</p>
+                        <div class="flow-path">Per commit: 2-5 sec (blocking)</div>
+                    </div>
+                </div>
+                <div class="flow-item">
+                    <div class="flow-num">3</div>
+                    <div class="flow-content">
+                        <h4>Session Start (Claude Chat)</h4>
+                        <p>start_session() → MCP #1 → Context Loader → Read Notion + Repo → Context</p>
+                        <div class="flow-path">Per session: 3-5 sec</div>
+                    </div>
+                </div>
+                <div class="flow-item">
+                    <div class="flow-num">4</div>
+                    <div class="flow-content">
+                        <h4>RAG Search</h4>
+                        <p>Query → MCP #2 → RAG Search → ChromaDB + BM25 → Rerank → Results</p>
+                        <div class="flow-path">Per search: ~500ms</div>
+                    </div>
+                </div>
+                <div class="flow-item">
+                    <div class="flow-num">5</div>
+                    <div class="flow-content">
+                        <h4>Claude Code → Repo</h4>
+                        <p>Write file → File System → Git Repo → Commit → Flow #2 triggers</p>
+                        <div class="flow-path">Direct filesystem access</div>
+                    </div>
+                </div>
+                <div class="flow-item">
+                    <div class="flow-num">6</div>
+                    <div class="flow-content">
+                        <h4>Handoff (Chat → Code)</h4>
+                        <p>end_session() → MCP #1 → Write handoff.md → <strong>Manual copy-paste</strong></p>
+                        <div class="flow-path">⚠️ Friction: Manual step required</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Connection Legend -->
+        <div class="legend">
+            <h3>🔗 Connection Types</h3>
+            <div class="legend-grid">
+                <div class="legend-section">
+                    <h4>Who Talks to What</h4>
+                    <div class="legend-item">
+                        <span class="legend-arrow">Claude Chat →</span>
+                        <span class="legend-text"><strong>MCP Servers</strong> (both #1 and #2)</span>
+                    </div>
+                    <div class="legend-item">
+                        <span class="legend-arrow">Claude Code →</span>
+                        <span class="legend-text"><strong>File System</strong> (direct read/write to repo)</span>
+                    </div>
+                    <div class="legend-item">
+                        <span class="legend-arrow">Git Commit →</span>
+                        <span class="legend-text"><strong>Git Hooks</strong> (auto-triggers sync)</span>
+                    </div>
+                    <div class="legend-item">
+                        <span class="legend-arrow">Sony USB →</span>
+                        <span class="legend-text"><strong>Voice Pipeline</strong> (manual trigger)</span>
+                    </div>
+                </div>
+                <div class="legend-section">
+                    <h4>Subsystem → API Dependencies</h4>
+                    <div class="legend-item">
+                        <span class="legend-arrow">Voice →</span>
+                        <span class="legend-text"><strong>Groq</strong> (transcription)</span>
+                    </div>
+                    <div class="legend-item">
+                        <span class="legend-arrow">AI Proc →</span>
+                        <span class="legend-text"><strong>OpenAI</strong> (GPT-4 analysis)</span>
+                    </div>
+                    <div class="legend-item">
+                        <span class="legend-arrow">RAG →</span>
+                        <span class="legend-text"><strong>OpenAI</strong> (embeddings) + <strong>Local</strong> (BGE rerank)</span>
+                    </div>
+                    <div class="legend-item">
+                        <span class="legend-arrow">Sync →</span>
+                        <span class="legend-text"><strong>Notion API</strong> + <strong>GitHub API</strong></span>
+                    </div>
+                </div>
+                <div class="legend-section">
+                    <h4>Shared State Access</h4>
+                    <div class="legend-item">
+                        <span class="legend-arrow">Notion ↔</span>
+                        <span class="legend-text">Read by <strong>Context Loader</strong>, written by <strong>Voice Pipeline, Notion Sync</strong></span>
+                    </div>
+                    <div class="legend-item">
+                        <span class="legend-arrow">Git Repo ↔</span>
+                        <span class="legend-text">Read by <strong>Context Loader, MCP</strong>, written by <strong>Claude Code, MCP</strong></span>
+                    </div>
+                    <div class="legend-item">
+                        <span class="legend-arrow">RAG Index ↔</span>
+                        <span class="legend-text">Read by <strong>RAG Search</strong>, written by <strong>Indexer</strong> (manual)</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</body>
+</html>

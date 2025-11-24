@@ -270,12 +270,12 @@
     "steven wolff": "AMS Analytics Product Strategy"
   },
   "metadata": {
-    "last_fetch": "2025-11-17T09:53:44.865692",
+    "last_fetch": "2025-11-21T13:14:22.652847",
     "cache_age_minutes": 0,
     "source": "notion",
     "total_projects": 21,
-    "fetch_duration_ms": 669,
-    "last_successful_fetch": "2025-11-17T09:53:44.865692",
+    "fetch_duration_ms": 733,
+    "last_successful_fetch": "2025-11-21T13:14:22.652847",
     "failed_fetch_attempts": 0
   }
 }

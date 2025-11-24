@@ -25,6 +25,18 @@
             "added": "2025-11-17T21:26:18.799407+00:00"
           }
         ]
+      },
+      "interview-preparation": {
+        "created": "2025-11-23T18:11:32.729237+00:00",
+        "last_used": "2025-11-23T18:11:32.729237+00:00",
+        "usage_count": 1,
+        "files": [
+          {
+            "path": "research/customer-interviews/insights/segment-comparison-meta-analysis.md",
+            "type": "synthesis",
+            "added": "2025-11-23T18:11:32.729237+00:00"
+          }
+        ]
       }
     },
     "Epic 2nd Brain": {
