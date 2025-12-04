@@ -1,0 +1,1125 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>The Chief Vision: 2025 → 2030</title>
+    <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=DM+Serif+Display&display=swap" rel="stylesheet">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        :root {
+            --bg-dark: #0a0a0f;
+            --bg-card: #12121a;
+            --bg-card-hover: #1a1a24;
+            --text-primary: #f4f4f6;
+            --text-secondary: #8b8b9e;
+            --text-muted: #5a5a6e;
+            --accent-gold: #d4a853;
+            --accent-gold-dim: #a68542;
+            --accent-blue: #4a9eff;
+            --accent-green: #34d399;
+            --accent-red: #f87171;
+            --accent-purple: #a78bfa;
+            --border-subtle: #2a2a3a;
+            --glow-gold: rgba(212, 168, 83, 0.15);
+        }
+        
+        body {
+            font-family: 'DM Sans', -apple-system, sans-serif;
+            background: var(--bg-dark);
+            color: var(--text-primary);
+            min-height: 100vh;
+            line-height: 1.5;
+        }
+        
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+            padding: 48px 32px;
+        }
+        
+        /* Header */
+        header {
+            text-align: center;
+            margin-bottom: 64px;
+        }
+        
+        .title {
+            font-family: 'DM Serif Display', serif;
+            font-size: 3rem;
+            font-weight: 400;
+            letter-spacing: -0.02em;
+            margin-bottom: 16px;
+            background: linear-gradient(135deg, var(--text-primary) 0%, var(--accent-gold) 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+        
+        .subtitle {
+            font-size: 1.25rem;
+            color: var(--text-secondary);
+            max-width: 600px;
+            margin: 0 auto 32px;
+        }
+        
+        .tagline {
+            display: inline-flex;
+            align-items: center;
+            gap: 12px;
+            background: var(--bg-card);
+            border: 1px solid var(--border-subtle);
+            border-radius: 100px;
+            padding: 12px 24px;
+            font-size: 0.9rem;
+            color: var(--text-secondary);
+        }
+        
+        .tagline-arrow {
+            color: var(--accent-gold);
+            font-size: 1.1rem;
+        }
+        
+        .tagline-highlight {
+            color: var(--accent-gold);
+            font-weight: 600;
+        }
+        
+        /* Comparison Grid */
+        .comparison {
+            display: grid;
+            grid-template-columns: 1fr 80px 1fr;
+            gap: 24px;
+            margin-bottom: 80px;
+        }
+        
+        .era {
+            background: var(--bg-card);
+            border: 1px solid var(--border-subtle);
+            border-radius: 24px;
+            padding: 32px;
+            position: relative;
+            overflow: hidden;
+        }
+        
+        .era::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 3px;
+        }
+        
+        .era.today::before {
+            background: linear-gradient(90deg, var(--accent-red) 0%, var(--text-muted) 100%);
+        }
+        
+        .era.future::before {
+            background: linear-gradient(90deg, var(--accent-gold) 0%, var(--accent-green) 100%);
+        }
+        
+        .era-label {
+            font-size: 0.75rem;
+            text-transform: uppercase;
+            letter-spacing: 2px;
+            margin-bottom: 8px;
+        }
+        
+        .era.today .era-label {
+            color: var(--accent-red);
+        }
+        
+        .era.future .era-label {
+            color: var(--accent-gold);
+        }
+        
+        .era-year {
+            font-family: 'DM Serif Display', serif;
+            font-size: 2rem;
+            margin-bottom: 24px;
+        }
+        
+        .era-stat {
+            display: flex;
+            align-items: baseline;
+            gap: 8px;
+            margin-bottom: 24px;
+            padding-bottom: 24px;
+            border-bottom: 1px solid var(--border-subtle);
+        }
+        
+        .stat-value {
+            font-family: 'DM Serif Display', serif;
+            font-size: 2.5rem;
+        }
+        
+        .era.today .stat-value {
+            color: var(--accent-red);
+        }
+        
+        .era.future .stat-value {
+            color: var(--accent-green);
+        }
+        
+        .stat-label {
+            font-size: 0.9rem;
+            color: var(--text-secondary);
+        }
+        
+        /* App Grid */
+        .apps-grid {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+            margin-bottom: 24px;
+        }
+        
+        .app-pill {
+            background: var(--bg-dark);
+            border: 1px solid var(--border-subtle);
+            border-radius: 8px;
+            padding: 8px 12px;
+            font-size: 0.8rem;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+        
+        .app-icon {
+            font-size: 1rem;
+        }
+        
+        /* Pain Points */
+        .pain-list {
+            list-style: none;
+        }
+        
+        .pain-item {
+            display: flex;
+            align-items: flex-start;
+            gap: 12px;
+            padding: 12px 0;
+            border-bottom: 1px solid var(--border-subtle);
+            font-size: 0.9rem;
+            color: var(--text-secondary);
+        }
+        
+        .pain-item:last-child {
+            border-bottom: none;
+        }
+        
+        .pain-icon {
+            font-size: 1rem;
+            flex-shrink: 0;
+            margin-top: 2px;
+        }
+        
+        .era.today .pain-icon {
+            color: var(--accent-red);
+        }
+        
+        .era.future .pain-icon {
+            color: var(--accent-green);
+        }
+        
+        /* Arrow Divider */
+        .arrow-divider {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        
+        .arrow-symbol {
+            font-size: 2rem;
+            color: var(--accent-gold);
+            animation: pulse 2s ease-in-out infinite;
+        }
+        
+        @keyframes pulse {
+            0%, 100% { opacity: 0.5; transform: translateX(0); }
+            50% { opacity: 1; transform: translateX(4px); }
+        }
+        
+        /* Chief Section */
+        .chief-section {
+            margin-bottom: 80px;
+        }
+        
+        .section-header {
+            text-align: center;
+            margin-bottom: 48px;
+        }
+        
+        .section-title {
+            font-family: 'DM Serif Display', serif;
+            font-size: 2rem;
+            margin-bottom: 8px;
+        }
+        
+        .section-subtitle {
+            color: var(--text-secondary);
+            font-size: 1rem;
+        }
+        
+        /* Chief Card */
+        .chief-card {
+            background: linear-gradient(135deg, var(--bg-card) 0%, #1a1a28 100%);
+            border: 1px solid var(--accent-gold-dim);
+            border-radius: 32px;
+            padding: 48px;
+            position: relative;
+            overflow: hidden;
+        }
+        
+        .chief-card::before {
+            content: '';
+            position: absolute;
+            top: -50%;
+            left: -50%;
+            width: 200%;
+            height: 200%;
+            background: radial-gradient(circle at center, var(--glow-gold) 0%, transparent 50%);
+            pointer-events: none;
+        }
+        
+        .chief-header {
+            display: flex;
+            align-items: center;
+            gap: 24px;
+            margin-bottom: 40px;
+            position: relative;
+        }
+        
+        .chief-avatar {
+            width: 80px;
+            height: 80px;
+            background: linear-gradient(135deg, var(--accent-gold) 0%, var(--accent-gold-dim) 100%);
+            border-radius: 20px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 2.5rem;
+            box-shadow: 0 8px 32px rgba(212, 168, 83, 0.3);
+        }
+        
+        .chief-info h3 {
+            font-family: 'DM Serif Display', serif;
+            font-size: 1.75rem;
+            margin-bottom: 4px;
+        }
+        
+        .chief-info p {
+            color: var(--text-secondary);
+            font-size: 1rem;
+        }
+        
+        .chief-traits {
+            display: flex;
+            gap: 12px;
+            margin-top: 12px;
+        }
+        
+        .trait {
+            background: var(--bg-dark);
+            border: 1px solid var(--border-subtle);
+            border-radius: 100px;
+            padding: 6px 14px;
+            font-size: 0.75rem;
+            color: var(--text-secondary);
+        }
+        
+        /* Capabilities Grid */
+        .capabilities {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 20px;
+            position: relative;
+        }
+        
+        .capability {
+            background: var(--bg-dark);
+            border: 1px solid var(--border-subtle);
+            border-radius: 16px;
+            padding: 24px;
+            transition: all 0.2s ease;
+        }
+        
+        .capability:hover {
+            border-color: var(--accent-gold-dim);
+            transform: translateY(-2px);
+        }
+        
+        .capability-icon {
+            font-size: 1.5rem;
+            margin-bottom: 12px;
+        }
+        
+        .capability-name {
+            font-weight: 600;
+            font-size: 0.95rem;
+            margin-bottom: 8px;
+        }
+        
+        .capability-desc {
+            font-size: 0.8rem;
+            color: var(--text-secondary);
+            line-height: 1.5;
+        }
+        
+        /* Modes Section */
+        .modes-section {
+            margin-bottom: 80px;
+        }
+        
+        .modes-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 24px;
+        }
+        
+        .mode-card {
+            background: var(--bg-card);
+            border: 1px solid var(--border-subtle);
+            border-radius: 20px;
+            padding: 28px;
+            position: relative;
+        }
+        
+        .mode-card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 24px;
+            right: 24px;
+            height: 3px;
+            border-radius: 0 0 3px 3px;
+        }
+        
+        .mode-card.briefing::before {
+            background: var(--accent-gold);
+        }
+        
+        .mode-card.deepwork::before {
+            background: var(--accent-blue);
+        }
+        
+        .mode-card.comms::before {
+            background: var(--accent-purple);
+        }
+        
+        .mode-trigger {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            background: var(--bg-dark);
+            border: 1px solid var(--border-subtle);
+            border-radius: 8px;
+            padding: 8px 14px;
+            font-family: 'SF Mono', 'Monaco', monospace;
+            font-size: 0.8rem;
+            color: var(--accent-gold);
+            margin-bottom: 16px;
+        }
+        
+        .mode-trigger .mic {
+            font-size: 0.9rem;
+        }
+        
+        .mode-title {
+            font-weight: 600;
+            font-size: 1.1rem;
+            margin-bottom: 8px;
+        }
+        
+        .mode-desc {
+            font-size: 0.85rem;
+            color: var(--text-secondary);
+            margin-bottom: 16px;
+        }
+        
+        .mode-actions {
+            list-style: none;
+        }
+        
+        .mode-action {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            padding: 8px 0;
+            font-size: 0.8rem;
+            color: var(--text-secondary);
+            border-bottom: 1px solid var(--border-subtle);
+        }
+        
+        .mode-action:last-child {
+            border-bottom: none;
+        }
+        
+        .action-icon {
+            font-size: 0.9rem;
+        }
+        
+        .trust-badge {
+            margin-left: auto;
+            font-size: 0.65rem;
+            padding: 3px 8px;
+            border-radius: 4px;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+        
+        .trust-auto {
+            background: rgba(52, 211, 153, 0.15);
+            color: var(--accent-green);
+        }
+        
+        .trust-confirm {
+            background: rgba(212, 168, 83, 0.15);
+            color: var(--accent-gold);
+        }
+        
+        .trust-collab {
+            background: rgba(74, 158, 255, 0.15);
+            color: var(--accent-blue);
+        }
+        
+        /* Architecture Section */
+        .arch-section {
+            margin-bottom: 80px;
+        }
+        
+        .arch-diagram {
+            background: var(--bg-card);
+            border: 1px solid var(--border-subtle);
+            border-radius: 24px;
+            padding: 40px;
+        }
+        
+        .arch-layers {
+            display: flex;
+            flex-direction: column;
+            gap: 24px;
+        }
+        
+        .arch-layer {
+            background: var(--bg-dark);
+            border: 1px solid var(--border-subtle);
+            border-radius: 16px;
+            padding: 24px;
+        }
+        
+        .layer-header {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            margin-bottom: 16px;
+        }
+        
+        .layer-icon {
+            width: 36px;
+            height: 36px;
+            border-radius: 10px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.1rem;
+        }
+        
+        .layer-icon.voice { background: rgba(212, 168, 83, 0.2); }
+        .layer-icon.chief { background: rgba(212, 168, 83, 0.3); }
+        .layer-icon.agents { background: rgba(74, 158, 255, 0.2); }
+        .layer-icon.actions { background: rgba(52, 211, 153, 0.2); }
+        .layer-icon.context { background: rgba(167, 139, 250, 0.2); }
+        
+        .layer-name {
+            font-weight: 600;
+            font-size: 0.95rem;
+        }
+        
+        .layer-desc {
+            font-size: 0.75rem;
+            color: var(--text-muted);
+        }
+        
+        .layer-items {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+        }
+        
+        .layer-item {
+            background: var(--bg-card);
+            border: 1px solid var(--border-subtle);
+            border-radius: 10px;
+            padding: 12px 16px;
+            font-size: 0.8rem;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        
+        .layer-item-icon {
+            font-size: 1rem;
+        }
+        
+        .layer-item-badge {
+            font-size: 0.6rem;
+            padding: 2px 6px;
+            border-radius: 4px;
+            margin-left: 4px;
+        }
+        
+        .badge-ready {
+            background: rgba(52, 211, 153, 0.15);
+            color: var(--accent-green);
+        }
+        
+        .badge-building {
+            background: rgba(212, 168, 83, 0.15);
+            color: var(--accent-gold);
+        }
+        
+        .badge-future {
+            background: rgba(138, 138, 158, 0.15);
+            color: var(--text-muted);
+        }
+        
+        /* Flow Arrows */
+        .flow-connector {
+            display: flex;
+            justify-content: center;
+            padding: 8px 0;
+        }
+        
+        .flow-arrow {
+            color: var(--text-muted);
+            font-size: 1.2rem;
+        }
+        
+        /* Footer */
+        footer {
+            text-align: center;
+            padding-top: 40px;
+            border-top: 1px solid var(--border-subtle);
+        }
+        
+        .footer-text {
+            color: var(--text-muted);
+            font-size: 0.85rem;
+        }
+        
+        .footer-emphasis {
+            color: var(--accent-gold);
+            font-weight: 600;
+        }
+        
+        /* Responsive */
+        @media (max-width: 1024px) {
+            .comparison {
+                grid-template-columns: 1fr;
+            }
+            
+            .arrow-divider {
+                padding: 24px 0;
+            }
+            
+            .arrow-symbol {
+                transform: rotate(90deg);
+            }
+            
+            .capabilities,
+            .modes-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <!-- Header -->
+        <header>
+            <h1 class="title">The Chief Vision</h1>
+            <p class="subtitle">From fragmented apps and manual context-switching to a unified, voice-first orchestrator that knows everything and can act on your behalf.</p>
+            <div class="tagline">
+                <span>45 min morning triage</span>
+                <span class="tagline-arrow">→</span>
+                <span class="tagline-highlight">5 min of confirmations</span>
+            </div>
+        </header>
+        
+        <!-- Before/After Comparison -->
+        <div class="comparison">
+            <!-- Today -->
+            <div class="era today">
+                <div class="era-label">Today</div>
+                <div class="era-year">2025</div>
+                
+                <div class="era-stat">
+                    <span class="stat-value">6</span>
+                    <span class="stat-label">separate apps to manage</span>
+                </div>
+                
+                <div class="apps-grid">
+                    <div class="app-pill"><span class="app-icon">📧</span> Superhuman</div>
+                    <div class="app-pill"><span class="app-icon">📅</span> Calendar</div>
+                    <div class="app-pill"><span class="app-icon">📋</span> Notion</div>
+                    <div class="app-pill"><span class="app-icon">💬</span> Slack</div>
+                    <div class="app-pill"><span class="app-icon">🤖</span> Claude</div>
+                    <div class="app-pill"><span class="app-icon">⚡</span> Claude Code</div>
+                </div>
+                
+                <ul class="pain-list">
+                    <li class="pain-item">
+                        <span class="pain-icon">✗</span>
+                        <span>10-15 min reconstructing context every session</span>
+                    </li>
+                    <li class="pain-item">
+                        <span class="pain-icon">✗</span>
+                        <span>Manual copy-paste between strategy and implementation</span>
+                    </li>
+                    <li class="pain-item">
+                        <span class="pain-icon">✗</span>
+                        <span>Reactive: you ask, system answers</span>
+                    </li>
+                    <li class="pain-item">
+                        <span class="pain-icon">✗</span>
+                        <span>Read-only: can show info, can't take action</span>
+                    </li>
+                    <li class="pain-item">
+                        <span class="pain-icon">✗</span>
+                        <span>Per-domain context: work OR family OR finance</span>
+                    </li>
+                </ul>
+            </div>
+            
+            <!-- Arrow -->
+            <div class="arrow-divider">
+                <span class="arrow-symbol">→</span>
+            </div>
+            
+            <!-- Future -->
+            <div class="era future">
+                <div class="era-label">Vision</div>
+                <div class="era-year">2030</div>
+                
+                <div class="era-stat">
+                    <span class="stat-value">1</span>
+                    <span class="stat-label">voice interface to everything</span>
+                </div>
+                
+                <div class="apps-grid">
+                    <div class="app-pill" style="border-color: var(--accent-gold); background: rgba(212, 168, 83, 0.1);">
+                        <span class="app-icon">🎖️</span> 
+                        <span style="color: var(--accent-gold); font-weight: 600;">Chief</span>
+                    </div>
+                </div>
+                
+                <ul class="pain-list">
+                    <li class="pain-item">
+                        <span class="pain-icon">✓</span>
+                        <span>Instant context: Chief remembers every decision</span>
+                    </li>
+                    <li class="pain-item">
+                        <span class="pain-icon">✓</span>
+                        <span>Seamless handoffs: routes to right specialist automatically</span>
+                    </li>
+                    <li class="pain-item">
+                        <span class="pain-icon">✓</span>
+                        <span>Proactive: surfaces what matters before you ask</span>
+                    </li>
+                    <li class="pain-item">
+                        <span class="pain-icon">✓</span>
+                        <span>Action-capable: sends emails, books reservations, places orders</span>
+                    </li>
+                    <li class="pain-item">
+                        <span class="pain-icon">✓</span>
+                        <span>Unified view: work + family + finance in one orchestrator</span>
+                    </li>
+                </ul>
+            </div>
+        </div>
+        
+        <!-- Chief Agent -->
+        <div class="chief-section">
+            <div class="section-header">
+                <h2 class="section-title">Meet Chief</h2>
+                <p class="section-subtitle">Your ambient, voice-first executive function</p>
+            </div>
+            
+            <div class="chief-card">
+                <div class="chief-header">
+                    <div class="chief-avatar">🎖️</div>
+                    <div class="chief-info">
+                        <h3>Chief of Staff</h3>
+                        <p>Orchestrator agent that routes to specialists</p>
+                        <div class="chief-traits">
+                            <span class="trait">🎙️ Voice-first</span>
+                            <span class="trait">📱 Ambient (desktop + mobile)</span>
+                            <span class="trait">💛 Warm & conversational</span>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="capabilities">
+                    <div class="capability">
+                        <div class="capability-icon">🔍</div>
+                        <div class="capability-name">Unified View</div>
+                        <div class="capability-desc">Sees across all life domains: work projects, family logistics, finance, calendar, email, messages</div>
+                    </div>
+                    <div class="capability">
+                        <div class="capability-icon">⚡</div>
+                        <div class="capability-name">Proactive Synthesis</div>
+                        <div class="capability-desc">Surfaces blockers, decisions needed, and conflicts before you ask. "You have a scheduling conflict..."</div>
+                    </div>
+                    <div class="capability">
+                        <div class="capability-icon">🎯</div>
+                        <div class="capability-name">Action Execution</div>
+                        <div class="capability-desc">Actually does things: sends emails, books reservations, places orders, schedules meetings</div>
+                    </div>
+                    <div class="capability">
+                        <div class="capability-icon">🧠</div>
+                        <div class="capability-name">Decision Memory</div>
+                        <div class="capability-desc">Remembers every decision, the reasoning, and outcomes. Detects conflicts with past choices.</div>
+                    </div>
+                    <div class="capability">
+                        <div class="capability-icon">🔀</div>
+                        <div class="capability-name">Agent Routing</div>
+                        <div class="capability-desc">Dispatches to specialists: Claude Code for implementation, RAG for search, domain experts as needed</div>
+                    </div>
+                    <div class="capability">
+                        <div class="capability-icon">🤝</div>
+                        <div class="capability-name">Graduated Trust</div>
+                        <div class="capability-desc">Auto-executes low-risk actions, confirms medium-risk, collaborates on high-stakes decisions</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Three Modes -->
+        <div class="modes-section">
+            <div class="section-header">
+                <h2 class="section-title">Three Operating Modes</h2>
+                <p class="section-subtitle">Different interactions for different contexts</p>
+            </div>
+            
+            <div class="modes-grid">
+                <!-- Morning Briefing -->
+                <div class="mode-card briefing">
+                    <div class="mode-trigger">
+                        <span class="mic">🎙️</span>
+                        <span>"Chief"</span>
+                    </div>
+                    <div class="mode-title">Morning Briefing</div>
+                    <div class="mode-desc">Start-of-day synthesis. Chief reviews everything and surfaces what matters.</div>
+                    
+                    <ul class="mode-actions">
+                        <li class="mode-action">
+                            <span class="action-icon">📊</span>
+                            <span>Signal-heavy summary of the day</span>
+                        </li>
+                        <li class="mode-action">
+                            <span class="action-icon">🚧</span>
+                            <span>Blockers for Deep Work & Family blocks</span>
+                        </li>
+                        <li class="mode-action">
+                            <span class="action-icon">❓</span>
+                            <span>Decisions needed to unblock goals</span>
+                        </li>
+                        <li class="mode-action">
+                            <span class="action-icon">🛒</span>
+                            <span>Instacart order ready—confirm?</span>
+                            <span class="trust-badge trust-confirm">Confirm</span>
+                        </li>
+                        <li class="mode-action">
+                            <span class="action-icon">📅</span>
+                            <span>Schedule dinner with Jessica</span>
+                            <span class="trust-badge trust-auto">Auto</span>
+                        </li>
+                    </ul>
+                </div>
+                
+                <!-- Deep Work -->
+                <div class="mode-card deepwork">
+                    <div class="mode-trigger">
+                        <span class="mic">🎙️</span>
+                        <span>"Catch me up"</span>
+                    </div>
+                    <div class="mode-title">Deep Work Session</div>
+                    <div class="mode-desc">Project-focused collaboration. Chief loads context and works alongside you.</div>
+                    
+                    <ul class="mode-actions">
+                        <li class="mode-action">
+                            <span class="action-icon">📂</span>
+                            <span>Load project from Strategy Board</span>
+                        </li>
+                        <li class="mode-action">
+                            <span class="action-icon">🔍</span>
+                            <span>RAG search for relevant files</span>
+                        </li>
+                        <li class="mode-action">
+                            <span class="action-icon">💭</span>
+                            <span>Deliberate on decisions together</span>
+                            <span class="trust-badge trust-collab">Collab</span>
+                        </li>
+                        <li class="mode-action">
+                            <span class="action-icon">⚠️</span>
+                            <span>Surface conflicting past decisions</span>
+                        </li>
+                        <li class="mode-action">
+                            <span class="action-icon">💾</span>
+                            <span>Auto-capture progress & update roadmap</span>
+                            <span class="trust-badge trust-auto">Auto</span>
+                        </li>
+                    </ul>
+                </div>
+                
+                <!-- Communications -->
+                <div class="mode-card comms">
+                    <div class="mode-trigger">
+                        <span class="mic">🎙️</span>
+                        <span>"Communications block"</span>
+                    </div>
+                    <div class="mode-title">Communications Block</div>
+                    <div class="mode-desc">Batch processing of email, messages. Chief triages, drafts, sends with approval.</div>
+                    
+                    <ul class="mode-actions">
+                        <li class="mode-action">
+                            <span class="action-icon">📧</span>
+                            <span>Triage 25 emails into decisions</span>
+                        </li>
+                        <li class="mode-action">
+                            <span class="action-icon">✍️</span>
+                            <span>Draft responses for batch approval</span>
+                            <span class="trust-badge trust-confirm">Confirm</span>
+                        </li>
+                        <li class="mode-action">
+                            <span class="action-icon">📜</span>
+                            <span>Complex items: term sheets, contracts</span>
+                            <span class="trust-badge trust-collab">Collab</span>
+                        </li>
+                        <li class="mode-action">
+                            <span class="action-icon">👨‍⚖️</span>
+                            <span>Schedule lawyer if needed</span>
+                            <span class="trust-badge trust-auto">Auto</span>
+                        </li>
+                        <li class="mode-action">
+                            <span class="action-icon">📤</span>
+                            <span>Send approved emails</span>
+                            <span class="trust-badge trust-auto">Auto</span>
+                        </li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Architecture -->
+        <div class="arch-section">
+            <div class="section-header">
+                <h2 class="section-title">System Architecture</h2>
+                <p class="section-subtitle">How the pieces connect</p>
+            </div>
+            
+            <div class="arch-diagram">
+                <div class="arch-layers">
+                    <!-- Voice Layer -->
+                    <div class="arch-layer">
+                        <div class="layer-header">
+                            <div class="layer-icon voice">🎙️</div>
+                            <div>
+                                <div class="layer-name">Voice Interface</div>
+                                <div class="layer-desc">Primary input modality + text fallback</div>
+                            </div>
+                        </div>
+                        <div class="layer-items">
+                            <div class="layer-item">
+                                <span class="layer-item-icon">🖥️</span>
+                                Desktop (primary)
+                                <span class="layer-item-badge badge-ready">Ready</span>
+                            </div>
+                            <div class="layer-item">
+                                <span class="layer-item-icon">📱</span>
+                                Mobile (ambient)
+                                <span class="layer-item-badge badge-building">Building</span>
+                            </div>
+                            <div class="layer-item">
+                                <span class="layer-item-icon">⌨️</span>
+                                Text fallback
+                                <span class="layer-item-badge badge-ready">Ready</span>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="flow-connector"><span class="flow-arrow">↓</span></div>
+                    
+                    <!-- Chief Orchestrator -->
+                    <div class="arch-layer" style="border-color: var(--accent-gold-dim); background: linear-gradient(135deg, var(--bg-dark) 0%, rgba(212, 168, 83, 0.05) 100%);">
+                        <div class="layer-header">
+                            <div class="layer-icon chief">🎖️</div>
+                            <div>
+                                <div class="layer-name">Chief Orchestrator</div>
+                                <div class="layer-desc">Central intelligence + routing + memory</div>
+                            </div>
+                        </div>
+                        <div class="layer-items">
+                            <div class="layer-item">
+                                <span class="layer-item-icon">🧠</span>
+                                Intent Recognition
+                            </div>
+                            <div class="layer-item">
+                                <span class="layer-item-icon">🔀</span>
+                                Agent Router
+                            </div>
+                            <div class="layer-item">
+                                <span class="layer-item-icon">📝</span>
+                                Decision Memory
+                                <span class="layer-item-badge badge-building">Building</span>
+                            </div>
+                            <div class="layer-item">
+                                <span class="layer-item-icon">⚖️</span>
+                                Trust Evaluator
+                                <span class="layer-item-badge badge-future">Future</span>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="flow-connector"><span class="flow-arrow">↓</span></div>
+                    
+                    <!-- Specialist Agents -->
+                    <div class="arch-layer">
+                        <div class="layer-header">
+                            <div class="layer-icon agents">🤖</div>
+                            <div>
+                                <div class="layer-name">Specialist Agents</div>
+                                <div class="layer-desc">Domain experts Chief routes to</div>
+                            </div>
+                        </div>
+                        <div class="layer-items">
+                            <div class="layer-item">
+                                <span class="layer-item-icon">💬</span>
+                                Claude (Strategy)
+                                <span class="layer-item-badge badge-ready">Ready</span>
+                            </div>
+                            <div class="layer-item">
+                                <span class="layer-item-icon">⚡</span>
+                                Claude Code (Impl)
+                                <span class="layer-item-badge badge-ready">Ready</span>
+                            </div>
+                            <div class="layer-item">
+                                <span class="layer-item-icon">🔍</span>
+                                RAG Search
+                                <span class="layer-item-badge badge-ready">Ready</span>
+                            </div>
+                            <div class="layer-item">
+                                <span class="layer-item-icon">🎨</span>
+                                Figma Agent
+                                <span class="layer-item-badge badge-future">Future</span>
+                            </div>
+                            <div class="layer-item">
+                                <span class="layer-item-icon">💰</span>
+                                Finance Agent
+                                <span class="layer-item-badge badge-future">Future</span>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="flow-connector"><span class="flow-arrow">↓</span></div>
+                    
+                    <!-- Action Layer -->
+                    <div class="arch-layer">
+                        <div class="layer-header">
+                            <div class="layer-icon actions">⚡</div>
+                            <div>
+                                <div class="layer-name">Action Layer</div>
+                                <div class="layer-desc">External systems Chief can act upon</div>
+                            </div>
+                        </div>
+                        <div class="layer-items">
+                            <div class="layer-item">
+                                <span class="layer-item-icon">📅</span>
+                                Google Calendar
+                                <span class="layer-item-badge badge-building">Building</span>
+                            </div>
+                            <div class="layer-item">
+                                <span class="layer-item-icon">📧</span>
+                                Email (Superhuman)
+                                <span class="layer-item-badge badge-future">Future</span>
+                            </div>
+                            <div class="layer-item">
+                                <span class="layer-item-icon">📋</span>
+                                Notion
+                                <span class="layer-item-badge badge-ready">Ready</span>
+                            </div>
+                            <div class="layer-item">
+                                <span class="layer-item-icon">🍽️</span>
+                                OpenTable
+                                <span class="layer-item-badge badge-future">Future</span>
+                            </div>
+                            <div class="layer-item">
+                                <span class="layer-item-icon">🛒</span>
+                                Instacart
+                                <span class="layer-item-badge badge-future">Future</span>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="flow-connector"><span class="flow-arrow">↓</span></div>
+                    
+                    <!-- Context Layer -->
+                    <div class="arch-layer">
+                        <div class="layer-header">
+                            <div class="layer-icon context">💾</div>
+                            <div>
+                                <div class="layer-name">Context Layer</div>
+                                <div class="layer-desc">Persistent state across all interactions</div>
+                            </div>
+                        </div>
+                        <div class="layer-items">
+                            <div class="layer-item">
+                                <span class="layer-item-icon">📂</span>
+                                Git Repos (3 projects)
+                                <span class="layer-item-badge badge-ready">Ready</span>
+                            </div>
+                            <div class="layer-item">
+                                <span class="layer-item-icon">📋</span>
+                                Notion DBs
+                                <span class="layer-item-badge badge-ready">Ready</span>
+                            </div>
+                            <div class="layer-item">
+                                <span class="layer-item-icon">🗄️</span>
+                                RAG Index (ChromaDB)
+                                <span class="layer-item-badge badge-ready">Ready</span>
+                            </div>
+                            <div class="layer-item">
+                                <span class="layer-item-icon">📝</span>
+                                Decision Log
+                                <span class="layer-item-badge badge-building">Building</span>
+                            </div>
+                            <div class="layer-item">
+                                <span class="layer-item-icon">🧠</span>
+                                Session Memory
+                                <span class="layer-item-badge badge-building">Building</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Footer -->
+        <footer>
+            <p class="footer-text">
+                Epic 2nd Brain is the <span class="footer-emphasis">infrastructure bridge</span> from today to Chief.
+                <br>
+                Every system built now becomes a component Chief orchestrates in 2030.
+            </p>
+        </footer>
+    </div>
+</body>
+</html>

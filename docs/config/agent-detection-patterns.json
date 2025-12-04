@@ -1,0 +1,40 @@
+{
+  "description": "Agent detection patterns for git hook - determines which AI agent made a commit based on files changed",
+  "patterns": {
+    "session_logs": {
+      "priority": 1,
+      "description": "Highest priority - explicit session logs always win",
+      "patterns": {
+        "docs/sessions/claude-chat/**": "🪄 Claude",
+        "docs/sessions/claude-code/**": "💻 Claude Code"
+      }
+    },
+    "claude_chat": {
+      "priority": 2,
+      "description": "Strategic documents written by Claude Chat (Sonnet 4.5)",
+      "agent": "🪄 Claude",
+      "patterns": [
+        "docs/prd/**",
+        "docs/archive/**",
+        "research/**",
+        "business/**",
+        "product/**"
+      ]
+    },
+    "claude_code": {
+      "priority": 3,
+      "description": "Implementation files written by Claude Code",
+      "agent": "💻 Claude Code",
+      "patterns": [
+        "src/**",
+        "scripts/**",
+        "ROADMAP.md",
+        "docs/tech-requirements/**",
+        "**/*.py",
+        "docs/architecture/**",
+        "docs/context/one-pagers/**"
+      ]
+    }
+  },
+  "default_agent": "💻 Claude Code"
+}

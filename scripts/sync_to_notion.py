@@ -21,6 +21,8 @@ import os
 import sys
 import argparse
 import re
+import json
+from fnmatch import fnmatch
 from datetime import datetime
 from pathlib import Path
 from typing import List, Optional, Dict
@@ -62,6 +64,18 @@ class NotionSyncEngine:
         self.notion_client = Client(auth=notion_token)
         self.wrapper = NotionClientWrapper(self.notion_client)
         self.config = ConfigLoader()
+
+        # Load agent detection patterns
+        patterns_path = project_root / "docs" / "config" / "agent-detection-patterns.json"
+        if patterns_path.exists():
+            with open(patterns_path, 'r', encoding='utf-8') as f:
+                patterns_config = json.load(f)
+                self.agent_patterns = patterns_config["patterns"]
+                self.default_agent = patterns_config["default_agent"]
+        else:
+            logger.warning(f"Agent detection patterns not found at {patterns_path} - using fallback logic")
+            self.agent_patterns = {}
+            self.default_agent = "💻 Claude Code"
 
         # Validate database IDs
         if not ROADMAP_DB_ID:
@@ -124,7 +138,15 @@ class NotionSyncEngine:
 
     def detect_agent_from_files(self, files_changed: str) -> str:
         """
-        Detect agent based on session log file directory.
+        Detect agent based on file patterns (configurable).
+
+        Priority order:
+        1. Session logs (explicit agent directories) - highest priority
+        2. Strategic docs (PRDs, research, business) → Claude Chat
+        3. Implementation (code, scripts, roadmap) → Claude Code
+        4. Default → Claude Code
+
+        Uses patterns from docs/config/agent-detection-patterns.json
 
         Args:
             files_changed: Comma-separated list of files
@@ -132,16 +154,41 @@ class NotionSyncEngine:
         Returns:
             Agent name: "🪄 Claude" or "💻 Claude Code"
         """
-        files_list = files_changed.split(",")
+        if not files_changed:
+            return self.default_agent
 
-        for file in files_list:
-            if "docs/sessions/claude-chat/" in file:
-                return "🪄 Claude"
-            elif "docs/sessions/claude-code/" in file:
-                return "💻 Claude Code"
+        files_list = [f.strip() for f in files_changed.split(",") if f.strip()]
 
-        # Fallback to Claude Code if no session log found
-        return "💻 Claude Code"
+        # Sort pattern categories by priority (1 = highest)
+        sorted_categories = sorted(
+            self.agent_patterns.items(),
+            key=lambda x: x[1].get("priority", 999)
+        )
+
+        # Check each file against patterns in priority order
+        for category_name, category_config in sorted_categories:
+            patterns = category_config.get("patterns")
+
+            # Handle session logs (dict of pattern → agent)
+            if isinstance(patterns, dict):
+                for file_path in files_list:
+                    for pattern, agent in patterns.items():
+                        if fnmatch(file_path, pattern):
+                            logger.debug(f"Matched {file_path} to {agent} via pattern {pattern}")
+                            return agent
+
+            # Handle other categories (list of patterns with single agent)
+            elif isinstance(patterns, list):
+                agent = category_config.get("agent", self.default_agent)
+                for file_path in files_list:
+                    for pattern in patterns:
+                        if fnmatch(file_path, pattern):
+                            logger.debug(f"Matched {file_path} to {agent} via pattern {pattern}")
+                            return agent
+
+        # No pattern matched - use default
+        logger.debug(f"No pattern matched for files: {files_changed}, using default: {self.default_agent}")
+        return self.default_agent
 
     def update_roadmap_status(
         self,

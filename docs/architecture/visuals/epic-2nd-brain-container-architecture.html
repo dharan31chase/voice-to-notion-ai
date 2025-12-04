@@ -1,0 +1,598 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Epic 2nd Brain - Inside the System</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, sans-serif;
+            background: linear-gradient(135deg, #f5f7fa 0%, #e4e8ec 100%);
+            min-height: 100vh;
+            padding: 40px;
+        }
+        
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+        }
+        
+        h1 {
+            text-align: center;
+            color: #1a1a2e;
+            font-size: 2rem;
+            margin-bottom: 8px;
+        }
+        
+        .subtitle {
+            text-align: center;
+            color: #666;
+            font-size: 1.1rem;
+            margin-bottom: 16px;
+        }
+        
+        .breadcrumb {
+            text-align: center;
+            margin-bottom: 40px;
+        }
+        
+        .breadcrumb span {
+            color: #999;
+            font-size: 0.85rem;
+        }
+        
+        .breadcrumb .current {
+            color: #1a1a2e;
+            font-weight: 600;
+        }
+        
+        /* Main Layout */
+        .system-layout {
+            display: grid;
+            grid-template-columns: 180px 1fr 180px;
+            gap: 32px;
+            align-items: start;
+        }
+        
+        /* Input/Output Columns */
+        .io-column {
+            display: flex;
+            flex-direction: column;
+            gap: 16px;
+            padding-top: 60px;
+        }
+        
+        .io-item {
+            background: white;
+            border-radius: 12px;
+            padding: 16px;
+            text-align: center;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.06);
+        }
+        
+        .io-item.input {
+            border-right: 3px solid #f59e0b;
+        }
+        
+        .io-item.output {
+            border-left: 3px solid #10b981;
+        }
+        
+        .io-icon {
+            font-size: 1.5rem;
+            margin-bottom: 8px;
+        }
+        
+        .io-label {
+            font-size: 0.8rem;
+            color: #666;
+        }
+        
+        /* Main System Box */
+        .system-container {
+            background: #1a1a2e;
+            border-radius: 24px;
+            padding: 32px;
+            position: relative;
+        }
+        
+        .system-header {
+            text-align: center;
+            margin-bottom: 32px;
+        }
+        
+        .system-header h2 {
+            color: white;
+            font-size: 1.3rem;
+            margin-bottom: 4px;
+        }
+        
+        .system-header p {
+            color: #888;
+            font-size: 0.85rem;
+        }
+        
+        /* Subsystems Grid */
+        .subsystems {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            grid-template-rows: repeat(2, 1fr);
+            gap: 16px;
+        }
+        
+        .subsystem {
+            background: rgba(255,255,255,0.08);
+            border-radius: 16px;
+            padding: 20px;
+            position: relative;
+            transition: all 0.2s ease;
+        }
+        
+        .subsystem:hover {
+            background: rgba(255,255,255,0.12);
+            transform: translateY(-2px);
+        }
+        
+        .subsystem-icon {
+            font-size: 2rem;
+            margin-bottom: 12px;
+        }
+        
+        .subsystem-title {
+            color: white;
+            font-size: 1rem;
+            font-weight: 600;
+            margin-bottom: 8px;
+        }
+        
+        .subsystem-desc {
+            color: #aaa;
+            font-size: 0.8rem;
+            line-height: 1.4;
+            margin-bottom: 12px;
+        }
+        
+        .subsystem-stats {
+            display: flex;
+            gap: 12px;
+            flex-wrap: wrap;
+        }
+        
+        .stat {
+            background: rgba(255,255,255,0.1);
+            padding: 4px 10px;
+            border-radius: 12px;
+            font-size: 0.7rem;
+            color: #ccc;
+        }
+        
+        /* Color coding for different subsystems */
+        .subsystem.voice {
+            border-top: 3px solid #f59e0b;
+        }
+        
+        .subsystem.ai {
+            border-top: 3px solid #8b5cf6;
+        }
+        
+        .subsystem.context {
+            border-top: 3px solid #3b82f6;
+        }
+        
+        .subsystem.sync {
+            border-top: 3px solid #ec4899;
+        }
+        
+        .subsystem.rag {
+            border-top: 3px solid #10b981;
+        }
+        
+        .subsystem.storage {
+            border-top: 3px solid #6b7280;
+        }
+        
+        /* Flow arrows */
+        .flow-indicator {
+            position: absolute;
+            color: #444;
+            font-size: 1.5rem;
+        }
+        
+        /* Data flow section */
+        .data-flows {
+            margin-top: 48px;
+            background: white;
+            border-radius: 16px;
+            padding: 32px;
+        }
+        
+        .data-flows h3 {
+            color: #1a1a2e;
+            font-size: 1rem;
+            margin-bottom: 24px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        
+        .flow-list {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 20px;
+        }
+        
+        .flow-item {
+            display: flex;
+            align-items: flex-start;
+            gap: 16px;
+        }
+        
+        .flow-number {
+            background: #1a1a2e;
+            color: white;
+            width: 28px;
+            height: 28px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 0.8rem;
+            font-weight: 600;
+            flex-shrink: 0;
+        }
+        
+        .flow-content h4 {
+            color: #1a1a2e;
+            font-size: 0.9rem;
+            margin-bottom: 4px;
+        }
+        
+        .flow-content p {
+            color: #666;
+            font-size: 0.8rem;
+            line-height: 1.4;
+        }
+        
+        .flow-path {
+            color: #999;
+            font-size: 0.75rem;
+            font-family: monospace;
+            margin-top: 4px;
+        }
+        
+        /* Connections section */
+        .connections {
+            margin-top: 32px;
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 16px;
+        }
+        
+        .connection-group h4 {
+            color: #1a1a2e;
+            font-size: 0.85rem;
+            margin-bottom: 12px;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+        
+        .connection-item {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            padding: 8px 0;
+            border-bottom: 1px solid #eee;
+            font-size: 0.85rem;
+            color: #444;
+        }
+        
+        .connection-item:last-child {
+            border-bottom: none;
+        }
+        
+        .connection-icon {
+            font-size: 1rem;
+        }
+        
+        /* Legend */
+        .legend {
+            margin-top: 32px;
+            padding-top: 24px;
+            border-top: 1px solid #eee;
+            display: flex;
+            justify-content: center;
+            gap: 32px;
+            flex-wrap: wrap;
+        }
+        
+        .legend-item {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            font-size: 0.8rem;
+            color: #666;
+        }
+        
+        .legend-color {
+            width: 16px;
+            height: 4px;
+            border-radius: 2px;
+        }
+        
+        .legend-color.voice { background: #f59e0b; }
+        .legend-color.ai { background: #8b5cf6; }
+        .legend-color.context { background: #3b82f6; }
+        .legend-color.sync { background: #ec4899; }
+        .legend-color.rag { background: #10b981; }
+        .legend-color.storage { background: #6b7280; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Inside Epic 2nd Brain</h1>
+        <p class="subtitle">6 Subsystems Working Together</p>
+        <div class="breadcrumb">
+            <span>System Overview</span>
+            <span> → </span>
+            <span class="current">Container Architecture</span>
+            <span> → </span>
+            <span>Component Details</span>
+        </div>
+        
+        <!-- Main Layout -->
+        <div class="system-layout">
+            <!-- Inputs -->
+            <div class="io-column">
+                <div class="io-item input">
+                    <div class="io-icon">🎙️</div>
+                    <div class="io-label">Voice Notes</div>
+                </div>
+                <div class="io-item input">
+                    <div class="io-icon">💬</div>
+                    <div class="io-label">Claude Chat</div>
+                </div>
+                <div class="io-item input">
+                    <div class="io-icon">⚡</div>
+                    <div class="io-label">Claude Code</div>
+                </div>
+                <div class="io-item input">
+                    <div class="io-icon">📝</div>
+                    <div class="io-label">Git Commits</div>
+                </div>
+            </div>
+            
+            <!-- Main System -->
+            <div class="system-container">
+                <div class="system-header">
+                    <h2>🧠 Epic 2nd Brain Infrastructure</h2>
+                    <p>50+ modules • 15,000+ lines • 11 config files</p>
+                </div>
+                
+                <div class="subsystems">
+                    <!-- Row 1 -->
+                    <div class="subsystem voice">
+                        <div class="subsystem-icon">🎙️</div>
+                        <div class="subsystem-title">Voice Pipeline</div>
+                        <div class="subsystem-desc">8-stage orchestration: USB detect → transcribe → analyze → upload</div>
+                        <div class="subsystem-stats">
+                            <span class="stat">8 stages</span>
+                            <span class="stat">Groq API</span>
+                        </div>
+                    </div>
+                    
+                    <div class="subsystem ai">
+                        <div class="subsystem-icon">🤖</div>
+                        <div class="subsystem-title">AI Processing</div>
+                        <div class="subsystem-desc">4 specialized routers: project, duration, tags, icons</div>
+                        <div class="subsystem-stats">
+                            <span class="stat">GPT-4</span>
+                            <span class="stat">4 routers</span>
+                        </div>
+                    </div>
+                    
+                    <div class="subsystem context">
+                        <div class="subsystem-icon">📂</div>
+                        <div class="subsystem-title">Context Loader</div>
+                        <div class="subsystem-desc">Intelligent file selection with learned preferences</div>
+                        <div class="subsystem-stats">
+                            <span class="stat">3-6 files</span>
+                            <span class="stat">MCP</span>
+                        </div>
+                    </div>
+                    
+                    <!-- Row 2 -->
+                    <div class="subsystem sync">
+                        <div class="subsystem-icon">🔄</div>
+                        <div class="subsystem-title">Notion Sync</div>
+                        <div class="subsystem-desc">Git commits → Roadmap & Sessions databases</div>
+                        <div class="subsystem-stats">
+                            <span class="stat">Git hooks</span>
+                            <span class="stat">2-5 sec</span>
+                        </div>
+                    </div>
+                    
+                    <div class="subsystem rag">
+                        <div class="subsystem-icon">🔍</div>
+                        <div class="subsystem-title">RAG Search</div>
+                        <div class="subsystem-desc">Hybrid search: BM25 + semantic + neural reranking</div>
+                        <div class="subsystem-stats">
+                            <span class="stat">ChromaDB</span>
+                            <span class="stat">BGE rerank</span>
+                        </div>
+                    </div>
+                    
+                    <div class="subsystem storage">
+                        <div class="subsystem-icon">💾</div>
+                        <div class="subsystem-title">Storage Layer</div>
+                        <div class="subsystem-desc">5 locations: Local files, Notion DBs, ChromaDB, Git, GitHub</div>
+                        <div class="subsystem-stats">
+                            <span class="stat">5 Notion DBs</span>
+                            <span class="stat">Git backup</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Outputs -->
+            <div class="io-column">
+                <div class="io-item output">
+                    <div class="io-icon">✅</div>
+                    <div class="io-label">Notion Tasks</div>
+                </div>
+                <div class="io-item output">
+                    <div class="io-icon">📋</div>
+                    <div class="io-label">Roadmap Updates</div>
+                </div>
+                <div class="io-item output">
+                    <div class="io-icon">🔍</div>
+                    <div class="io-label">Search Results</div>
+                </div>
+                <div class="io-item output">
+                    <div class="io-icon">📄</div>
+                    <div class="io-label">Session Logs</div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Data Flows -->
+        <div class="data-flows">
+            <h3>🔀 How Data Flows Through the System</h3>
+            
+            <div class="flow-list">
+                <div class="flow-item">
+                    <div class="flow-number">1</div>
+                    <div class="flow-content">
+                        <h4>Voice → Notion (Primary)</h4>
+                        <p>Sony recorder → USB detect → Groq transcribe → GPT-4 analyze → Notion upload → Archive</p>
+                        <div class="flow-path">~5-15 min batch processing</div>
+                    </div>
+                </div>
+                
+                <div class="flow-item">
+                    <div class="flow-number">2</div>
+                    <div class="flow-content">
+                        <h4>Git → Notion (Sync)</h4>
+                        <p>Commit with [ROADMAP-X] tag → Post-commit hook → Update Roadmap DB → Create Session entry</p>
+                        <div class="flow-path">~2-5 sec per commit (blocking)</div>
+                    </div>
+                </div>
+                
+                <div class="flow-item">
+                    <div class="flow-number">3</div>
+                    <div class="flow-content">
+                        <h4>Claude Chat → Context (Session Start)</h4>
+                        <p>start_session() → Check learned profile → Suggest files → Load into context</p>
+                        <div class="flow-path">~3-5 sec</div>
+                    </div>
+                </div>
+                
+                <div class="flow-item">
+                    <div class="flow-number">4</div>
+                    <div class="flow-content">
+                        <h4>Query → RAG Results (Search)</h4>
+                        <p>Search query → BM25 + Semantic → Hybrid merge → BGE rerank → Top 5 results</p>
+                        <div class="flow-path">~500ms</div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- External Connections -->
+            <div class="connections">
+                <div class="connection-group">
+                    <h4>🔌 External APIs</h4>
+                    <div class="connection-item">
+                        <span class="connection-icon">⚡</span>
+                        <span>Groq - Transcription (10x faster)</span>
+                    </div>
+                    <div class="connection-item">
+                        <span class="connection-icon">🤖</span>
+                        <span>OpenAI - GPT-4 + Embeddings</span>
+                    </div>
+                    <div class="connection-item">
+                        <span class="connection-icon">📋</span>
+                        <span>Notion - 5 Databases</span>
+                    </div>
+                    <div class="connection-item">
+                        <span class="connection-icon">🐙</span>
+                        <span>GitHub - Cloud backup</span>
+                    </div>
+                </div>
+                
+                <div class="connection-group">
+                    <h4>💾 Storage Locations</h4>
+                    <div class="connection-item">
+                        <span class="connection-icon">📁</span>
+                        <span>Local: staging/, archives/, .cache/</span>
+                    </div>
+                    <div class="connection-item">
+                        <span class="connection-icon">📋</span>
+                        <span>Notion: Tasks, Strategy, Roadmap, Sessions</span>
+                    </div>
+                    <div class="connection-item">
+                        <span class="connection-icon">🗄️</span>
+                        <span>ChromaDB: RAG vector index</span>
+                    </div>
+                    <div class="connection-item">
+                        <span class="connection-icon">📝</span>
+                        <span>Git: docs/, sessions/, PRDs</span>
+                    </div>
+                </div>
+                
+                <div class="connection-group">
+                    <h4>⚙️ Configuration</h4>
+                    <div class="connection-item">
+                        <span class="connection-icon">📄</span>
+                        <span>11 YAML/JSON config files</span>
+                    </div>
+                    <div class="connection-item">
+                        <span class="connection-icon">🎯</span>
+                        <span>project-paths.json (multi-project)</span>
+                    </div>
+                    <div class="connection-item">
+                        <span class="connection-icon">🧠</span>
+                        <span>context-profiles.json (learned prefs)</span>
+                    </div>
+                    <div class="connection-item">
+                        <span class="connection-icon">🔍</span>
+                        <span>rag_config.yaml (search settings)</span>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Legend -->
+            <div class="legend">
+                <div class="legend-item">
+                    <div class="legend-color voice"></div>
+                    <span>Voice Pipeline</span>
+                </div>
+                <div class="legend-item">
+                    <div class="legend-color ai"></div>
+                    <span>AI Processing</span>
+                </div>
+                <div class="legend-item">
+                    <div class="legend-color context"></div>
+                    <span>Context Loader</span>
+                </div>
+                <div class="legend-item">
+                    <div class="legend-color sync"></div>
+                    <span>Notion Sync</span>
+                </div>
+                <div class="legend-item">
+                    <div class="legend-color rag"></div>
+                    <span>RAG Search</span>
+                </div>
+                <div class="legend-item">
+                    <div class="legend-color storage"></div>
+                    <span>Storage</span>
+                </div>
+            </div>
+        </div>
+    </div>
+</body>
+</html>
