@@ -1,0 +1,530 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Epic 2nd Brain - Leverage Points (Decision View)</title>
+    <script src="https://cdn.jsdelivr.net/npm/mermaid@10/dist/mermaid.min.js"></script>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 2rem;
+        }
+        
+        .container {
+            max-width: 1600px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 20px;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+            overflow: hidden;
+        }
+        
+        header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 3rem 2rem;
+            text-align: center;
+        }
+        
+        h1 {
+            font-size: 2.5rem;
+            margin-bottom: 0.5rem;
+            font-weight: 700;
+        }
+        
+        .subtitle {
+            font-size: 1.2rem;
+            opacity: 0.9;
+            font-weight: 400;
+        }
+        
+        .legend {
+            background: #f8f9fa;
+            padding: 2rem;
+            border-bottom: 3px solid #e9ecef;
+        }
+        
+        .legend h2 {
+            font-size: 1.5rem;
+            margin-bottom: 1.5rem;
+            color: #495057;
+        }
+        
+        .legend-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 1.5rem;
+        }
+        
+        .legend-item {
+            display: flex;
+            align-items: start;
+            gap: 1rem;
+        }
+        
+        .legend-icon {
+            font-size: 1.5rem;
+            flex-shrink: 0;
+        }
+        
+        .legend-text h3 {
+            font-size: 1rem;
+            margin-bottom: 0.25rem;
+            color: #212529;
+        }
+        
+        .legend-text p {
+            font-size: 0.875rem;
+            color: #6c757d;
+            line-height: 1.4;
+        }
+        
+        .diagram-container {
+            padding: 3rem 2rem;
+            background: white;
+        }
+        
+        .mermaid {
+            display: flex;
+            justify-content: center;
+            min-height: 800px;
+        }
+        
+        .insights {
+            background: #f8f9fa;
+            padding: 3rem 2rem;
+            border-top: 3px solid #e9ecef;
+        }
+        
+        .insights h2 {
+            font-size: 1.8rem;
+            margin-bottom: 1.5rem;
+            color: #495057;
+        }
+        
+        .priority-table {
+            background: white;
+            border-radius: 12px;
+            overflow: hidden;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+            margin-bottom: 2rem;
+        }
+        
+        .priority-table table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+        
+        .priority-table th {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 1rem;
+            text-align: left;
+            font-weight: 600;
+        }
+        
+        .priority-table td {
+            padding: 1rem;
+            border-bottom: 1px solid #e9ecef;
+        }
+        
+        .priority-table tr:last-child td {
+            border-bottom: none;
+        }
+        
+        .priority-table tr:hover {
+            background: #f8f9fa;
+        }
+        
+        .priority-badge {
+            display: inline-block;
+            padding: 0.25rem 0.75rem;
+            border-radius: 20px;
+            font-size: 0.875rem;
+            font-weight: 600;
+        }
+        
+        .priority-high {
+            background: #d4edda;
+            color: #155724;
+        }
+        
+        .priority-medium {
+            background: #fff3cd;
+            color: #856404;
+        }
+        
+        .priority-low {
+            background: #f8d7da;
+            color: #721c24;
+        }
+        
+        .check-mark {
+            color: #28a745;
+            font-weight: bold;
+        }
+        
+        .loop-analysis {
+            margin-top: 2rem;
+        }
+        
+        .loop-card {
+            background: white;
+            border-radius: 12px;
+            padding: 2rem;
+            margin-bottom: 1.5rem;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+            border-left: 5px solid #667eea;
+        }
+        
+        .loop-card h3 {
+            font-size: 1.3rem;
+            margin-bottom: 1rem;
+            color: #495057;
+        }
+        
+        .loop-card p {
+            color: #6c757d;
+            line-height: 1.6;
+            margin-bottom: 0.75rem;
+        }
+        
+        .loop-status {
+            display: inline-block;
+            padding: 0.5rem 1rem;
+            border-radius: 6px;
+            font-weight: 600;
+            margin-top: 1rem;
+        }
+        
+        .status-working {
+            background: #d4edda;
+            color: #155724;
+        }
+        
+        .status-friction {
+            background: #fff3cd;
+            color: #856404;
+        }
+        
+        .status-broken {
+            background: #f8d7da;
+            color: #721c24;
+        }
+        
+        footer {
+            background: #343a40;
+            color: white;
+            padding: 2rem;
+            text-align: center;
+        }
+        
+        footer p {
+            margin-bottom: 0.5rem;
+            opacity: 0.9;
+        }
+        
+        .nav-links {
+            margin-top: 1rem;
+        }
+        
+        .nav-links a {
+            color: #667eea;
+            text-decoration: none;
+            margin: 0 1rem;
+            font-weight: 500;
+        }
+        
+        .nav-links a:hover {
+            text-decoration: underline;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>🎯 Epic 2nd Brain - Leverage Points</h1>
+            <p class="subtitle">Decision View: Where Should I Invest Next?</p>
+        </header>
+        
+        <section class="legend">
+            <h2>Legend</h2>
+            <div class="legend-grid">
+                <div class="legend-item">
+                    <span class="legend-icon">✅</span>
+                    <div class="legend-text">
+                        <h3>Working Well</h3>
+                        <p>Leave alone - don't over-optimize what's already effective</p>
+                    </div>
+                </div>
+                <div class="legend-item">
+                    <span class="legend-icon">⚠️</span>
+                    <div class="legend-text">
+                        <h3>Friction Point</h3>
+                        <p>Known pain - opportunities for improvement</p>
+                    </div>
+                </div>
+                <div class="legend-item">
+                    <span class="legend-icon">🎯</span>
+                    <div class="legend-text">
+                        <h3>High-Leverage Intervention</h3>
+                        <p>Numbered - see priority table below for details</p>
+                    </div>
+                </div>
+                <div class="legend-item">
+                    <span class="legend-icon">🔄</span>
+                    <div class="legend-text">
+                        <h3>Critical Feedback Loop</h3>
+                        <p>Virtuous (reinforcing) or with friction (balancing/broken)</p>
+                    </div>
+                </div>
+            </div>
+        </section>
+        
+        <section class="diagram-container">
+            <div class="mermaid">
+flowchart TB
+    subgraph Actors["👥 EXTERNAL ACTORS"]
+        You["👤 You (Dharan)<br/>✅ Clear interaction patterns"]
+        Sony["🎙️ Sony Recorder<br/>✅ Reliable USB mount"]
+        Chat["💬 Claude Chat<br/>⚠️ Context opacity"]
+        Code["⚡ Claude Code<br/>⚠️ Manual session end"]
+    end
+
+    subgraph SharedState["📦 SHARED STATE"]
+        Notion["📋 Notion<br/>✅ 5 databases working<br/>⚠️ Mobile sync limited"]
+        Repo["📂 Git Repo<br/>✅ Version control<br/>✅ Cloud backup"]
+        RAGIndex["🗄️ RAG Index<br/>✅ Fast search<br/>⚠️ Manual re-index"]
+    end
+
+    subgraph Interface["🔌 INTERFACE LAYER"]
+        MCP1["MCP Server #1<br/>9 tools<br/>🎯1 Context visibility"]
+        MCP2["MCP Server #2<br/>3 RAG tools<br/>🎯2 Merge servers?"]
+        Hooks["🪝 Git Hooks<br/>⚠️ Blocking (2-5s)<br/>🎯3 Async queue"]
+        FS["📁 File System<br/>✅ Direct access"]
+    end
+
+    subgraph Subsystems["⚙️ PROCESSING SUBSYSTEMS"]
+        Voice["🎙️ Voice Pipeline<br/>✅ 8 stages working<br/>🎯4 Parallel processing"]
+        AI["🤖 AI Processing<br/>✅ 4 routers clean"]
+        Sync["🔄 Notion Sync<br/>⚠️ No visibility<br/>🎯5 Selective mobile sync"]
+        RAG["🔍 RAG Search<br/>✅ Fast hybrid search<br/>🎯6 Auto-indexing"]
+        Context["📂 Context Loader<br/>⚠️ No mid-session adjust<br/>🎯7 Live context control"]
+    end
+
+    subgraph APIs["🌐 EXTERNAL APIs"]
+        Groq["⚡ Groq<br/>✅ Fast transcription"]
+        OpenAI["🤖 OpenAI<br/>✅ Reliable"]
+        NotionAPI["📋 Notion API<br/>✅ Stable"]
+        GitHub["🐙 GitHub<br/>✅ Cloud backup"]
+    end
+
+    You -->|"voice notes"| Sony
+    You -->|"strategy"| Chat
+    You -->|"implementation"| Code
+    
+    Sony -->|".mp3 files"| Voice
+    Chat <-->|"MCP protocol"| MCP1
+    Chat <-->|"MCP protocol"| MCP2
+    Code <-->|"read/write"| FS
+    
+    MCP1 <-->|"query/update"| Notion
+    MCP1 <-->|"read/write"| Repo
+    MCP2 <-->|"search"| RAGIndex
+    Hooks -->|"sync<br/>🎯3"| Notion
+    FS <-->|"files"| Repo
+    
+    MCP1 --> Context
+    MCP2 --> RAG
+    Hooks --> Sync
+    
+    Voice --> AI
+    AI --> Sync
+    Context -->|"reads"| Notion
+    Context -->|"reads"| Repo
+    RAG -->|"searches"| RAGIndex
+    Sync -->|"writes"| Notion
+    
+    Voice -.->|"transcribe"| Groq
+    AI -.->|"analyze"| OpenAI
+    RAG -.->|"embed"| OpenAI
+    Sync -.->|"CRUD"| NotionAPI
+    Hooks -.->|"push"| GitHub
+
+    Context -.->|"🔄 Loop 1:<br/>Learn preferences"| MCP1
+    MCP1 -.->|"save profile"| Repo
+    
+    Repo -.->|"🔄 Loop 2:<br/>Commit trigger"| Hooks
+    Hooks -.->|"update status"| Notion
+    
+    Chat -.->|"🔄 Loop 3:<br/>Auto-log ✓"| MCP1
+    Code -.->|"Manual log ✗<br/>🎯8"| FS
+
+    classDef actor fill:#eff6ff,stroke:#3b82f6,stroke-width:2px
+    classDef state fill:#fef3c7,stroke:#f59e0b,stroke-width:2px
+    classDef interface fill:#dbeafe,stroke:#3b82f6,stroke-width:2px
+    classDef subsystem fill:#1e293b,stroke:#334155,stroke-width:2px,color:#fff
+    classDef api fill:#f1f5f9,stroke:#94a3b8,stroke-width:1px
+
+    class You,Sony,Chat,Code actor
+    class Notion,Repo,RAGIndex state
+    class MCP1,MCP2,Hooks,FS interface
+    class Voice,AI,Sync,RAG,Context subsystem
+    class Groq,OpenAI,NotionAPI,GitHub api
+            </div>
+        </section>
+        
+        <section class="insights">
+            <h2>📊 Intervention Opportunities (Ranked by Leverage)</h2>
+            
+            <div class="priority-table">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>#</th>
+                            <th>Intervention</th>
+                            <th>Component</th>
+                            <th>Leverage Point</th>
+                            <th>ROI</th>
+                            <th>Your Priority?</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td>🎯8</td>
+                            <td><strong>Unified Session End</strong></td>
+                            <td>Chat + Code</td>
+                            <td>#5 Rules</td>
+                            <td><span class="priority-badge priority-high">HIGH</span></td>
+                            <td><span class="check-mark">✅ Priority #1</span></td>
+                        </tr>
+                        <tr>
+                            <td>🎯5</td>
+                            <td><strong>Selective Notion Sync</strong></td>
+                            <td>Sync subsystem</td>
+                            <td>#6 Info Flows</td>
+                            <td><span class="priority-badge priority-high">HIGH</span></td>
+                            <td><span class="check-mark">✅ Priority #2</span></td>
+                        </tr>
+                        <tr>
+                            <td>🎯1</td>
+                            <td><strong>Live Context Control</strong></td>
+                            <td>MCP Server #1</td>
+                            <td>#6 Info Flows</td>
+                            <td><span class="priority-badge priority-high">HIGH</span></td>
+                            <td>New opportunity</td>
+                        </tr>
+                        <tr>
+                            <td>🎯7</td>
+                            <td><strong>Context Visibility</strong></td>
+                            <td>Context Loader</td>
+                            <td>#6 Info Flows</td>
+                            <td><span class="priority-badge priority-medium">MEDIUM</span></td>
+                            <td>New opportunity</td>
+                        </tr>
+                        <tr>
+                            <td>🎯6</td>
+                            <td><strong>Auto-RAG Indexing</strong></td>
+                            <td>RAG subsystem</td>
+                            <td>#5 Rules</td>
+                            <td><span class="priority-badge priority-medium">MEDIUM</span></td>
+                            <td>New opportunity</td>
+                        </tr>
+                        <tr>
+                            <td>🎯3</td>
+                            <td><strong>Async Git Hook</strong></td>
+                            <td>Git Hooks</td>
+                            <td>#9 Delays</td>
+                            <td><span class="priority-badge priority-medium">MEDIUM</span></td>
+                            <td>New opportunity</td>
+                        </tr>
+                        <tr>
+                            <td>🎯4</td>
+                            <td><strong>Parallel Transcription</strong></td>
+                            <td>Voice Pipeline</td>
+                            <td>#9 Delays</td>
+                            <td><span class="priority-badge priority-low">LOW</span></td>
+                            <td>New opportunity</td>
+                        </tr>
+                        <tr>
+                            <td>🎯2</td>
+                            <td><strong>Unified MCP Servers</strong></td>
+                            <td>MCP #1 + #2</td>
+                            <td>#10 Structure</td>
+                            <td><span class="priority-badge priority-low">LOW</span></td>
+                            <td>New opportunity</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+            
+            <h2>🔄 Critical Feedback Loops</h2>
+            
+            <div class="loop-analysis">
+                <div class="loop-card">
+                    <h3>🔄 Loop 1: Context Learning (Reinforcing)</h3>
+                    <p><strong>Structure:</strong> User selects files → save_context_profile → Next session loads learned files → Better suggestions → More usage → More learning</p>
+                    <p><strong>Current State:</strong> Working but could be stronger. Phase 2 intelligent loading operational (Nov 2025). System gets smarter with use.</p>
+                    <p><strong>Amplification Opportunity:</strong> 🎯1 Live Context Control + 🎯7 Context Visibility would make this loop spin faster by giving visibility and mid-session adjustments.</p>
+                    <span class="loop-status status-working">✅ WORKING</span>
+                </div>
+                
+                <div class="loop-card">
+                    <h3>🔄 Loop 2: Git-Notion Sync (Balancing)</h3>
+                    <p><strong>Structure:</strong> Git commit → Post-commit hook → Notion sync → Roadmap updated → User sees status → (balances to accurate state)</p>
+                    <p><strong>Current State:</strong> Working with friction. Sync happens automatically ✅, but 2-5s blocking delay ⚠️, no visibility ⚠️, no retry on failures ⚠️</p>
+                    <p><strong>Improvement Opportunity:</strong> 🎯3 Async queue (remove delay, add retry) + 🎯5 Selective sync (expand to PRDs/handoffs for mobile)</p>
+                    <span class="loop-status status-friction">⚠️ FRICTION</span>
+                </div>
+                
+                <div class="loop-card">
+                    <h3>🔄 Loop 3: Session Documentation (Broken for Code)</h3>
+                    <p><strong>Structure:</strong> Session work → Capture metadata → Create log → Update Notion → User reviews</p>
+                    <p><strong>Current State:</strong> Claude Chat works ✅ (end_session tool auto-creates log), but Claude Code broken ❌ (manual script, inconsistent, often forgotten)</p>
+                    <p><strong>Fix:</strong> 🎯8 Unified Session End - Your Priority #1. Make Code session end as automatic as Chat. Add auto-detection, timer, handoff queue.</p>
+                    <span class="loop-status status-broken">❌ BROKEN</span>
+                </div>
+            </div>
+            
+            <h2>💡 Recommended Next Sprint (10-20 hours)</h2>
+            <div class="loop-card">
+                <p><strong>1. 🎯8 Unified Session End</strong> (8-12 hours) - Your Priority #1, fixes Loop #3</p>
+                <p><strong>2. 🎯5 Selective Notion Sync</strong> (6-8 hours) - Your Priority #2, enables mobile workflow</p>
+                <p><strong>3. 🎯1 Live Context Control</strong> (4-6 hours) - Newly identified high-leverage, amplifies Loop #1</p>
+                <p style="margin-top: 1rem;"><strong>Total: 18-26 hours</strong> - Realistic for one sprint, addresses both stated priorities + one blind spot</p>
+            </div>
+        </section>
+        
+        <footer>
+            <p>Epic 2nd Brain - Systems Architecture Series</p>
+            <p>Last Updated: November 24, 2024</p>
+            <div class="nav-links">
+                <a href="system-overview.html">← Level 1: System Overview</a>
+                <a href="container-architecture.html">← Level 2: Container Architecture</a>
+                <a href="../leverage-points.mermaid.md">View Mermaid Source →</a>
+            </div>
+        </footer>
+    </div>
+    
+    <script>
+        mermaid.initialize({ 
+            startOnLoad: true,
+            theme: 'default',
+            flowchart: {
+                useMaxWidth: true,
+                htmlLabels: true,
+                curve: 'basis'
+            }
+        });
+    </script>
+</body>
+</html>

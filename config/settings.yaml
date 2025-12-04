@@ -69,8 +69,8 @@ processing:
   retry_on_short_transcript_errors: false  # Don't retry "transcript too short" errors
 
   # Audio File Duration Limits
-  max_file_duration_minutes: 120  # Skip files longer than this (-1 = unlimited, not recommended)
-  warn_duration_threshold_minutes: 90  # Warn if file exceeds this duration
+  max_file_duration_minutes: 20  # Skip files longer than this (Groq limit: ~25MB ≈ 20min)
+  warn_duration_threshold_minutes: 15  # Warn if file exceeds this duration
 
 # Transcription Configuration (Groq Cloud API + Local Whisper fallback)
 transcription:

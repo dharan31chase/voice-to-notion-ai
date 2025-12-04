@@ -64,6 +64,12 @@ PROJECT_CONFIG = {
         "context_folders": ["research", "product", "business", "sessions"],
         "session_log_path": "sessions/customer-discovery",
         "strategy_board_view": "Legacy AI Only"
+    },
+    "Lifeadmin": {
+        "repo_path": Path.home() / "Documents" / "1. Projects" / "lifeadmin",
+        "context_folders": ["decisions"],
+        "session_log_path": "sessions/financial-planning",
+        "strategy_board_view": "Lifeadmin Only"
     }
 }
 
@@ -79,7 +85,7 @@ def read_file(path: str, project: str = "Epic 2nd Brain") -> str:
     Args:
         path: Relative path from repo root (e.g., 'docs/prd/feature.md')
         project: Project name (default: "Epic 2nd Brain")
-                 Options: "Epic 2nd Brain", "Legacy AI"
+                 Options: "Epic 2nd Brain", "Legacy AI", "Lifeadmin"
 
     Returns:
         File contents as string
@@ -88,6 +94,7 @@ def read_file(path: str, project: str = "Epic 2nd Brain") -> str:
         - read_file("README.md")
         - read_file("docs/prd/context-sync-bridge.md")
         - read_file("research/requirements-vision.md", project="Legacy AI")
+        - read_file("decisions/decision-log.md", project="Lifeadmin")
     """
     # Get project repo path
     if project not in PROJECT_CONFIG:
@@ -123,7 +130,7 @@ def write_file(path: str, content: str, project: str = "Epic 2nd Brain") -> dict
         path: Relative path from repo root (e.g., 'docs/prd/feature.md')
         content: Full file content to write
         project: Project name (default: "Epic 2nd Brain")
-                 Options: "Epic 2nd Brain", "Legacy AI"
+                 Options: "Epic 2nd Brain", "Legacy AI", "Lifeadmin"
 
     Returns:
         Dict with status and file path
@@ -136,6 +143,7 @@ def write_file(path: str, content: str, project: str = "Epic 2nd Brain") -> dict
     Examples:
         - write_file("docs/prd/new-feature.md", "# PRD: New Feature...")
         - write_file("research/requirements-vision.md", "# Requirements...", project="Legacy AI")
+        - write_file("decisions/decision-log.md", "# Decision Log...", project="Lifeadmin")
     """
     # Get project repo path
     if project not in PROJECT_CONFIG:
@@ -212,7 +220,7 @@ def start_session(
 
     Args:
         project_name: Name of project (default: "Epic 2nd Brain")
-                      Options: "Epic 2nd Brain", "Legacy AI"
+                      Options: "Epic 2nd Brain", "Legacy AI", "Lifeadmin"
                       Also accepts aliases: "legacy", "customer discovery", "ai-assistant", "mcp"
         work_stream: Optional work stream (e.g., "interview-analysis", "synthesis")
                      If not provided, will prompt for it
@@ -657,13 +665,14 @@ def search_docs(
         doc_types: Types to search (default: all)
                    Options: "prd", "tech-req", "sessions", "context", "research", "product"
         project_name: Filter to specific project (default: None = search all projects)
-                      Options: "Epic 2nd Brain", "Legacy AI"
+                      Options: "Epic 2nd Brain", "Legacy AI", "Lifeadmin"
 
     Returns:
         List of relevant doc snippets with context
 
     Examples:
         - search_docs("MCP server")  # Search all projects
+        - search_docs("financial planning", project_name="Lifeadmin")  # Lifeadmin only
         - search_docs("customer pain points", project_name="Legacy AI")  # Legacy AI only
         - search_docs("git hooks", ["tech-req"], "Epic 2nd Brain")  # Epic 2nd Brain tech-req only
     """
@@ -764,13 +773,14 @@ def query_strategy_board(
         filter_status: Status values to EXCLUDE (default: ["✅ Complete", "🔴 Blocked"])
         limit: Max initiatives to return (default: 3)
         project_name: Filter by project (default: None = all projects)
-                      Options: "Epic 2nd Brain", "Legacy AI"
+                      Options: "Epic 2nd Brain", "Legacy AI", "Lifeadmin"
 
     Returns:
         Dict with initiatives list and metadata
 
     Examples:
         - query_strategy_board()  # Top 3, exclude Complete/Blocked, all projects
+        - query_strategy_board(project_name="Lifeadmin")  # Lifeadmin initiatives only
         - query_strategy_board(limit=5)  # Top 5
         - query_strategy_board(project_name="Legacy AI")  # Legacy AI initiatives only
     """

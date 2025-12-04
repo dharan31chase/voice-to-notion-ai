@@ -1,0 +1,686 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Context Management Architecture: Current vs Proposed</title>
+    <script src="https://cdn.jsdelivr.net/npm/mermaid@10/dist/mermaid.min.js"></script>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+        
+        .container {
+            max-width: 1600px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 16px;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+            overflow: hidden;
+        }
+        
+        header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 40px;
+            text-align: center;
+        }
+        
+        header h1 {
+            font-size: 2.5em;
+            margin-bottom: 10px;
+            font-weight: 700;
+        }
+        
+        header p {
+            font-size: 1.2em;
+            opacity: 0.9;
+        }
+        
+        .tabs {
+            display: flex;
+            background: #f8f9fa;
+            border-bottom: 2px solid #dee2e6;
+        }
+        
+        .tab {
+            flex: 1;
+            padding: 20px;
+            text-align: center;
+            cursor: pointer;
+            font-size: 1.1em;
+            font-weight: 600;
+            transition: all 0.3s;
+            border: none;
+            background: transparent;
+        }
+        
+        .tab:hover {
+            background: #e9ecef;
+        }
+        
+        .tab.active {
+            background: white;
+            color: #667eea;
+            border-bottom: 3px solid #667eea;
+        }
+        
+        .tab-content {
+            display: none;
+            padding: 40px;
+        }
+        
+        .tab-content.active {
+            display: block;
+        }
+        
+        .diagram-container {
+            background: #f8f9fa;
+            border-radius: 12px;
+            padding: 30px;
+            margin: 20px 0;
+        }
+        
+        .comparison-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 30px;
+            margin: 30px 0;
+        }
+        
+        .comparison-card {
+            background: white;
+            border-radius: 12px;
+            padding: 25px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+        }
+        
+        .comparison-card h3 {
+            color: #667eea;
+            margin-bottom: 15px;
+            font-size: 1.3em;
+        }
+        
+        .problem-list {
+            list-style: none;
+            margin: 15px 0;
+        }
+        
+        .problem-list li {
+            padding: 10px;
+            margin: 8px 0;
+            border-left: 4px solid #dc3545;
+            background: #fff5f5;
+            border-radius: 4px;
+        }
+        
+        .benefit-list {
+            list-style: none;
+            margin: 15px 0;
+        }
+        
+        .benefit-list li {
+            padding: 10px;
+            margin: 8px 0;
+            border-left: 4px solid #28a745;
+            background: #f0fdf4;
+            border-radius: 4px;
+        }
+        
+        .metric-box {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 20px;
+            border-radius: 12px;
+            text-align: center;
+            margin: 20px 0;
+        }
+        
+        .metric-box h2 {
+            font-size: 3em;
+            margin-bottom: 10px;
+        }
+        
+        .metric-box p {
+            font-size: 1.2em;
+            opacity: 0.9;
+        }
+        
+        .phase-card {
+            background: white;
+            border-left: 5px solid #667eea;
+            padding: 25px;
+            margin: 20px 0;
+            border-radius: 8px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+        }
+        
+        .phase-card h3 {
+            color: #667eea;
+            margin-bottom: 15px;
+        }
+        
+        .phase-card .time {
+            background: #e9ecef;
+            padding: 5px 15px;
+            border-radius: 20px;
+            display: inline-block;
+            margin: 10px 0;
+            font-weight: 600;
+        }
+        
+        .decision-box {
+            background: #fff3cd;
+            border-left: 5px solid #ffc107;
+            padding: 20px;
+            margin: 20px 0;
+            border-radius: 8px;
+        }
+        
+        .decision-box h4 {
+            color: #856404;
+            margin-bottom: 10px;
+        }
+        
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 20px 0;
+        }
+        
+        th, td {
+            padding: 15px;
+            text-align: left;
+            border-bottom: 1px solid #dee2e6;
+        }
+        
+        th {
+            background: #667eea;
+            color: white;
+            font-weight: 600;
+        }
+        
+        tr:hover {
+            background: #f8f9fa;
+        }
+        
+        .cta-section {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 40px;
+            text-align: center;
+            margin-top: 40px;
+            border-radius: 12px;
+        }
+        
+        .cta-section h2 {
+            font-size: 2em;
+            margin-bottom: 20px;
+        }
+        
+        .cta-section p {
+            font-size: 1.2em;
+            margin-bottom: 30px;
+        }
+        
+        .cta-button {
+            background: white;
+            color: #667eea;
+            padding: 15px 40px;
+            border-radius: 8px;
+            text-decoration: none;
+            font-weight: 600;
+            font-size: 1.1em;
+            display: inline-block;
+            transition: transform 0.3s;
+        }
+        
+        .cta-button:hover {
+            transform: scale(1.05);
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>🏗️ Context Management Architecture</h1>
+            <p>From Black Box to Intelligent Control</p>
+        </header>
+        
+        <div class="tabs">
+            <button class="tab active" onclick="showTab('overview')">📊 Executive Overview</button>
+            <button class="tab" onclick="showTab('current')">🔴 Current State</button>
+            <button class="tab" onclick="showTab('proposed')">🟢 Proposed State</button>
+            <button class="tab" onclick="showTab('roadmap')">🗓️ Implementation</button>
+        </div>
+        
+        <!-- Overview Tab -->
+        <div id="overview" class="tab-content active">
+            <h2>Executive Summary</h2>
+            
+            <div class="comparison-grid">
+                <div class="comparison-card">
+                    <h3>🔴 The Problem</h3>
+                    <ul class="problem-list">
+                        <li><strong>Black Box Loading:</strong> Files magically appear, you don't know which ones</li>
+                        <li><strong>No Mid-Session Control:</strong> Can't adjust context without 5-min restart</li>
+                        <li><strong>Manual File Hunting:</strong> 5 minutes navigating folders, copying exact paths</li>
+                        <li><strong>No Learning:</strong> Same bad suggestions every time, system never improves</li>
+                    </ul>
+                    <p style="margin-top: 20px; font-weight: 600; color: #dc3545;">
+                        Cost: 45-140 min/week wasted on context friction
+                    </p>
+                </div>
+                
+                <div class="comparison-card">
+                    <h3>🟢 The Solution</h3>
+                    <ul class="benefit-list">
+                        <li><strong>Full Visibility:</strong> See exactly what's loaded with list_context()</li>
+                        <li><strong>Instant Adjustment:</strong> Add/remove files in 30 seconds, no restart</li>
+                        <li><strong>Smart Discovery:</strong> Search by content, find files in 2 seconds</li>
+                        <li><strong>Auto-Learning:</strong> System improves from usage, 30% → 80% accuracy</li>
+                    </ul>
+                    <p style="margin-top: 20px; font-weight: 600; color: #28a745;">
+                        Savings: 100-140 min/week + enables scaling to 5+ projects
+                    </p>
+                </div>
+            </div>
+            
+            <div class="metric-box">
+                <h2>90% Faster</h2>
+                <p>Context adjustment: 5 minutes → 30 seconds</p>
+            </div>
+            
+            <div class="metric-box" style="background: linear-gradient(135deg, #28a745 0%, #20c997 100%);">
+                <h2>2.7x Better</h2>
+                <p>Suggestion accuracy: 30% → 80%</p>
+            </div>
+            
+            <h2 style="margin-top: 40px;">Investment vs Return</h2>
+            <table>
+                <thead>
+                    <tr>
+                        <th>Metric</th>
+                        <th>Details</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td><strong>Time Investment</strong></td>
+                        <td>16-22 hours over 3 weeks</td>
+                    </tr>
+                    <tr>
+                        <td><strong>Time Savings</strong></td>
+                        <td>100-140 min/week (1.7-2.3 hours/week)</td>
+                    </tr>
+                    <tr>
+                        <td><strong>Payback Period</strong></td>
+                        <td>10-13 weeks</td>
+                    </tr>
+                    <tr>
+                        <td><strong>Risk Level</strong></td>
+                        <td>Low - builds on proven MCP infrastructure</td>
+                    </tr>
+                    <tr>
+                        <td><strong>Strategic Value</strong></td>
+                        <td>Enables multi-project scaling (prevents 3-5x friction)</td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+        
+        <!-- Current State Tab -->
+        <div id="current" class="tab-content">
+            <h2>🔴 Current State: The Black Box</h2>
+            
+            <div class="diagram-container">
+                <pre class="mermaid">
+flowchart TB
+    User["👤 User<br/>Start session"]
+    
+    subgraph MCP["MCP Server (Current)"]
+        StartSession["start_session()"]
+        ProfileCheck["Check profiles<br/>(static config)"]
+        Suggest["Suggest 3-6 files<br/>(generic heuristics)"]
+        ReadFiles["read_file()<br/>(each file)"]
+    end
+    
+    subgraph Storage["📦 Storage"]
+        Profiles["context-profiles.json<br/>(rarely updated)"]
+        Repo["📂 Git Repo<br/>(docs, PRDs, sessions)"]
+    end
+    
+    User -->|"start_session"| StartSession
+    StartSession --> ProfileCheck
+    ProfileCheck --> Profiles
+    ProfileCheck --> Suggest
+    Suggest --> ReadFiles
+    ReadFiles --> Repo
+    ReadFiles -->|"loaded content<br/>(INVISIBLE)"| User
+    
+    style MCP fill:#fee,stroke:#c00
+    style User fill:#fff,stroke:#333
+    style Storage fill:#f8f9fa,stroke:#666
+                </pre>
+            </div>
+            
+            <h3>What's Wrong</h3>
+            <ul class="problem-list">
+                <li><strong>No Visibility:</strong> User can't see which files are loaded</li>
+                <li><strong>One-Time Only:</strong> Context set at start, can't adjust mid-session</li>
+                <li><strong>Bad Suggestions:</strong> Generic heuristics often wrong, suggest useless files</li>
+                <li><strong>No Learning:</strong> Same mistakes repeated, system never improves</li>
+                <li><strong>Manual File Access:</strong> To add file, must navigate folders, copy exact path</li>
+                <li><strong>Restart Spiral:</strong> Pivot topic → need different context → restart chat → lose 20 min of work → repeat</li>
+            </ul>
+            
+            <h3>Your Pain Points (Verbatim)</h3>
+            <div style="background: #fff5f5; padding: 20px; border-radius: 8px; border-left: 5px solid #dc3545; margin: 20px 0;">
+                <p style="margin-bottom: 15px; font-style: italic;">
+                    "A lot of the times, the files you suggest in the beginning are completely useless too and the mcp tool doesn't learn at all."
+                </p>
+                <p style="margin-bottom: 15px; font-style: italic;">
+                    "I usually pivot to a new chat to start and I forget halfway in which files are in context."
+                </p>
+                <p style="font-style: italic;">
+                    "Today, it's so hard to add a file, I have to go to the folder and paste the path name exactly for you to even know which file I want to add because the suggestions aren't great now."
+                </p>
+            </div>
+            
+            <h3>The Cascading Failure</h3>
+            <div style="background: #f8f9fa; padding: 25px; border-radius: 8px; margin: 20px 0;">
+                <pre style="font-family: monospace; line-height: 1.8;">
+Bad suggestions at start
+    ↓
+Work with wrong files
+    ↓
+20 min in, realize need different context
+    ↓
+Try to add file manually → can't find path → give up OR spend 5 min navigating
+    ↓
+Start new chat → lose 20 min of work
+    ↓
+New chat → same bad suggestions → REPEAT
+                </pre>
+            </div>
+        </div>
+        
+        <!-- Proposed State Tab -->
+        <div id="proposed" class="tab-content">
+            <h2>🟢 Proposed State: Intelligent Control</h2>
+            
+            <div class="diagram-container">
+                <pre class="mermaid">
+flowchart TB
+    User["👤 User<br/>Mid-session control"]
+    
+    subgraph Phase2["Phase 2: Visibility + Control"]
+        ListContext["list_context()<br/>NEW TOOL"]
+        ReloadContext["reload_context()<br/>NEW TOOL"]
+        SessionState["Session State Tracker<br/>NEW"]
+        UsageTracker["Usage Tracker<br/>NEW"]
+    end
+    
+    subgraph Phase3["Phase 3: Smart Discovery"]
+        SearchRepo["search_repo()<br/>NEW TOOL"]
+        ListFiles["list_files()<br/>NEW TOOL"]
+        MiniRAG["Mini-RAG Engine<br/>NEW"]
+    end
+    
+    subgraph Phase4["Phase 4: Learning"]
+        Analyzer["Usage Analyzer<br/>NEW"]
+        ProfileUpdater["Auto-Updater<br/>NEW"]
+    end
+    
+    subgraph Storage["📦 Storage (Enhanced)"]
+        Profiles["context-profiles.json<br/>(auto-updated)"]
+        UsageLog["context-usage.jsonl<br/>NEW"]
+        RAGIndex["ChromaDB Index<br/>NEW"]
+        Repo["📂 Git Repo"]
+    end
+    
+    User -->|"list_context()"| ListContext
+    ListContext --> SessionState
+    SessionState -->|"show loaded"| User
+    
+    User -->|"reload_context"| ReloadContext
+    ReloadContext --> SessionState
+    ReloadContext --> Repo
+    
+    User -->|"search_repo"| SearchRepo
+    SearchRepo --> MiniRAG
+    MiniRAG --> RAGIndex
+    MiniRAG -->|"ranked results"| User
+    
+    SessionState --> UsageTracker
+    UsageTracker --> UsageLog
+    UsageLog --> Analyzer
+    Analyzer --> ProfileUpdater
+    ProfileUpdater --> Profiles
+    
+    style Phase2 fill:#def,stroke:#06f
+    style Phase3 fill:#dfd,stroke:#0a0
+    style Phase4 fill:#ffd,stroke:#fa0
+    style User fill:#fff,stroke:#333
+    style Storage fill:#f8f9fa,stroke:#666
+                </pre>
+            </div>
+            
+            <h3>New Capabilities</h3>
+            
+            <div class="phase-card">
+                <h3>Phase 2: Context Visibility + Control</h3>
+                <span class="time">Week of Nov 25 • 6-8 hours</span>
+                <ul class="benefit-list">
+                    <li><strong>list_context():</strong> See exactly what's loaded (files, tokens, why included)</li>
+                    <li><strong>reload_context():</strong> Add/remove files in 30 seconds, no restart</li>
+                    <li><strong>Always-loaded files:</strong> ROADMAP.md available 100% of time</li>
+                    <li><strong>Usage tracking:</strong> Silent logging for Phase 4 learning</li>
+                </ul>
+                <p style="margin-top: 15px; font-weight: 600;">Result: Zero restart spirals, full transparency</p>
+            </div>
+            
+            <div class="phase-card">
+                <h3>Phase 3: Smart Discovery</h3>
+                <span class="time">Week of Dec 2 • 6-8 hours</span>
+                <ul class="benefit-list">
+                    <li><strong>search_repo():</strong> Find files by content ("Find PRDs about sessions")</li>
+                    <li><strong>list_files():</strong> Browse by pattern ("Show me all architecture docs")</li>
+                    <li><strong>Mini-RAG:</strong> Semantic search returns results in <2 seconds</li>
+                </ul>
+                <p style="margin-top: 15px; font-weight: 600;">Result: No more manual path hunting (5 min → 10 sec)</p>
+            </div>
+            
+            <div class="phase-card">
+                <h3>Phase 4: Learning Loop</h3>
+                <span class="time">Week of Dec 9 • 4-6 hours</span>
+                <ul class="benefit-list">
+                    <li><strong>Usage Analysis:</strong> Process 2-3 weeks of behavior data</li>
+                    <li><strong>Auto-Update Profiles:</strong> System learns which files you actually use</li>
+                    <li><strong>Improved Suggestions:</strong> Accuracy goes from 30% → 80%</li>
+                </ul>
+                <p style="margin-top: 15px; font-weight: 600;">Result: System finally learns, gets better over time</p>
+            </div>
+        </div>
+        
+        <!-- Implementation Tab -->
+        <div id="roadmap" class="tab-content">
+            <h2>Implementation Roadmap</h2>
+            
+            <h3>Timeline: 3 Weeks (Nov 25 - Dec 13)</h3>
+            
+            <table>
+                <thead>
+                    <tr>
+                        <th>Phase</th>
+                        <th>Week</th>
+                        <th>Time</th>
+                        <th>Key Deliverables</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td><strong>Phase 2</strong><br/>Visibility + Control</td>
+                        <td>Nov 25-29</td>
+                        <td>6-8 hours</td>
+                        <td>
+                            • list_context() tool<br/>
+                            • reload_context() tool<br/>
+                            • Session state tracking<br/>
+                            • Usage logging (silent)
+                        </td>
+                    </tr>
+                    <tr>
+                        <td><strong>Phase 3</strong><br/>Smart Discovery</td>
+                        <td>Dec 2-6</td>
+                        <td>6-8 hours</td>
+                        <td>
+                            • search_repo() tool<br/>
+                            • list_files() tool<br/>
+                            • Mini-RAG engine<br/>
+                            • ChromaDB indexing
+                        </td>
+                    </tr>
+                    <tr>
+                        <td><strong>Phase 4</strong><br/>Learning Loop</td>
+                        <td>Dec 9-13</td>
+                        <td>4-6 hours</td>
+                        <td>
+                            • Usage analyzer<br/>
+                            • Profile auto-updater<br/>
+                            • Integration with start_session<br/>
+                            • 2x validation testing
+                        </td>
+                    </tr>
+                </tbody>
+            </table>
+            
+            <h3 style="margin-top: 40px;">Key Technical Decisions</h3>
+            
+            <div class="decision-box">
+                <h4>Decision 1: Mini-RAG vs Simple Search (Phase 3)</h4>
+                <p><strong>Question:</strong> Epic 2nd Brain corpus is ~50k tokens. Is that large enough to justify RAG overhead?</p>
+                <p><strong>Options:</strong></p>
+                <ul>
+                    <li>A: Simple ripgrep keyword search (fast, simple)</li>
+                    <li>B: Mini-RAG with ChromaDB (semantic, more complex)</li>
+                </ul>
+                <p><strong>Recommendation:</strong> Start with ripgrep, monitor Phase 2 usage, upgrade to RAG if search quality insufficient</p>
+                <p><strong>Rationale:</strong> Corpus might be too small. Can add RAG later if needed.</p>
+            </div>
+            
+            <div class="decision-box">
+                <h4>Decision 2: Usage Tracking Scope</h4>
+                <p><strong>What to track:</strong></p>
+                <ul>
+                    <li>✅ Files loaded at start (from suggestions)</li>
+                    <li>✅ Files added/removed mid-session (explicit signals)</li>
+                    <li>✅ Files referenced in responses (implicit signals)</li>
+                </ul>
+                <p><strong>What NOT to track:</strong></p>
+                <ul>
+                    <li>❌ Conversation content (privacy)</li>
+                    <li>❌ User queries (privacy)</li>
+                    <li>❌ Response quality ratings (out of scope)</li>
+                </ul>
+                <p><strong>Rationale:</strong> Focus on file usage patterns only, respect privacy</p>
+            </div>
+            
+            <h3 style="margin-top: 40px;">Success Metrics by Phase</h3>
+            
+            <table>
+                <thead>
+                    <tr>
+                        <th>Metric</th>
+                        <th>Current</th>
+                        <th>Phase 2</th>
+                        <th>Phase 3</th>
+                        <th>Phase 4</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td>Context adjustment time</td>
+                        <td>5 min (restart)</td>
+                        <td>30 sec</td>
+                        <td>30 sec</td>
+                        <td>30 sec</td>
+                    </tr>
+                    <tr>
+                        <td>File discovery time</td>
+                        <td>5 min (manual)</td>
+                        <td>5 min</td>
+                        <td>10 sec</td>
+                        <td>10 sec</td>
+                    </tr>
+                    <tr>
+                        <td>Suggestion accuracy</td>
+                        <td>30%</td>
+                        <td>30%</td>
+                        <td>30%</td>
+                        <td>80%</td>
+                    </tr>
+                    <tr>
+                        <td>Restart spirals/week</td>
+                        <td>3-5</td>
+                        <td>0</td>
+                        <td>0</td>
+                        <td>0</td>
+                    </tr>
+                    <tr>
+                        <td><strong>Time saved/week</strong></td>
+                        <td><strong>0</strong></td>
+                        <td><strong>45 min</strong></td>
+                        <td><strong>80-110 min</strong></td>
+                        <td><strong>100-140 min</strong></td>
+                    </tr>
+                </tbody>
+            </table>
+            
+            <div class="cta-section">
+                <h2>Ready to Start?</h2>
+                <p>Phase 2 can begin this week (Nov 25-29)</p>
+                <p style="margin-top: 10px;">16-22 hours investment → 100-140 min/week savings</p>
+                <p style="margin-top: 10px;">Payback in 10-13 weeks, enables scaling to 5+ projects</p>
+            </div>
+        </div>
+    </div>
+    
+    <script>
+        mermaid.initialize({ 
+            startOnLoad: true,
+            theme: 'default',
+            flowchart: {
+                useMaxWidth: true,
+                htmlLabels: true,
+                curve: 'basis'
+            }
+        });
+        
+        function showTab(tabName) {
+            // Hide all tab contents
+            const contents = document.querySelectorAll('.tab-content');
+            contents.forEach(content => content.classList.remove('active'));
+            
+            // Remove active class from all tabs
+            const tabs = document.querySelectorAll('.tab');
+            tabs.forEach(tab => tab.classList.remove('active'));
+            
+            // Show selected tab content
+            document.getElementById(tabName).classList.add('active');
+            
+            // Add active class to clicked tab
+            event.target.classList.add('active');
+        }
+    </script>
+</body>
+</html>

@@ -58,6 +58,26 @@
           }
         }
       }
+    },
+    {
+      "name": "Lifeadmin",
+      "aliases": ["lifeadmin", "life-admin", "life admin", "financial planning"],
+      "root_path": "/Users/dharanchandrahasan/Documents/1. Projects/lifeadmin",
+      "folders_to_scan": [
+        "decisions"
+      ],
+      "always_files": [
+        "decisions/decision-log.md"
+      ],
+      "workstreams": {
+        "financial-planning": {
+          "description": "Financial planning for household and business ventures",
+          "always_files": [
+            "decisions/decision-log.md"
+          ],
+          "folders_with_latest": {}
+        }
+      }
     }
   ]
 }
