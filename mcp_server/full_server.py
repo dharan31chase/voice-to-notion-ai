@@ -32,12 +32,46 @@ load_dotenv()
 project_root = Path.home() / "Documents" / "1. Projects" / "ai-assistant"
 sys.path.insert(0, str(project_root))
 
+# Import utility modules
+from mcp_server.utils.backup import create_backup, cleanup_old_backups, restore_from_backup, list_backups
+from mcp_server.utils.archival import archive_file, unarchive_file, list_archived_files, get_archive_path
+from mcp_server.utils.notion_helpers import markdown_to_notion_blocks, generate_handoff_template
+from mcp_server.utils.usage_tracker import UsageTracker, track_mcp_tool_call
+from mcp_server.utils.notion_schema import NotionSchemaDetector
+from mcp_server.utils.learning import (
+    setup_debug_logging,
+    load_project_config,
+    find_project,
+    classify_file_type,
+    scan_folders,
+    suggest_files_for_workstream,
+    load_profile,
+    save_profile,
+    parse_user_selection
+)
+from mcp_server.utils.session_helpers import (
+    generate_high_signal_session_template,
+    check_initiative_exists,
+    search_similar_initiatives,
+    create_initiative_in_strategy_board
+)
+from mcp_server.utils.roadmap_helpers import (
+    update_roadmap_row,
+    mark_initiative_complete_in_roadmap,
+    find_initiative_in_roadmap,
+    sync_roadmap_with_strategy_board
+)
+
 # Initialize MCP server
 mcp = FastMCP(name="ai-assistant-full")
 
 # Initialize Notion client
 notion_token = os.getenv("NOTION_TOKEN")
 notion_client = Client(auth=notion_token) if notion_token else None
+
+# Initialize Notion schema detector (Phase 5)
+# Auto-detects database schemas to remove hardcoded property names
+schema_detector = NotionSchemaDetector(notion_client) if notion_client else None
 
 # Database IDs for Sessions and Roadmap
 SESSIONS_DB_ID = os.getenv("NOTION_SESSIONS_DB")
@@ -73,6 +107,29 @@ PROJECT_CONFIG = {
     }
 }
 
+# Global usage tracker (session-level)
+# Initialized on first tool call, saved on end_session()
+_current_tracker: Optional[UsageTracker] = None
+
+
+def get_or_create_tracker(project: str = "Epic 2nd Brain") -> UsageTracker:
+    """
+    Get or create the current session's usage tracker.
+
+    Args:
+        project: Project name
+
+    Returns:
+        UsageTracker instance
+    """
+    global _current_tracker
+
+    if _current_tracker is None:
+        _current_tracker = UsageTracker(project=project)
+
+    return _current_tracker
+
+
 # ============================================================================
 # TOOL 1: Read Files
 # ============================================================================
@@ -80,7 +137,11 @@ PROJECT_CONFIG = {
 @mcp.tool()
 def read_file(path: str, project: str = "Epic 2nd Brain") -> str:
     """
-    Read a file from a project repo.
+    🎯 USE THIS FIRST: Read a file from a project repo.
+
+    IMPORTANT: Use this tool instead of bash commands like cat, view, or head.
+    This tool is optimized for reading project documentation and supports
+    multi-project access with proper path resolution.
 
     Args:
         path: Relative path from repo root (e.g., 'docs/prd/feature.md')
@@ -91,7 +152,8 @@ def read_file(path: str, project: str = "Epic 2nd Brain") -> str:
         File contents as string
 
     Examples:
-        - read_file("README.md")
+        - read_file("README.md")  # Root directory
+        - read_file("ROADMAP.md")  # Root directory - always check here first
         - read_file("docs/prd/context-sync-bridge.md")
         - read_file("research/requirements-vision.md", project="Legacy AI")
         - read_file("decisions/decision-log.md", project="Lifeadmin")
@@ -109,6 +171,11 @@ def read_file(path: str, project: str = "Epic 2nd Brain") -> str:
     try:
         with open(full_path, 'r', encoding='utf-8') as f:
             content = f.read()
+
+        # Track file load (silent, for learning algorithm)
+        tracker = get_or_create_tracker(project=project)
+        tracker.track_file_load(str(path), context="read_file", source="manual")
+
         return content
     except Exception as e:
         return f"Error reading file: {str(e)}"
@@ -121,7 +188,11 @@ def read_file(path: str, project: str = "Epic 2nd Brain") -> str:
 @mcp.tool()
 def write_file(path: str, content: str, project: str = "Epic 2nd Brain") -> dict:
     """
-    Write a file to a project repo.
+    🎯 USE THIS FIRST: Write a file to a project repo.
+
+    IMPORTANT: Use this tool instead of bash commands like echo >, cat with heredoc,
+    or redirection operators. This tool handles multi-project paths, creates parent
+    directories automatically, and provides proper error handling.
 
     This enables Claude (chat) to create PRDs, session logs, and other
     docs directly in the repo without using /mnt/user-data/outputs workaround.
@@ -169,6 +240,11 @@ def write_file(path: str, content: str, project: str = "Epic 2nd Brain") -> dict
             "message": f"Invalid path: {str(e)}"
         }
 
+    # Create backup if file exists
+    backup_path = None
+    if full_path.exists():
+        backup_path = create_backup(full_path)
+
     # Create parent directories if needed
     try:
         full_path.parent.mkdir(parents=True, exist_ok=True)
@@ -183,12 +259,27 @@ def write_file(path: str, content: str, project: str = "Epic 2nd Brain") -> dict
         with open(full_path, 'w', encoding='utf-8') as f:
             f.write(content)
 
-        return {
+        # Track file write (silent, for learning algorithm)
+        tracker = get_or_create_tracker(project=project)
+        if backup_path:
+            # File existed - track as edit
+            tracker.track_file_edit(str(path), change_type="write")
+        else:
+            # New file - track as create
+            tracker.track_file_create(str(path))
+
+        result = {
             "status": "success",
             "path": str(full_path),
             "relative_path": path,
             "message": f"File written successfully: {path}"
         }
+
+        if backup_path:
+            result["backup_created"] = str(backup_path)
+            result["message"] += f" (backup: {backup_path.name})"
+
+        return result
     except Exception as e:
         return {
             "status": "error",
@@ -208,7 +299,11 @@ def start_session(
     use_intelligent_loading: bool = True
 ) -> dict:
     """
-    Load context for a Claude chat session with intelligent file selection.
+    🎯 USE THIS AT SESSION START: Load context for a Claude chat session with intelligent file selection.
+
+    IMPORTANT: Call this tool at the beginning of every Claude Chat session to load
+    the right context. This is more efficient than manually reading files with read_file()
+    or using bash ls/find commands to explore the repo.
 
     NEW: Intelligent context loading (Phase 1)
     - Suggests 3-6 files based on work stream and file types
@@ -408,39 +503,56 @@ def start_session(
 def end_session(
     project_name: str,
     summary: str,
-    session_duration_hours: Optional[float] = None,  # NEW: Session duration
+    session_duration_hours: Optional[float] = None,
+    what_worked: Optional[List[str]] = None,  # NEW: Phase 2 - What worked well
+    what_didnt_work: Optional[List[str]] = None,  # NEW: Phase 2 - Blockers/issues
     decisions: Optional[List[str]] = None,
     next_steps: Optional[List[str]] = None,
-    initiative_page_id: Optional[str] = None,  # NEW: For linking to Strategy Board
+    initiative_name: Optional[str] = None,  # NEW: Phase 2 - Initiative name for detection
+    initiative_page_id: Optional[str] = None,  # For direct linking (skips detection)
     create_handoff: bool = False,
     handoff_initiative_id: Optional[str] = None,
     handoff_prd_path: Optional[str] = None,
     handoff_one_pager_location: Optional[str] = None
 ) -> dict:
     """
-    Log Claude Code session to docs/ and Notion Sessions DB.
+    🎯 USE THIS AT SESSION END: Log Claude Code session to docs/ and Notion Sessions DB.
 
-    NEW: Creates entry in Sessions database with Duration and Initiative link.
-    NEW: Auto-creates Roadmap entry if initiative doesn't have one yet.
+    IMPORTANT: Call this tool at the end of every session to automatically:
+    - Create high-signal session log with What Worked/What Didn't Work sections
+    - Detect and validate initiative existence in Strategy Board
+    - Update Notion Sessions database with duration and initiative link
+    - Auto-create Roadmap entry if needed
+    - Generate handoff prompts for Claude Code (if requested)
+
+    NEW (Phase 2): High-signal template with What Worked/What Didn't Work sections.
+    NEW (Phase 2): Initiative detection - checks if initiative exists, prompts if not.
 
     Args:
         project_name: Project name
-        summary: Brief summary of session
-        session_duration_hours: Session duration in hours (e.g., 1.5). Will prompt if not provided.
+        summary: Brief summary of session (1-2 sentences)
+        session_duration_hours: Session duration in hours (e.g., 1.5)
+        what_worked: List of things that worked well (successes, wins)
+        what_didnt_work: List of blockers or issues encountered
         decisions: List of key decisions made
         next_steps: List of recommended next actions
-        initiative_page_id: Notion page ID for Strategy Board initiative (for linking)
+        initiative_name: Initiative name to link (will auto-detect in Strategy Board)
+        initiative_page_id: Notion page ID for direct linking (skips detection)
         create_handoff: If True, create handoff prompt in docs/handoffs/
-        handoff_initiative_id: Notion page ID for handoff (same as initiative_page_id typically)
-        handoff_prd_path: Path to PRD file (e.g., "docs/prd/feature.md")
+        handoff_initiative_id: Notion page ID for handoff
+        handoff_prd_path: Path to PRD file
         handoff_one_pager_location: Notion URL or repo path to one-pager
 
     Returns:
-        Dict with log path, Sessions DB entry, Roadmap status, and next steps
+        Dict with log path, Sessions DB entry, Roadmap status, and initiative detection results
 
     Examples:
-        - end_session("Epic 2nd Brain", "Multi-project validation", 1.5, initiative_page_id="page123")
-        - end_session("Legacy AI", "Customer interview analysis", 2.0, initiative_page_id="page456")
+        - end_session("Epic 2nd Brain", "Multi-project validation", 1.5,
+                     what_worked=["Tests passed", "No regressions"],
+                     initiative_name="Context Engineering")
+        - end_session("Legacy AI", "Customer interview analysis", 2.0,
+                     what_didnt_work=["Notion API timeout"],
+                     initiative_page_id="page456")  # Direct link, skips detection
     """
     decisions = decisions or []
     next_steps = next_steps or []
@@ -468,38 +580,67 @@ def end_session(
     # Ensure directory exists
     log_path.parent.mkdir(parents=True, exist_ok=True)
 
-    # Write session log
+    # NEW Phase 2: Initiative detection logic
+    detected_initiative = None
+    if initiative_name and not initiative_page_id:
+        # Try to detect initiative in Strategy Board
+        strategy_board_db_id = os.getenv("STRATEGY_BOARD_DATABASE_ID")
+        if notion_client and strategy_board_db_id:
+            try:
+                detection_result = check_initiative_exists(
+                    notion_client,
+                    initiative_name,
+                    project_name,
+                    strategy_board_db_id
+                )
+
+                if detection_result["initiative_found"]:
+                    # Found initiative - use its page ID
+                    detected_initiative = detection_result["initiative"]
+                    initiative_page_id = detected_initiative["id"]
+                else:
+                    # Not found - return options to user
+                    return {
+                        "status": "initiative_not_found",
+                        "message": detection_result["message"],
+                        "options": detection_result.get("options", []),
+                        "action_required": detection_result.get("action_required", ""),
+                        "suggestion": "Call end_session() again with initiative_page_id after resolving, or proceed without linking"
+                    }
+            except Exception as e:
+                # Proceed without initiative link if detection fails
+                pass
+
+    # Write session log using high-signal template
     try:
+        session_log_content = generate_high_signal_session_template(
+            summary=summary,
+            what_worked=what_worked,
+            what_didnt_work=what_didnt_work,
+            decisions=decisions,
+            next_steps=next_steps,
+            initiative_name=initiative_name or (detected_initiative["name"] if detected_initiative else None),
+            session_duration_hours=session_duration_hours
+        )
+
         with open(log_path, 'w', encoding='utf-8') as f:
-            f.write(f"# Session: {date_str} - Claude Chat\n\n")
-            f.write(f"**Project**: {project_name}\n")
-            f.write(f"**Status**: Complete\n")
-            f.write(f"**Session Type**: Planning\n\n")
-            f.write(f"---\n\n")
-            f.write(f"## Summary\n\n{summary}\n\n")
-
-            if decisions:
-                f.write(f"## Decisions Made\n\n")
-                for i, decision in enumerate(decisions, 1):
-                    f.write(f"{i}. {decision}\n")
-                f.write("\n")
-
-            if next_steps:
-                f.write(f"## Next Steps\n\n")
-                for i, step in enumerate(next_steps, 1):
-                    f.write(f"{i}. {step}\n")
-                f.write("\n")
-
-            f.write(f"---\n\n")
-            f.write(f"*Generated at {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}*\n")
+            f.write(session_log_content)
 
         result = {
             "status": "success",
             "log_path": str(log_path.relative_to(repo_path)),
             "full_path": str(log_path),
+            "template": "high-signal",  # NEW: Indicates new template used
             "reminder": f"Don't forget to commit this session log to {project_name} repo!",
             "next_action": f"Run: cd {repo_path} && git add . && git commit -m '[ROADMAP-X] Session: {summary}'"
         }
+
+        if detected_initiative:
+            result["initiative_detected"] = {
+                "name": detected_initiative["name"],
+                "status": detected_initiative["status"],
+                "url": detected_initiative["url"]
+            }
 
         # NEW: Write to Sessions database in Notion
         if notion_client and SESSIONS_DB_ID and session_duration_hours:
@@ -508,6 +649,9 @@ def end_session(
                 session_properties = {
                     "Title": {
                         "title": [{"text": {"content": f"Session: {date_str} - {summary[:50]}"}}]
+                    },
+                    "Description": {
+                        "rich_text": [{"text": {"content": summary}}]
                     },
                     "Session Date": {
                         "date": {"start": datetime.now().date().isoformat()}
@@ -585,6 +729,69 @@ def end_session(
                     except Exception as e:
                         result["roadmap_error"] = f"Error checking/creating Roadmap entry: {str(e)}"
 
+                # NEW Phase 3: Sync ROADMAP.md with Strategy Board
+                if initiative_page_id:
+                    try:
+                        # Get initiative status from Strategy Board
+                        initiative = notion_client.pages.retrieve(page_id=initiative_page_id)
+
+                        # Extract initiative name
+                        title_prop = initiative["properties"].get("Initiative Name", {})
+                        initiative_name_str = ""
+                        if title_prop.get("title"):
+                            initiative_name_str = title_prop["title"][0]["text"]["content"]
+
+                        # Extract status
+                        status_prop = initiative["properties"].get("Status", {}).get("select", {})
+                        status = status_prop.get("name", "Unknown")
+
+                        # Extract completed date if status is Complete
+                        completed_date_str = None
+                        if status == "✅ Complete":
+                            completed_date_prop = initiative["properties"].get("Completed Date", {})
+                            if completed_date_prop.get("date"):
+                                completed_date_str = completed_date_prop["date"]["start"]
+                            else:
+                                # Use today if not set
+                                completed_date_str = datetime.now().date().isoformat()
+
+                        # Get PRD path from initiative if available
+                        prd_path = None
+                        prd_prop = initiative["properties"].get("PRD", {})
+                        if prd_prop.get("url"):
+                            # Extract filename from URL if it's a file path
+                            prd_url = prd_prop["url"]
+                            if "docs/prd/" in prd_url:
+                                prd_path = prd_url.split("docs/prd/")[-1]
+                                prd_path = f"docs/prd/{prd_path}"
+
+                        # Read ROADMAP.md
+                        roadmap_path = repo_path / "ROADMAP.md"
+                        if roadmap_path.exists():
+                            roadmap_content = roadmap_path.read_text(encoding='utf-8')
+
+                            # Sync ROADMAP.md with Strategy Board
+                            sync_result = sync_roadmap_with_strategy_board(
+                                roadmap_content=roadmap_content,
+                                initiative_name=initiative_name_str,
+                                strategy_board_status=status,
+                                completed_date=completed_date_str,
+                                prd_path=prd_path if prd_path else None
+                            )
+
+                            # Write updated ROADMAP.md
+                            if sync_result["status"] == "success":
+                                roadmap_path.write_text(sync_result["updated_content"], encoding='utf-8')
+                                result["roadmap_synced"] = True
+                                result["roadmap_status"] = status
+
+                                if sync_result.get("prd_archived"):
+                                    result["prd_archived"] = True
+                                    result["prd_archive_path"] = sync_result["archive_path"]
+
+                    except Exception as e:
+                        result["roadmap_sync_error"] = f"Error syncing ROADMAP.md: {str(e)}"
+
             except Exception as e:
                 result["sessions_db_error"] = f"Error writing to Sessions DB: {str(e)}"
 
@@ -636,6 +843,75 @@ def end_session(
                 result["notion_updated"] = False
                 result["notion_error"] = str(e)
 
+        # NEW: Auto-commit and push session log
+        try:
+            import subprocess
+
+            # Get relative path for git
+            relative_log_path = log_path.relative_to(repo_path)
+
+            # Stage session log file
+            subprocess.run(
+                ["git", "add", str(relative_log_path)],
+                cwd=str(repo_path),
+                check=True,
+                capture_output=True,
+                text=True
+            )
+
+            # Generate commit message
+            initiative_tag = ""
+            if initiative_name:
+                # Extract initiative tag from name (e.g., "Context Engineering" -> "CONTEXT-ENG")
+                # For now, use generic ROADMAP-X tag
+                initiative_tag = "[ROADMAP-X] "
+
+            commit_message = f"{initiative_tag}Session: {summary}"
+
+            # Commit
+            subprocess.run(
+                ["git", "commit", "-m", commit_message],
+                cwd=str(repo_path),
+                check=True,
+                capture_output=True,
+                text=True
+            )
+
+            # Push to remote
+            push_result = subprocess.run(
+                ["git", "push"],
+                cwd=str(repo_path),
+                check=True,
+                capture_output=True,
+                text=True
+            )
+
+            result["git_committed"] = True
+            result["git_pushed"] = True
+            result["commit_message"] = commit_message
+            result["git_success"] = "Session log committed and pushed successfully"
+
+        except subprocess.CalledProcessError as e:
+            # Git failed - don't block session completion
+            result["git_committed"] = False
+            result["git_error"] = f"Git operation failed: {e.stderr if e.stderr else str(e)}"
+            result["git_note"] = "Session log created successfully, but git commit/push failed. You may need to commit manually."
+        except Exception as e:
+            result["git_committed"] = False
+            result["git_error"] = f"Git error: {str(e)}"
+
+        # Save usage tracker (Phase 4: Usage Tracking)
+        global _current_tracker
+        if _current_tracker is not None:
+            try:
+                usage_log_path = _current_tracker.save()
+                result["usage_log_saved"] = True
+                result["usage_log_path"] = str(usage_log_path.relative_to(repo_path))
+                # Reset tracker for next session
+                _current_tracker = None
+            except Exception as e:
+                result["usage_log_error"] = f"Error saving usage log: {str(e)}"
+
         return result
 
     except Exception as e:
@@ -656,7 +932,11 @@ def search_docs(
     project_name: Optional[str] = None
 ) -> list:
     """
-    Search across project documentation.
+    🎯 USE THIS FIRST: Search across project documentation.
+
+    IMPORTANT: Use this tool instead of bash grep/rg commands. This tool provides
+    structured search results with context snippets, relevance ranking, and multi-project
+    support. It's optimized for finding relevant documentation quickly.
 
     Multi-project support: Search single project or all projects.
 
@@ -765,7 +1045,12 @@ def query_strategy_board(
     project_name: Optional[str] = None
 ) -> dict:
     """
-    Query Notion Strategy Board for prioritized initiatives.
+    🎯 USE THIS FIRST: Query Notion Strategy Board for prioritized initiatives.
+
+    IMPORTANT: Use this tool to get the current priorities and active initiatives
+    instead of manually reading Notion URLs or trying to scrape Notion pages.
+    This tool provides structured access to Strategy Board with proper filtering
+    and multi-project support.
 
     Multi-project support: Filter by project when provided.
 
@@ -944,7 +1229,11 @@ def update_initiative_status(
     completed_date: Optional[str] = None
 ) -> dict:
     """
-    Update Notion Strategy Board initiative.
+    🎯 USE THIS FIRST: Update Notion Strategy Board initiative.
+
+    IMPORTANT: Use this tool to update Notion initiatives programmatically instead
+    of manually editing Notion pages in the browser. This tool handles status updates,
+    decision notes appending, launch notes, and completion dates with proper error handling.
 
     Args:
         page_id: Notion page ID
@@ -1054,7 +1343,11 @@ def write_to_page_content(
     fallback_path: Optional[str] = None
 ) -> dict:
     """
-    Write markdown to Notion page content with graceful degradation.
+    🎯 USE THIS FIRST: Write markdown to Notion page content with graceful degradation.
+
+    IMPORTANT: Use this tool to write markdown content to Notion pages instead of
+    manually copying/pasting or using the Notion web interface. This tool converts
+    markdown to Notion blocks and provides automatic fallback to repo files if Notion fails.
 
     Args:
         page_id: Notion page ID

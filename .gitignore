@@ -12,6 +12,9 @@ scripts/test_*.py
 logs/
 *.log
 
+# Backups (ephemeral, auto-deleted after 3 versions)
+**/.backups/
+
 # Working transcripts and archives
 transcripts/*.txt
 transcripts_archive/

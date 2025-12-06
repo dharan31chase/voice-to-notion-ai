@@ -10,6 +10,7 @@
 | Priority | Initiative | Project | Status | Owner | Target | One-Pager |
 |----------|-----------|---------|--------|-------|--------|-----------|
 | P1 | Applied Context Engineering | Infrastructure | 🚀 In Progress | Dharan | Dec 13 | [Link](docs/context/one-pagers/infrastructure/context-engineering.md) |
+| P1 | Live Context Control v3 | Infrastructure | 🚀 In Progress | Dharan | Dec 13 | [PRD](docs/prd/live-context-control-v3.md) |
 | P1 | Prototype Validation | Legacy AI | 🚀 In Progress | Dharan | Nov 25 | [Link](../legacy-ai/docs/context/one-pagers/prototype-validation.md) |
 | P0 | RAG Implementation (Tier 1) - Legacy AI | Infrastructure | ✅ Complete | Dharan | Nov 24 | [Link](docs/context/one-pagers/infrastructure/rag-implementation-legacy-ai.md) |
 | P1 | Customer Interview Analysis | Legacy AI | ✅ Complete | Dharan | Nov 17 | [Link](../legacy-ai/docs/context/one-pagers/customer-interview-analysis.md) |
