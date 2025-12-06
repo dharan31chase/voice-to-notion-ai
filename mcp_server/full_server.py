@@ -648,9 +648,9 @@ def end_session(
                 # Create session entry in Notion
                 session_properties = {
                     "Title": {
-                        "title": [{"text": {"content": f"Session: {date_str} - {summary[:50]}"}}]
+                        "title": [{"text": {"content": f"Session: {date_str} - 💻 Claude Code"}}]
                     },
-                    "Description": {
+                    "What Shipped": {
                         "rich_text": [{"text": {"content": summary}}]
                     },
                     "Session Date": {
@@ -658,6 +658,9 @@ def end_session(
                     },
                     "Duration": {
                         "number": session_duration_hours
+                    },
+                    "Agent": {
+                        "select": {"name": "💻 Claude Code"}
                     }
                 }
                 # Note: "Project" text field was removed - project is now inferred via Initiative relation
@@ -1253,12 +1256,12 @@ def query_strategy_board(
             projects_db_id = os.getenv("PROJECTS_DATABASE_ID")
             if projects_db_id:
                 try:
-                    # Find the project page with matching name
+                    # Find the project page with matching name (use contains for fuzzy match)
                     projects_response = notion_client.databases.query(
                         database_id=projects_db_id,
                         filter={
                             "property": "Name",
-                            "title": {"equals": project_name}
+                            "title": {"contains": project_name}
                         }
                     )
 

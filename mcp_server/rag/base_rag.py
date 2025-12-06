@@ -65,7 +65,7 @@ class BaseRAG(ABC):
         # Reranking settings
         self.reranking_config = self.project_config.get("reranking", {})
         self.reranking_enabled = self.reranking_config.get("enabled", True)
-        self.reranker_model = self.reranking_config.get("model", "bge-reranker-base")
+        self.reranker_model = self.reranking_config.get("model", "BAAI/bge-reranker-base")
         self.top_k_rerank = self.reranking_config.get("top_k_rerank", 20)
 
         # Global settings

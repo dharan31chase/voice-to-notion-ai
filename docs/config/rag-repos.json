@@ -22,7 +22,7 @@
       "chunk_overlap": 200,
       "reranking": {
         "enabled": true,
-        "model": "bge-reranker-base",
+        "model": "BAAI/bge-reranker-base",
         "top_k_rerank": 20
       }
     },
@@ -47,7 +47,7 @@
       "chunk_overlap": 200,
       "reranking": {
         "enabled": true,
-        "model": "bge-reranker-base",
+        "model": "BAAI/bge-reranker-base",
         "top_k_rerank": 20
       }
     }
