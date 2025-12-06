@@ -1,0 +1,68 @@
+{
+  "config_version": "1.0",
+  "description": "RAG repository configuration for separate project indexes (privacy-first)",
+  "projects": {
+    "Epic 2nd Brain": {
+      "enabled": true,
+      "chroma_collection": "epic-2nd-brain",
+      "index_paths": [
+        "docs/prd",
+        "docs/tech-requirements",
+        "docs/sessions/claude-code",
+        "docs/sessions/claude-chat",
+        "docs/context/one-pagers"
+      ],
+      "exclude_patterns": [
+        "**/.backups/**",
+        "**/archive/**",
+        "**/__pycache__/**"
+      ],
+      "embedding_model": "text-embedding-3-small",
+      "chunk_size": 1000,
+      "chunk_overlap": 200,
+      "reranking": {
+        "enabled": true,
+        "model": "bge-reranker-base",
+        "top_k_rerank": 20
+      }
+    },
+    "Legacy AI": {
+      "enabled": true,
+      "chroma_collection": "legacy-ai",
+      "index_paths": [
+        "research/customer-interviews",
+        "research/analyses",
+        "product",
+        "business",
+        "sessions/customer-discovery"
+      ],
+      "exclude_patterns": [
+        "**/.backups/**",
+        "**/archive/**",
+        "**/__pycache__/**",
+        "**/personal-artifacts/**"
+      ],
+      "embedding_model": "text-embedding-3-small",
+      "chunk_size": 1000,
+      "chunk_overlap": 200,
+      "reranking": {
+        "enabled": true,
+        "model": "bge-reranker-base",
+        "top_k_rerank": 20
+      }
+    }
+  },
+  "global_settings": {
+    "chroma_persist_directory": ".chroma",
+    "privacy_mode": true,
+    "local_embeddings": false,
+    "auto_reindex_on_commit": false,
+    "max_results_per_query": 10
+  },
+  "notes": {
+    "privacy": "Each project has separate ChromaDB collection for privacy isolation",
+    "embedding_model": "OpenAI text-embedding-3-small (384 dimensions, high quality)",
+    "reranking": "BGE reranker-base (local, privacy-first)",
+    "auto_reindex": "Disabled by default to avoid cost, enable when needed"
+  }
+}
