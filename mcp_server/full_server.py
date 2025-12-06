@@ -1035,6 +1035,154 @@ def search_docs(
 
 
 # ============================================================================
+# RAG TOOLS: Advanced Semantic Search (Phase 6)
+# ============================================================================
+
+@mcp.tool()
+def search_legacy_ai(
+    query: str,
+    doc_types: Optional[List[str]] = None,
+    top_k: int = 10
+) -> list:
+    """
+    🎯 USE THIS: Search Legacy AI documents with hybrid RAG (ChromaDB + BGE reranking).
+
+    Privacy-first: Isolated ChromaDB collection, no cross-project data leakage.
+    High accuracy: BM25 + semantic embeddings + local BGE reranking.
+
+    Args:
+        query: Search query (natural language or keywords)
+        doc_types: Filter by types (default: all)
+                   Options: "interview", "analysis", "product", "business", "session"
+        top_k: Number of results to return (default: 10)
+
+    Returns:
+        List of ranked results with content, metadata, score, source
+
+    Examples:
+        - search_legacy_ai("customer pain points")
+        - search_legacy_ai("financial planning needs", doc_types=["interview"])
+        - search_legacy_ai("product requirements", top_k=5)
+
+    Note: Requires ChromaDB collection to be indexed. Run indexing if first time use.
+    """
+    try:
+        from mcp_server.rag.legacy_ai_rag import LegacyAIRAG
+
+        rag = LegacyAIRAG()
+
+        # Check if RAG is enabled
+        if not rag.is_enabled():
+            return [{
+                "error": "Legacy AI RAG is not enabled",
+                "message": "Check docs/config/rag-repos.json to enable"
+            }]
+
+        # Build metadata filter if doc_types provided
+        filter_metadata = None
+        if doc_types:
+            filter_metadata = {"doc_type": {"$in": doc_types}}
+
+        # Perform search
+        results = rag.search(query, top_k=top_k, filter_metadata=filter_metadata)
+
+        # Check if collection is empty
+        if not results:
+            stats = rag.get_stats()
+            if stats.get("total_chunks", 0) == 0:
+                return [{
+                    "message": "No documents indexed yet",
+                    "hint": "Run rag.index_documents() to index Legacy AI documents"
+                }]
+
+        return results
+
+    except ImportError as e:
+        return [{
+            "error": "RAG dependencies not installed",
+            "message": str(e),
+            "hint": "Install with: pip install chromadb openai sentence-transformers"
+        }]
+    except Exception as e:
+        return [{
+            "error": f"Search failed: {str(e)}",
+            "query": query
+        }]
+
+
+@mcp.tool()
+def search_epic_2nd_brain(
+    query: str,
+    doc_types: Optional[List[str]] = None,
+    top_k: int = 10
+) -> list:
+    """
+    🎯 USE THIS: Search Epic 2nd Brain documents with hybrid RAG (ChromaDB + BGE reranking).
+
+    Privacy-first: Isolated ChromaDB collection, no cross-project data leakage.
+    High accuracy: BM25 + semantic embeddings + local BGE reranking.
+
+    Args:
+        query: Search query (natural language or keywords)
+        doc_types: Filter by types (default: all)
+                   Options: "prd", "tech-req", "session-code", "session-chat", "one-pager"
+        top_k: Number of results to return (default: 10)
+
+    Returns:
+        List of ranked results with content, metadata, score, source
+
+    Examples:
+        - search_epic_2nd_brain("MCP server architecture")
+        - search_epic_2nd_brain("git hooks", doc_types=["tech-req"])
+        - search_epic_2nd_brain("session handoffs", top_k=5)
+
+    Note: Requires ChromaDB collection to be indexed. Run indexing if first time use.
+    """
+    try:
+        from mcp_server.rag.epic_2nd_brain_rag import Epic2ndBrainRAG
+
+        rag = Epic2ndBrainRAG()
+
+        # Check if RAG is enabled
+        if not rag.is_enabled():
+            return [{
+                "error": "Epic 2nd Brain RAG is not enabled",
+                "message": "Check docs/config/rag-repos.json to enable"
+            }]
+
+        # Build metadata filter if doc_types provided
+        filter_metadata = None
+        if doc_types:
+            filter_metadata = {"doc_type": {"$in": doc_types}}
+
+        # Perform search
+        results = rag.search(query, top_k=top_k, filter_metadata=filter_metadata)
+
+        # Check if collection is empty
+        if not results:
+            stats = rag.get_stats()
+            if stats.get("total_chunks", 0) == 0:
+                return [{
+                    "message": "No documents indexed yet",
+                    "hint": "Run rag.index_documents() to index Epic 2nd Brain documents"
+                }]
+
+        return results
+
+    except ImportError as e:
+        return [{
+            "error": "RAG dependencies not installed",
+            "message": str(e),
+            "hint": "Install with: pip install chromadb openai sentence-transformers"
+        }]
+    except Exception as e:
+        return [{
+            "error": f"Search failed: {str(e)}",
+            "query": query
+        }]
+
+
+# ============================================================================
 # TOOL 6: Query Strategy Board (NEW)
 # ============================================================================
 
