@@ -363,6 +363,61 @@ def start_session(
             "message": f"Error loading project config: {str(e)}"
         }
 
+    # NEW Phase 7: Check for pending handoffs before starting session
+    pending_handoffs = []
+    try:
+        from mcp_server.utils.handoff_detector import HandoffDetector
+
+        # Initialize handoff detector for this project
+        repo_path = PROJECT_CONFIG.get(project["name"], {}).get("repo_path")
+        if repo_path:
+            detector = HandoffDetector(repo_path)
+
+            # Scan for pending handoffs to claude-code
+            pending_handoffs = detector.scan_for_handoffs(
+                agent="claude-code",
+                status="pending"
+            )
+
+            if pending_handoffs and debug:
+                logging.info(f"Found {len(pending_handoffs)} pending handoff(s)")
+
+    except Exception as e:
+        # Non-critical - handoff detection is optional
+        if debug:
+            logging.warning(f"Handoff detection failed: {e}")
+
+    # If handoffs found, return them for user to review
+    if pending_handoffs:
+        handoff_summaries = []
+
+        for i, handoff in enumerate(pending_handoffs, 1):
+            validation = detector.validate_handoff(handoff) if 'detector' in locals() else {"valid": False}
+
+            handoff_summaries.append({
+                "index": i,
+                "file_name": handoff.get("file_name", "Unknown"),
+                "summary": handoff.get("summary", "No summary"),
+                "type": handoff.get("type", "unknown"),
+                "priority": handoff.get("priority", "P3"),
+                "from": handoff.get("from", "unknown"),
+                "prd_path": handoff.get("prd_path", "Not specified"),
+                "estimated_hours": handoff.get("estimated_hours", "Unknown"),
+                "deadline": handoff.get("deadline", "Not specified"),
+                "notes": handoff.get("notes", ""),
+                "file_path": str(handoff.get("file_path", "")),
+                "valid": validation.get("valid", False),
+                "warnings": validation.get("warnings", [])
+            })
+
+        return {
+            "status": "handoff_found",
+            "message": f"🎯 Found {len(pending_handoffs)} pending handoff(s) for Claude Code",
+            "handoffs": handoff_summaries,
+            "action_required": "Review handoffs and accept/reject using accept_handoff() or reject_handoff() tools",
+            "note": "After accepting a handoff, run start_session() again to load context"
+        }
+
     # Prompt for work_stream if not provided (backward compatible)
     if not work_stream:
         return {
@@ -385,7 +440,9 @@ def start_session(
         "suggested_files": [],
         "learned_profile": None,
         "files_to_load": [],
-        "alerts": []
+        "alerts": [],
+        "handoffs_checked": True,
+        "pending_handoffs_count": 0
     }
 
     if debug:
@@ -2315,6 +2372,335 @@ def parse_user_selection(response: str, options: List[dict]) -> List[int]:
 
     except ValueError as e:
         raise ValueError(f"Invalid selection: {response}. Use format: '1,2,3' or 'all'")
+
+
+# ============================================================================
+# HANDOFF TOOLS: Accept/Reject Handoffs (Phase 7)
+# ============================================================================
+
+@mcp.tool()
+def accept_handoff(
+    handoff_file_path: str,
+    load_context: bool = True
+) -> dict:
+    """
+    Accept a pending handoff and optionally load its context.
+
+    Args:
+        handoff_file_path: Path to handoff file (from start_session handoffs list)
+        load_context: Auto-load PRD and context files (default: True)
+
+    Returns:
+        Dict with status, loaded files, and next steps
+
+    Example:
+        accept_handoff("docs/handoffs/2025-12-06-to-claude-code-phase-7.md")
+    """
+    from mcp_server.utils.handoff_detector import HandoffDetector
+    from pathlib import Path
+
+    try:
+        handoff_path = Path(handoff_file_path)
+
+        if not handoff_path.exists():
+            # Try relative to ai-assistant repo
+            ai_assistant_repo = PROJECT_CONFIG["Epic 2nd Brain"]["repo_path"]
+            handoff_path = ai_assistant_repo / handoff_file_path
+
+        if not handoff_path.exists():
+            return {
+                "status": "error",
+                "message": f"Handoff file not found: {handoff_file_path}"
+            }
+
+        # Determine repo from handoff location
+        repo_path = None
+        for project_name, config in PROJECT_CONFIG.items():
+            if str(config["repo_path"]) in str(handoff_path):
+                repo_path = config["repo_path"]
+                break
+
+        if not repo_path:
+            repo_path = PROJECT_CONFIG["Epic 2nd Brain"]["repo_path"]
+
+        detector = HandoffDetector(repo_path)
+
+        # Parse handoff
+        handoff_data = detector.parse_handoff_frontmatter(handoff_path)
+
+        if not handoff_data:
+            return {
+                "status": "error",
+                "message": "Failed to parse handoff YAML frontmatter"
+            }
+
+        # Validate handoff
+        validation = detector.validate_handoff(handoff_data)
+
+        if not validation["valid"]:
+            return {
+                "status": "error",
+                "message": "Handoff validation failed",
+                "errors": validation["errors"]
+            }
+
+        # Mark as accepted
+        success = detector.mark_handoff_status(
+            handoff_path,
+            "accepted",
+            notes="Accepted by Claude Code"
+        )
+
+        if not success:
+            return {
+                "status": "error",
+                "message": "Failed to update handoff status"
+            }
+
+        result = {
+            "status": "success",
+            "message": f"✅ Handoff accepted: {handoff_data.get('summary', 'Untitled')}",
+            "handoff": {
+                "type": handoff_data.get("type"),
+                "priority": handoff_data.get("priority"),
+                "from": handoff_data.get("from"),
+                "initiative_id": handoff_data.get("initiative_id"),
+                "prd_path": handoff_data.get("prd_path"),
+                "estimated_hours": handoff_data.get("estimated_hours")
+            }
+        }
+
+        # Load context if requested
+        if load_context:
+            context_files = detector.get_handoff_context_files(handoff_data)
+
+            result["loaded_files"] = []
+
+            for file_path in context_files:
+                try:
+                    content = file_path.read_text(encoding='utf-8')
+                    result["loaded_files"].append({
+                        "path": str(file_path.relative_to(repo_path)),
+                        "size_kb": len(content) / 1024,
+                        "loaded": True
+                    })
+                except Exception as e:
+                    result["loaded_files"].append({
+                        "path": str(file_path.relative_to(repo_path)),
+                        "loaded": False,
+                        "error": str(e)
+                    })
+
+            result["message"] += f"\n\n📂 Loaded {len([f for f in result['loaded_files'] if f['loaded']])} context file(s)"
+
+        # Add next steps
+        result["next_steps"] = [
+            "Review PRD and context files",
+            f"Start implementation for: {handoff_data.get('summary', 'task')}",
+            "Update Strategy Board status if needed",
+            "Mark handoff complete when done using complete_handoff()"
+        ]
+
+        return result
+
+    except Exception as e:
+        return {
+            "status": "error",
+            "message": f"Error accepting handoff: {str(e)}"
+        }
+
+
+@mcp.tool()
+def reject_handoff(
+    handoff_file_path: str,
+    reason: str
+) -> dict:
+    """
+    Reject a pending handoff with a reason.
+
+    Args:
+        handoff_file_path: Path to handoff file (from start_session handoffs list)
+        reason: Reason for rejection
+
+    Returns:
+        Dict with status and updated handoff
+
+    Example:
+        reject_handoff(
+            "docs/handoffs/2025-12-06-to-claude-code-phase-7.md",
+            reason="PRD needs more detail on success criteria"
+        )
+    """
+    from mcp_server.utils.handoff_detector import HandoffDetector
+    from pathlib import Path
+
+    try:
+        handoff_path = Path(handoff_file_path)
+
+        if not handoff_path.exists():
+            # Try relative to ai-assistant repo
+            ai_assistant_repo = PROJECT_CONFIG["Epic 2nd Brain"]["repo_path"]
+            handoff_path = ai_assistant_repo / handoff_file_path
+
+        if not handoff_path.exists():
+            return {
+                "status": "error",
+                "message": f"Handoff file not found: {handoff_file_path}"
+            }
+
+        # Determine repo from handoff location
+        repo_path = None
+        for project_name, config in PROJECT_CONFIG.items():
+            if str(config["repo_path"]) in str(handoff_path):
+                repo_path = config["repo_path"]
+                break
+
+        if not repo_path:
+            repo_path = PROJECT_CONFIG["Epic 2nd Brain"]["repo_path"]
+
+        detector = HandoffDetector(repo_path)
+
+        # Parse handoff
+        handoff_data = detector.parse_handoff_frontmatter(handoff_path)
+
+        if not handoff_data:
+            return {
+                "status": "error",
+                "message": "Failed to parse handoff YAML frontmatter"
+            }
+
+        # Mark as rejected
+        success = detector.mark_handoff_status(
+            handoff_path,
+            "rejected",
+            notes=reason
+        )
+
+        if not success:
+            return {
+                "status": "error",
+                "message": "Failed to update handoff status"
+            }
+
+        return {
+            "status": "success",
+            "message": f"✗ Handoff rejected: {handoff_data.get('summary', 'Untitled')}",
+            "reason": reason,
+            "handoff": {
+                "type": handoff_data.get("type"),
+                "priority": handoff_data.get("priority"),
+                "from": handoff_data.get("from"),
+                "prd_path": handoff_data.get("prd_path")
+            },
+            "next_steps": [
+                "Handoff marked as rejected",
+                f"Claude Chat will see rejection reason: {reason}",
+                "No further action needed from Claude Code"
+            ]
+        }
+
+    except Exception as e:
+        return {
+            "status": "error",
+            "message": f"Error rejecting handoff: {str(e)}"
+        }
+
+
+@mcp.tool()
+def complete_handoff(
+    handoff_file_path: str,
+    notes: Optional[str] = None
+) -> dict:
+    """
+    Mark a handoff as completed after finishing the work.
+
+    Args:
+        handoff_file_path: Path to handoff file
+        notes: Optional completion notes
+
+    Returns:
+        Dict with status and updated handoff
+
+    Example:
+        complete_handoff(
+            "docs/handoffs/2025-12-06-to-claude-code-phase-7.md",
+            notes="Phase 7 implementation complete. All tests passing."
+        )
+    """
+    from mcp_server.utils.handoff_detector import HandoffDetector
+    from pathlib import Path
+
+    try:
+        handoff_path = Path(handoff_file_path)
+
+        if not handoff_path.exists():
+            # Try relative to ai-assistant repo
+            ai_assistant_repo = PROJECT_CONFIG["Epic 2nd Brain"]["repo_path"]
+            handoff_path = ai_assistant_repo / handoff_file_path
+
+        if not handoff_path.exists():
+            return {
+                "status": "error",
+                "message": f"Handoff file not found: {handoff_file_path}"
+            }
+
+        # Determine repo from handoff location
+        repo_path = None
+        for project_name, config in PROJECT_CONFIG.items():
+            if str(config["repo_path"]) in str(handoff_path):
+                repo_path = config["repo_path"]
+                break
+
+        if not repo_path:
+            repo_path = PROJECT_CONFIG["Epic 2nd Brain"]["repo_path"]
+
+        detector = HandoffDetector(repo_path)
+
+        # Parse handoff
+        handoff_data = detector.parse_handoff_frontmatter(handoff_path)
+
+        if not handoff_data:
+            return {
+                "status": "error",
+                "message": "Failed to parse handoff YAML frontmatter"
+            }
+
+        # Mark as completed
+        completion_notes = notes or "Completed by Claude Code"
+        success = detector.mark_handoff_status(
+            handoff_path,
+            "completed",
+            notes=completion_notes
+        )
+
+        if not success:
+            return {
+                "status": "error",
+                "message": "Failed to update handoff status"
+            }
+
+        return {
+            "status": "success",
+            "message": f"✅ Handoff completed: {handoff_data.get('summary', 'Untitled')}",
+            "handoff": {
+                "type": handoff_data.get("type"),
+                "priority": handoff_data.get("priority"),
+                "from": handoff_data.get("from"),
+                "initiative_id": handoff_data.get("initiative_id")
+            },
+            "completion_notes": completion_notes,
+            "next_steps": [
+                "Handoff marked as completed",
+                "Claude Chat will see completion confirmation",
+                "Consider updating Strategy Board if initiative_id provided"
+            ]
+        }
+
+    except Exception as e:
+        return {
+            "status": "error",
+            "message": f"Error completing handoff: {str(e)}"
+        }
 
 
 # ============================================================================
