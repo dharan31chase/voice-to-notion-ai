@@ -89,6 +89,52 @@
           }
         ]
       }
+    },
+    "Lifeadmin": {
+      "weekly-review": {
+        "created": "2025-12-15T18:12:45.826385+00:00",
+        "last_used": "2025-12-15T18:12:45.826385+00:00",
+        "usage_count": 1,
+        "files": [
+          {
+            "path": "README.md",
+            "type": "core",
+            "added": "2025-12-15T18:12:45.826385+00:00"
+          },
+          {
+            "path": "projects/founder-os/daily-tracker.md",
+            "type": "core",
+            "added": "2025-12-15T18:12:45.826385+00:00"
+          },
+          {
+            "path": "decisions/decision-log.md",
+            "type": "optional",
+            "added": "2025-12-15T18:12:45.826385+00:00"
+          }
+        ]
+      },
+      "financial-planning": {
+        "created": "2025-12-15T18:16:20.637236+00:00",
+        "last_used": "2025-12-15T18:16:20.637236+00:00",
+        "usage_count": 1,
+        "files": [
+          {
+            "path": "areas/financial-planning/financial-planning-workstream-plan.md",
+            "type": "work_stream_doc",
+            "added": "2025-12-15T18:16:20.637236+00:00"
+          },
+          {
+            "path": "areas/financial-planning/business/legacy-ai/12-month-roadmap-2026.md",
+            "type": "work_stream_doc",
+            "added": "2025-12-15T18:16:20.637236+00:00"
+          },
+          {
+            "path": "areas/financial-planning/business/legacy-ai/input-metrics-tracker.md",
+            "type": "work_stream_doc",
+            "added": "2025-12-15T18:16:20.637236+00:00"
+          }
+        ]
+      }
     }
   },
   "Epic 2nd Brain": {

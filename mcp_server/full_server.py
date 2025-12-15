@@ -288,7 +288,126 @@ def write_file(path: str, content: str, project: str = "Epic 2nd Brain") -> dict
 
 
 # ============================================================================
-# TOOL 3: Start Session
+# TOOL 3: List Files (Phase 1 - Directory Exploration)
+# ============================================================================
+
+@mcp.tool()
+def list_files(
+    project: str = "Epic 2nd Brain",
+    path: str = "docs/",
+    recursive: bool = False,
+    file_pattern: str = "*.md"
+) -> list:
+    """
+    🎯 USE THIS: List files and folders in a project directory.
+
+    IMPORTANT: Use this tool instead of bash ls/find commands. This tool
+    provides structured directory listings with metadata and works across
+    all projects.
+
+    Args:
+        project: Project name ("Epic 2nd Brain", "Legacy AI", "Lifeadmin")
+        path: Relative path from repo root (default: "docs/")
+        recursive: Include subdirectories (default: False)
+        file_pattern: File filter (default: "*.md")
+
+    Returns:
+        List of files/folders with metadata:
+        [{
+            "path": "docs/prd/feature.md",
+            "name": "feature.md",
+            "type": "file" | "directory",
+            "size": 1234,  # bytes (files only)
+            "modified": 1234567890.0,  # Unix timestamp
+            "file_count": 5  # directories only
+        }]
+
+    Examples:
+        - list_files("Epic 2nd Brain", "docs/")  # Top-level folders in docs/
+        - list_files("Epic 2nd Brain", "docs/prd/", recursive=True)  # All PRDs
+        - list_files("Epic 2nd Brain", "docs/handoffs/")  # Check for handoff files
+        - list_files("Legacy AI", "research/")  # Legacy AI folders
+        - list_files("Epic 2nd Brain", "docs/", file_pattern="*.py")  # Python files
+
+    Use Cases:
+        - Verify folder structure exists (check for docs/handoffs/)
+        - Browse archive folders (list docs/prd/archive/2025/Q4/)
+        - Discover handoff files (check docs/handoffs/ for pending handoffs)
+        - Validate archival (confirm PRD moved to archive/)
+    """
+    # Get project repo path
+    if project not in PROJECT_CONFIG:
+        return [{
+            "error": f"Unknown project '{project}'",
+            "valid_projects": list(PROJECT_CONFIG.keys())
+        }]
+
+    repo_path = PROJECT_CONFIG[project]["repo_path"]
+    target_path = repo_path / path
+
+    if not target_path.exists():
+        return [{
+            "error": f"Path not found: {path}",
+            "full_path": str(target_path)
+        }]
+
+    results = []
+
+    try:
+        if recursive:
+            # Recursive listing
+            for item in target_path.rglob(file_pattern):
+                try:
+                    results.append({
+                        "path": str(item.relative_to(repo_path)),
+                        "name": item.name,
+                        "type": "file" if item.is_file() else "directory",
+                        "size": item.stat().st_size if item.is_file() else None,
+                        "modified": item.stat().st_mtime
+                    })
+                except Exception as e:
+                    # Skip files we can't read
+                    continue
+        else:
+            # Shallow listing (directories + matching files)
+            for item in target_path.iterdir():
+                try:
+                    if item.is_dir():
+                        # Count files in directory
+                        file_count = len([f for f in item.glob("*.md") if f.is_file()])
+                        results.append({
+                            "path": str(item.relative_to(repo_path)),
+                            "name": item.name,
+                            "type": "directory",
+                            "file_count": file_count,
+                            "modified": item.stat().st_mtime
+                        })
+                    elif item.match(file_pattern):
+                        results.append({
+                            "path": str(item.relative_to(repo_path)),
+                            "name": item.name,
+                            "type": "file",
+                            "size": item.stat().st_size,
+                            "modified": item.stat().st_mtime
+                        })
+                except Exception as e:
+                    # Skip files we can't read
+                    continue
+
+        # Sort: directories first, then by name
+        results.sort(key=lambda x: (x["type"] != "directory", x["name"]))
+
+        return results
+
+    except Exception as e:
+        return [{
+            "error": f"Error listing files: {str(e)}",
+            "path": path
+        }]
+
+
+# ============================================================================
+# TOOL 4: Start Session
 # ============================================================================
 
 @mcp.tool()
