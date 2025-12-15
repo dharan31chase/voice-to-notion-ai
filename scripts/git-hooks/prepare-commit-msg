@@ -1,0 +1,58 @@
+#!/bin/bash
+# Git hook: prepare-commit-msg
+# Auto-fills commit message template for structured commits
+#
+# This runs before the commit message editor opens.
+# If committing through CLI with -m flag, this template is skipped.
+
+COMMIT_MSG_FILE=$1
+COMMIT_SOURCE=$2
+
+# Only apply template if this is a new commit (not merge, squash, etc.)
+# and no message was provided via -m flag
+if [ -z "$COMMIT_SOURCE" ]; then
+    # Check if file is empty or has only comments
+    if ! grep -q '^[^#]' "$COMMIT_MSG_FILE" 2>/dev/null; then
+        cat > "$COMMIT_MSG_FILE" << 'EOF'
+[ROADMAP-X] Brief summary (70 chars max)
+
+## What Shipped
+
+1. [Feature/Fix]: [Description + impact]
+2. [Feature/Fix]: [Description + impact]
+
+## Critical Discovery (Optional)
+
+[User pain point or workflow issue discovered]
+Solution: [How addressed or deferred]
+
+## Decisions
+
+- [Decision 1]: [Why this approach]
+- [Decision 2]: [Why this approach]
+
+## Architecture Decisions (Optional)
+
+[Significant technical choice made]
+- Options: [A, B, C]
+- Chosen: [X] because [rationale]
+- Trade-offs: [What we're accepting]
+
+## Impact
+
+[Metrics or unblocked work]
+
+## Next Steps
+
+[What's next, what's deferred]
+
+## Key Learnings
+
+[1-sentence insight from this work]
+
+🤖 Generated with [Claude Code](https://claude.com/claude-code)
+
+Co-Authored-By: Claude <noreply@anthropic.com>
+EOF
+    fi
+fi
