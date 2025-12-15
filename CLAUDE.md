@@ -1,3 +1,78 @@
+- ## Commit Message Format (REQUIRED)
+
+  **ALWAYS use this format for git commits:**
+
+  ```
+  [ROADMAP-X] Brief summary (70 chars max)
+
+  ## What Shipped
+
+  1. [Feature/Fix]: [Description + impact]
+  2. [Feature/Fix]: [Description + impact]
+  (Max 5 items, 1-2 sentences each)
+
+  ## Critical Discovery (Optional)
+
+  [User pain point or workflow issue discovered]
+  Solution: [How addressed or deferred]
+
+  ## Decisions
+
+  - [Decision 1]: [Why this approach]
+  - [Decision 2]: [Why this approach]
+  (Max 3 decisions)
+
+  ## Architecture Decisions (Optional)
+
+  [Significant technical choice made]
+  - Options: [A, B, C]
+  - Chosen: [X] because [rationale]
+  - Trade-offs: [What we're accepting]
+
+  ## Impact
+
+  [Metrics or unblocked work]
+
+  ## Next Steps
+
+  [What's next, what's deferred]
+
+  ## Key Learnings
+
+  [1-sentence insight from this work]
+
+  🤖 Generated with [Claude Code](https://claude.com/claude-code)
+
+  Co-Authored-By: Claude <noreply@anthropic.com>
+  ```
+
+  **Character Limit**: Keep total message ≤1000 chars to avoid GitHub UI truncation
+  - Subject line: ≤70 chars
+  - Each section: ≤3 items, 1-2 sentences each
+  - Optional sections: Skip if not applicable
+
+  **Git Hook**: `.git/hooks/prepare-commit-msg` pre-fills this template
+
+- ## Session Log Format (REQUIRED)
+
+  **When user says "close session" or "end session":**
+
+  1. Create session log: `docs/sessions/claude-code/[YYYY-MM-DD]-[topic].md`
+  2. Use template from: `docs/sessions/TEMPLATE.md`
+  3. Mark optional sections: "Critical Discovery" and "Architecture Decisions"
+  4. Keep concise: 1-2 sentences per item, max 3 items per section
+  5. Include handoff prompt for next session
+
+  **Template structure** (see TEMPLATE.md for full format):
+  - What Shipped (required)
+  - Critical Discovery (optional)
+  - Decisions (required)
+  - Architecture Decisions (optional)
+  - Impact (required)
+  - Next Steps (required)
+  - Key Learnings (required)
+  - Time Breakdown (required)
+
 - ## Tech Requirements Review Protocol
 
   **BEFORE starting implementation:**

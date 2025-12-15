@@ -1,153 +1,118 @@
-# Session: [YYYY-MM-DD] - [Agent: Claude | Claude Code]
+# Session: [YYYY-MM-DD] - [Topic/Initiative]
 
-**Project**: [Project Name]
+**Date**: [YYYY-MM-DD]
 **Duration**: [X hours Y minutes]
-**Status**: Active | Blocked | Complete
-**Session Type**: Strategy | Implementation | Debug | Review
+**Agent**: Claude Code | Claude Chat
+**Owner**: Dharan Chandrahasan
+**Initiative**: [Initiative name from ROADMAP.md]
+**Status**: [Complete | In Progress | Blocked]
 
 ---
 
 ## 🚀 What Shipped
 
-**Features Completed**:
-- [Feature 1]: [Brief description + impact]
-- [Feature 2]: [Brief description + impact]
-
-**Bugs Fixed**:
-- [Bug 1]: [What was broken + how fixed]
-- [Bug 2]: [What was broken + how fixed]
+**Features/Fixes** (list 1-5 items):
+1. [Feature/Fix name]: [1-2 sentence description + impact]
+2. [Feature/Fix name]: [1-2 sentence description + impact]
 
 **Files Changed**:
-```
-path/to/file1.py  (+50, -20)  # Added [feature]
-path/to/file2.py  (+30, -10)  # Fixed [bug]
-```
-
-**Git Commits**:
-- `abc123`: [Commit message]
-- `def456`: [Commit message]
+- `path/to/file1.py` (+X, -Y): [What changed]
+- `path/to/file2.py` (+X, -Y): [What changed]
 
 ---
 
-## 🧠 Architecture Decisions
+## 🔍 Critical Discovery (Optional)
+
+**Problem**: [User pain point or workflow issue discovered]
+
+**Solution**: [How addressed, or link to tech-req doc if deferred]
+
+**Impact**: [Why this matters]
+
+---
+
+## ✅ Decisions
 
 **Decision 1**: [What was decided]
-- **Context**: [Why this decision was needed]
-- **Options Considered**: A, B, C
-- **Chosen**: [Option X]
+- **Why**: [Brief rationale]
+
+**Decision 2**: [What was decided]
+- **Why**: [Brief rationale]
+
+---
+
+## 🏗️ Architecture Decisions (Optional)
+
+**Decision**: [Significant technical choice made]
+- **Options**: [A, B, C]
+- **Chosen**: [X]
 - **Rationale**: [Why this option]
 - **Trade-offs**: [What we're accepting]
 - **Impact**: [How this affects future work]
 
-**Decision 2**: [What was decided]
-[Same structure as Decision 1]
+---
+
+## 📊 Impact
+
+**Metrics** (if applicable):
+- Test success rate: [Before] → [After]
+- Performance: [Before] → [After]
+- Time saved: [X min/week]
+
+**Unblocked Work**:
+- [Phase/initiative unblocked]: [Why]
 
 ---
 
-## 📝 Roadmap Updates
+## ➡️ Next Steps
 
-**Items Completed**:
-- ✅ [Roadmap item 1]: Shipped
-- ✅ [Roadmap item 2]: Shipped
+**Immediate** (next session):
+1. [Task 1]: [X min] - [Brief description]
+2. [Task 2]: [X min] - [Brief description]
 
-**Items Started**:
-- 🟡 [Roadmap item 3]: In progress (50% complete)
-- 🟡 [Roadmap item 4]: Blocked (waiting on X)
-
-**Items Added**:
-- ⭐ [New item 1]: [Why added, priority]
-- ⭐ [New item 2]: [Why added, priority]
+**Deferred** (backlog):
+- [Task 3]: [Why deferred, when to revisit]
 
 ---
 
-## ➡️ Next Steps (Choose 1)
+## 💡 Key Learnings
 
-### Option A: [Next Action A]
-**Why This Makes Sense**:
-[Rationale for why this is the logical next step]
-
-**Time Estimate**: [X hours]
-**Dependencies**: [None | Blocked on Y]
-**Impact**: [What this unlocks]
-
-### Option B: [Next Action B]
-**Why This Makes Sense**:
-[Rationale for alternative path]
-
-**Time Estimate**: [X hours]
-**Dependencies**: [None | Blocked on Z]
-**Impact**: [What this unlocks]
-
-### Option C: [Next Action C]
-**Why This Makes Sense**:
-[Rationale for third option]
-
-**Time Estimate**: [X hours]
-**Dependencies**: [None | Blocked on W]
-**Impact**: [What this unlocks]
-
-**Recommendation**: [Option X] because [brief rationale]
-
----
-
-## 🚨 Critical Alerts
-
-**Blockers**:
-- 🛑 [Blocker 1]: [Description, impact, needed to unblock]
-- 🛑 [Blocker 2]: [Description, impact, needed to unblock]
-
-**Bugs Discovered**:
-- 🐛 [Bug 1]: [Description, severity, workaround]
-- 🐛 [Bug 2]: [Description, severity, workaround]
-
-**Design Flaws**:
-- ⚠️ [Flaw 1]: [Description, impact on future work]
-- ⚠️ [Flaw 2]: [Description, impact on future work]
-
-**System Decisions Requiring Review**:
-- 🤔 [Decision 1]: [What needs review, why it matters]
-- 🤔 [Decision 2]: [What needs review, why it matters]
-
----
-
-## 📚 Context for Next Session
-
-**What the Next Agent Needs to Know**:
-1. [Key context point 1]
-2. [Key context point 2]
-3. [Key context point 3]
-
-**Assumptions Made**:
-- [Assumption 1]: [Why this assumption, how to validate]
-- [Assumption 2]: [Why this assumption, how to validate]
-
-**Open Questions**:
-- [Question 1]: [Why this matters, who should answer]
-- [Question 2]: [Why this matters, who should answer]
-
-**Recommended Reading** (if applicable):
-- [Doc 1]: [Why relevant]
-- [Doc 2]: [Why relevant]
-
----
-
-## 🔗 Links
-
-- **PRD**: [Link if relevant]
-- **Tech Requirements**: [Link if relevant]
-- **Architecture Diagram**: [Link if updated]
-- **GitHub Commits**: [Links to commits]
-- **Notion Updates**: [Links to Notion pages updated]
+1. [One-sentence insight from this work]
+2. [One-sentence insight from this work]
 
 ---
 
 ## ⏱️ Time Breakdown
 
-| Activity | Time Spent |
-|----------|------------|
-| Planning | X min |
-| Coding | X min |
-| Testing | X min |
-| Debugging | X min |
-| Documentation | X min |
+| Activity | Time |
+|----------|------|
+| [Activity 1] | X min |
+| [Activity 2] | X min |
+| [Activity 3] | X min |
 | **Total** | **X hours Y min** |
+
+---
+
+## 🔗 Related Documents
+
+- **PRD**: [Link if applicable]
+- **Tech Requirements**: [Link if applicable]
+- **Testing Issues**: [Link if applicable]
+- **GitHub Commit**: [Commit hash + link]
+- **Notion Session**: [Link after sync]
+
+---
+
+## 📝 Notes for Next Session
+
+**Context the next agent needs**:
+- [Key point 1]
+- [Key point 2]
+
+**Open questions**:
+- [Question 1]: [Why this matters]
+
+**Handoff prompt** (if applicable):
+```
+[Ready-to-copy prompt for next Claude Code/Chat session]
+```
