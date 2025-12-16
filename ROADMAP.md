@@ -1,7 +1,7 @@
 # Dharan's Roadmap: All Projects
 
-**Last Updated**: 2025-12-05
-**Current Focus**: Applied Context Engineering + Prototype Validation
+**Last Updated**: 2025-12-16
+**Current Focus**: Second Brain Sync + Prototype Validation
 
 ---
 
@@ -9,13 +9,18 @@
 
 | Priority | Initiative | Project | Status | Owner | Target | One-Pager |
 |----------|-----------|---------|--------|-------|--------|-----------|
-|P1|Applied Context Engineering|Infrastructure|❌ Won't Do|Dharan|Dec 13|[Link](docs/context/one-pagers/infrastructure/context-engineering.md)|
-| P1 | Live Context Control v3 | Infrastructure | ✅ Complete | Dharan | Dec 15 (Completed) | [PRD](docs/prd/live-context-control-v3.md) |
-| P1 | Prototype Validation | Legacy AI | 🚀 In Progress | Dharan | Nov 25 | [Link](../legacy-ai/docs/context/one-pagers/prototype-validation.md) |
-| P0 | RAG Implementation (Tier 1) - Legacy AI | Infrastructure | ✅ Complete | Dharan | Nov 24 | [Link](docs/context/one-pagers/infrastructure/rag-implementation-legacy-ai.md) |
-| P1 | Customer Interview Analysis | Legacy AI | ✅ Complete | Dharan | Nov 17 | [Link](../legacy-ai/docs/context/one-pagers/customer-interview-analysis.md) |
-| P0 | Roadmap Architecture Improvements | Infrastructure | ✅ Complete | Dharan | Nov 18 | [Link](docs/context/one-pagers/infrastructure/roadmap-architecture-improvements.md) |
-| P1 | Context Sync Bridge | Infrastructure | ✅ Complete | Dharan | Nov 13 | [Link](docs/context/one-pagers/infrastructure/context-sync-bridge.md) |
+| P0 | Second Brain Sync | Infrastructure | 🚀 In Progress | Dharan | Dec 22 | [PRD](2-areas/epic-2nd-brain-infrastructure/projects/second-brain-sync/prd.md) |
+| P1 | Prototype Validation | Legacy AI | 🚀 In Progress | Dharan | Dec 31 | [Link](../legacy-ai/docs/context/one-pagers/prototype-validation.md) |
+
+## ✅ Completed Work (Last 30 Days)
+
+| Priority | Initiative | Project | Completed | Owner | One-Pager |
+|----------|-----------|---------|-----------|-------|-----------|
+| P1 | Live Context Control v3 | Infrastructure | Dec 15 | Dharan | [PRD](docs/prd/live-context-control-v3.md) |
+| P0 | RAG Implementation (Tier 1) - Legacy AI | Infrastructure | Nov 24 | Dharan | [Link](docs/context/one-pagers/infrastructure/rag-implementation-legacy-ai.md) |
+| P0 | Roadmap Architecture Improvements | Infrastructure | Nov 18 | Dharan | [Link](docs/context/one-pagers/infrastructure/roadmap-architecture-improvements.md) |
+| P1 | Customer Interview Analysis | Legacy AI | Nov 17 | Dharan | [Link](../legacy-ai/docs/context/one-pagers/customer-interview-analysis.md) |
+| P1 | Context Sync Bridge | Infrastructure | Nov 13 | Dharan | [Link](docs/context/one-pagers/infrastructure/context-sync-bridge.md) |
 
 ## 📅 Near-Term Backlog (P2-P3, Weeks 3-4)
 
@@ -30,7 +35,8 @@
 | Priority | Initiative | Project | Status | Owner | Target | One-Pager |
 |----------|-----------|---------|--------|-------|--------|-----------|
 | P4 | Template Enhancements | Legacy AI | 📋 Backlog | Dharan | Dec 20 | [Link](../legacy-ai/docs/context/one-pagers/template-enhancements.md) |
-| P4 | MCP Server Refactor | Infrastructure | 📋 Backlog | Dharan | Dec 27 | [Link](docs/context/one-pagers/infrastructure/mcp-server-refactor.md) |
+
+
 | P4 | RAG Expansion to Epic 2nd Brain | Infrastructure | 📋 Backlog | Dharan | When triggered | Note: 2-4 hours when Epic 2nd Brain crosses 200k tokens |
 | P5 | API Automation (Tier 3) | Infrastructure | 📋 Backlog | Dharan | Q2 2026 | [Link](docs/context/one-pagers/infrastructure/api-automation.md) |
 | P5 | Email Intelligence | Infrastructure | 📋 Backlog | Dharan | Jan 10 | [Link](docs/context/one-pagers/infrastructure/email-intelligence.md) |
@@ -59,6 +65,9 @@
 
 ## 🔄 Recent Updates
 
+- **2025-12-16**: Second Brain Sync PRD approved - Hybrid tags approach (PARA folders + frontmatter), Hemingway Bridge formalized, ready for architecture (Day 2)
+- **2025-12-15**: Live Context Control v3 marked complete - Quick wins: folder infrastructure (60+ dirs), RAG indexed (1,002 chunks), list_files() MCP tool added
+- **2025-12-06**: Live Context Control v3 Phase 6-7 complete (98%) - RAG separate repos (privacy-first), file-based handoffs (YAML), all tests passing
 - **2025-12-05**: RAG Implementation marked complete (Nov 24) - 896 chunks indexed, 274k tokens, hybrid BM25 + semantic + BGE reranking, all 8 tests passing
 - **2025-12-05**: Customer Interview Analysis marked complete (Nov 17) - Linisha, Amma/Selvi, Rob Halpern analyses done, meta-analysis framework restored
 - **2025-12-05**: Context Profile Optimization merged into Applied Context Engineering Phase 4 (no longer separate initiative)
@@ -98,20 +107,27 @@
 - **Cost**: $100/month (no increase)
 - **Future**: Easy expansion to Epic 2nd Brain (2-4 hours when triggered)
 
-**Applied Context Engineering (P1 - Active, Extended to Dec 13)**:
-- **Phase 1**: ✅ Systems Architecture Complete (Nov 18-24)
-  - Level 1-3 diagrams (System Context, Container Architecture, Leverage Points)
-  - Level 4 (component deep dives) will iterate over time
-- **Phase 2**: Context Visibility + Control (Nov 25-29, 6-8 hours)
-  - list_context(), reload_context() tools
-  - Always-load core files (ROADMAP.md)
-  - Usage tracking (silent, for Phase 4 learning)
-- **Phase 3**: Smart Discovery (Dec 2-6, 6-8 hours)
-  - search_repo(), list_files() tools
-  - Semantic search over repo
-- **Phase 4**: Learning Loop (Dec 9-13, 4-6 hours)
-  - Analyze usage data, auto-update profiles
-  - Suggestion accuracy: 30% → 80%
-  - **Note**: Context Profile Optimization (completed Nov 17) merged as Phase 4 foundation
-- **Time saved**: 100-140 min/week across all phases
-- **Details**: [Live Context Control PRD](docs/prd/live-context-control.md)
+**Live Context Control v3 (P1 - ✅ Complete, Dec 15)**:
+- **What Shipped**:
+  - Phase 0-7 complete (62 hours total)
+  - Privacy-first RAG with separate repos (Legacy AI + Epic 2nd Brain)
+  - File-based handoffs with YAML frontmatter
+  - Folder infrastructure (60+ directories created)
+  - 1,002 chunks indexed for semantic search
+  - list_files() MCP tool for folder exploration
+- **Impact**:
+  - Context loading: 10-15 min → <3 min
+  - Time saved: 100-140 min/week
+  - Privacy: Separate ChromaDB collections (no data leakage)
+- **Details**: [Live Context Control PRD](docs/prd/live-context-control-v3.md)
+
+**Second Brain Sync (P0 - Active, Target Dec 22)**:
+- **Goal**: Bidirectional sync between Notion (mobile capture) and Git repos (ai-assistant + legacy-ai) using PARA structure
+- **Status**: PRD approved, ready for architecture (Day 2)
+- **Key Features**:
+  - Hybrid tags: PARA folders for organization + frontmatter tags for connections
+  - Hemingway Bridge in session templates (reduces startup friction to <3 min)
+  - MCP backwards compatibility (existing tools continue working)
+  - Auto-sync at 1am/1pm daily
+- **Estimated Effort**: 24-28 hours across 6 days
+- **Details**: [Second Brain Sync PRD](2-areas/epic-2nd-brain-infrastructure/projects/second-brain-sync/prd.md)
