@@ -73,6 +73,23 @@
   - Key Learnings (required)
   - Time Breakdown (required)
 
+- ## Testing Criteria Guidelines
+
+  **When defining testing criteria for PRDs or tech requirements:**
+
+  1. **Priority Hierarchy**: Data integrity (P0) > Performance (P1) > Quality output (P2)
+  2. **TDD First**: Write failing test BEFORE code - defines expected behavior, ensures alignment
+  3. **Test Structure**: Unit (70%, fast/isolated) > Integration (20%, multi-component) > E2E (10%, full workflow)
+  4. **Separate Test Environment**: Dedicated test workspace/APIs - prevents production pollution
+  5. **Coverage Target**: 70% code coverage (industry standard) - focus on critical paths
+  6. **Golden Dataset**: Canonical test files with known expected outputs - reproducible tests
+  7. **Performance Baselines**: Track regression with 20% degradation threshold - save benchmarks, compare to golden
+  8. **Test Requirements**: Tests REQUIRED for new features and bug fixes - enforced at session end
+  9. **Success Metrics**: 95%+ test pass rate, unit <30s, integration <2min, E2E <10min
+  10. **End-to-End Validation**: "Code built ≠ infrastructure exists" - verify folders/databases/config actually exist
+
+  **Full details**: See `docs/context/testing-roadmap.md`
+
 - ## Tech Requirements Review Protocol
 
   **BEFORE starting implementation:**
